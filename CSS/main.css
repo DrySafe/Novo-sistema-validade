@@ -1,0 +1,167 @@
+/* ============================================================
+   DESIGN SYSTEM - VALIDASUPER (FLUID & DARK MODE READY)
+   ============================================================ */
+
+:root {
+  /* Temas Claro (Light Mode) */
+  --bg-main: #f3f4f6;
+  --surface: #ffffff;
+  --surface-panel: #ffffff;
+  --border: #e5e7eb;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  
+  --primary: #1e3a8a;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+
+  /* Fontes e Tipografia Fluida */
+  --font-display: "Barlow Condensed", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  /* Cores Neon da Régua de Vencimentos (Ações Preventivas) */
+  --st-60: #facc15; /* 60 Dias - Amarelo */
+  --st-45: #fb923c; /* 45 Dias - Laranja Claro */
+  --st-30: #f97316; /* 30 Dias - Laranja */
+  --st-15: #ef4444; /* 15 Dias - Vermelho */
+  --st-7:  #dc2626; /* 7 Dias - Crítico */
+  --st-vencido: #991b1b;
+}
+
+/* ============================================================
+   DESIGN SYSTEM - VALIDASUPER (LIGHT & DARK MODE)
+   ============================================================ */
+
+:root {
+  /* Tema Claro (Padrão) */
+  --bg-main: #f3f4f6;
+  --surface: #ffffff;
+  --surface-panel: #ffffff;
+  --border: #e5e7eb;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  
+  --primary: #1e3a8a;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+
+  /* Fontes */
+  --font-display: "Barlow Condensed", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  /* Cores da Régua */
+  --st-60: #facc15;
+  --st-45: #fb923c;
+  --st-30: #f97316;
+  --st-15: #ef4444;
+  --st-7:  #dc2626;
+  --st-vencido: #991b1b;
+}
+
+/* Tema Escuro - Controlado EXCLUSIVAMENTE pela classe .dark na tag <body> */
+body.dark {
+  --bg-main: #090d16;
+  --surface: #111827;
+  --surface-panel: #1f2937;
+  --border: #374151;
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-light: #1e293b;
+}
+
+/* Reset Moderno */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.hidden { display: none !important; }
+
+/* Wrapper Principal Mobile */
+.app-viewport {
+  min-height: 100vh;
+  padding-bottom: 90px; /* Esspaço para a barra de navegação inferior em mobile */
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  width: 100%;
+  max-width: 600px; /* Foco mobile otimizado */
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Header Topbar Moderno */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+.topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+.btn-theme-toggle {
+  background: var(--surface-panel);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* Visor Industrial do Produto (Estilo Balança Digital) */
+.visor-produto {
+  background: #0f172a;
+  border: 2px solid #1e293b;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-mono);
+  color: #4ade80; /* Verde Terminal */
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.visor-header {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+}
+
+.visor-ean {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #f8fafc;
+}

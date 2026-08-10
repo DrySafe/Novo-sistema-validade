@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ValidaSuper - Prevenção de Perdas</title>
+
+  <!-- Tipografia Industrial Fluida -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Modular -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/tables.css">
+
+  <!-- CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/scanner.js"></script>
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="brand-title">ValidaSuper</div>
+      <div class="topbar-actions">
+        <button id="btn-toggle-theme" class="btn-theme-toggle" title="Alternar Tema">🌙</button>
+        <button id="btn-logout" class="btn-theme-toggle" title="Sair">🚪</button>
+      </div>
+    </header>
+
+    <!-- Tela de Login -->
+    <section id="login-screen" class="container">
+      <div style="text-align: center; margin-top: 3rem; margin-bottom: 2rem;">
+        <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--primary);">VALIDASUPER</h1>
+        <p style="color: var(--text-muted);">Controle de Validades e Perdas Operacionais</p>
+      </div>
+
+      <form id="form-login">
+        <div class="form-group">
+          <label for="login-email">E-mail Corporativo</label>
+          <input type="email" id="login-email" required placeholder="operador@loja.com">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
+      </form>
+    </section>
+
+    <!-- Tela Principal do App -->
+    <main id="app-screen" class="container hidden">
+      
+      <!-- Visor Informativo do Usuário -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+  <div>
+    <!-- Elementos com as IDs que o JS está procurando -->
+    <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
+      Olá, <strong id="display-user-name" style="color: var(--text-main);">Carregando...</strong>
+    </span>
+    <h3 id="display-store-name" style="font-family: var(--font-display); font-size: 1.3rem;">Loja --</h3>
+  </div>
+  
+  <button id="btn-open-modal" class="btn btn-primary" style="width: auto; min-height: 44px; padding: 0 1rem;">
+    + Cadastrar
+  </button>
+</div>
+
+      <!-- Card Lista de Produtos -->
+      <div id="product-card-container" class="product-card-list">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+    </main>
+
+    <!-- Bottom Navigation Bar (Fixa em Mobile) -->
+    <nav id="bottom-nav" class="bottom-nav hidden">
+      <button class="nav-item active" data-sector="validade">
+        <span class="nav-icon">📅</span>
+        <span>Validade</span>
+      </button>
+      <button class="nav-item" data-sector="vencidos">
+        <span class="nav-icon">🚫</span>
+        <span>Vencidos</span>
+      </button>
+      <button class="nav-item" data-sector="uso_loja">
+        <span class="nav-icon">🏪</span>
+        <span>Uso Loja</span>
+      </button>
+      <button class="nav-item" data-sector="avarias">
+        <span class="nav-icon">📦</span>
+        <span>Avarias</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Modal Bottom-Sheet para Novo Registro -->
+  <div id="modal-entry" class="modal">
+    <div class="modal-content">
+      <div class="modal-drag-handle"></div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 id="modal-title" style="font-family: var(--font-display); font-size: 1.4rem;">NOVO LANÇAMENTO</h3>
+        <button id="btn-close-modal" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="form-entry">
+        <input type="hidden" id="entry-sector" value="validade">
+        <input type="hidden" id="entry-image-url">
+
+        <!-- Visor Digital do EAN -->
+        <div class="visor-produto">
+          <div class="visor-header">CÓDIGO DE BARRAS / EAN</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <input type="text" id="entry-ean" required placeholder="0000000000000" style="background:none; border:none; color:#4ade80; font-family:var(--font-mono); font-size:1.4rem; font-weight:700; width:100%; outline:none;">
+            <button type="button" id="btn-toggle-camera" style="background:#1e293b; border:1px solid #334155; color:#fff; padding:0.5rem; border-radius:8px; font-size:1.2rem; cursor:pointer;">📷</button>
+          </div>
+        </div>
+
+        <!-- Câmera do Scanner -->
+        <div id="camera-container" class="hidden" style="position: relative; width: 100%; height: 200px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 1rem;">
+          <video id="scanner-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+          <div style="position: absolute; inset: 20%; border: 2px dashed #ef4444; border-radius: 8px; pointer-events: none;"></div>
+        </div>
+
+        <!-- Preview do Produto Encontrado -->
+        <div id="product-preview-box" class="hidden" style="display: flex; align-items: center; gap: 1rem; background: var(--surface-panel); padding: 0.75rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border);">
+          <img id="preview-img" src="" alt="Foto" style="width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #fff;">
+          <div>
+            <small style="color: var(--text-muted); display: block;">Produto Identificado:</small>
+            <strong id="preview-title" style="font-size: 0.9rem; color: var(--text-main);">-</strong>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="entry-product-name">Nome do Produto</label>
+          <input type="text" id="entry-product-name" required placeholder="Ex: Leite Integral 1L">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label for="entry-batch">Lote</label>
+            <input type="text" id="entry-batch" required placeholder="Ex: L01">
+          </div>
+          <div class="form-group">
+            <label for="entry-qty">Quantidade</label>
+            <input type="number" id="entry-qty" min="1" required placeholder="10">
+          </div>
+        </div>
+
+        <div id="field-group-validity" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label for="entry-expiration">Vencimento</label>
+            <input type="date" id="entry-expiration" required>
+          </div>
+          <div class="form-group">
+            <label for="entry-location">Local</label>
+            <select id="entry-location">
+              <option value="Gôndola">Gôndola</option>
+              <option value="Depósito">Depósito</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Confirmar Lançamento</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
