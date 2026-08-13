@@ -155,28 +155,59 @@ if (formRegisterStore) {
   });
 
   // 5. MODAL BOTTOM-SHEET
-  const btnOpenModal = document.getElementById('btn-open-modal');
-  const btnCloseModal = document.getElementById('btn-close-modal');
+  // Abertura dinâmica do Modal correto (Produto vs Equipe)
+const btnOpenModal = document.getElementById('btn-open-modal');
+const modalEntry = document.getElementById('modal-entry');
+const modalEmployee = document.getElementById('modal-employee');
 
-  if (btnOpenModal) {
-    btnOpenModal.addEventListener('click', () => {
+if (btnOpenModal) {
+  btnOpenModal.addEventListener('click', () => {
+    // Se estiver na aba da Equipe, abre o Modal de Funcionários
+    if (currentSector === 'equipe') {
+      if (modalEmployee) modalEmployee.classList.add('active');
+    } else {
+      // Caso contrário, abre o Modal de Lançamentos de Produtos
       document.getElementById('entry-sector').value = currentSector;
       const isValidade = currentSector === 'validade';
       document.getElementById('field-group-validity').style.display = isValidade ? 'grid' : 'none';
       if (modalEntry) modalEntry.classList.add('active');
-    });
-  }
-
-  const closeModalHandler = async () => {
-    if (typeof window.pararScanner === 'function') {
-      await window.pararScanner();
     }
-    const cameraContainer = document.getElementById('camera-container');
-    if (cameraContainer) cameraContainer.classList.add('hidden');
-    if (modalEntry) modalEntry.classList.remove('active');
-  };
+  });
+}
 
-  if (btnCloseModal) btnCloseModal.addEventListener('click', closeModalHandler);
+// Fechamento do Modal de Equipe
+const btnCloseModalEmp = document.getElementById('btn-close-modal-emp');
+if (btnCloseModalEmp && modalEmployee) {
+  btnCloseModalEmp.addEventListener('click', () => {
+    modalEmployee.classList.remove('active');
+  });
+}
+
+// Envios do Formulário de Cadastro de Colaborador
+const formEmployee = document.getElementById('form-employee');
+if (formEmployee) {
+  formEmployee.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await authService.addEmployee({
+        lojaId: currentProfile.loja_id,
+        nome: document.getElementById('emp-name').value,
+        funcao: document.getElementById('emp-role').value,
+        email: document.getElementById('emp-email').value,
+        avatarUrl: document.getElementById('emp-avatar').value
+      });
+
+      alert('Colaborador cadastrado com sucesso!');
+      if (modalEmployee) modalEmployee.classList.remove('active');
+      formEmployee.reset();
+      
+      // Recarrega a lista da equipe
+      loadSectorData();
+    } catch (err) {
+      alert('Erro ao cadastrar colaborador: ' + err.message);
+    }
+  });
+}
 
   // 6. CONSULTA AUTOMÁTICA DE EAN VIA OPEN FOOD FACTS
   const entryEanInput = document.getElementById('entry-ean');
@@ -303,6 +334,10 @@ async function loadSectorData() {
     if (currentSector === 'validade') {
       currentData = await productService.getReguaVencimentos(currentProfile.loja_id);
       renderValidadeCards(currentData, container);
+    } else if (currentSector === 'equipe') {
+      // Busca membros da equipe
+      currentData = await authService.getTeamMembers(currentProfile.loja_id);
+      renderEquipeCards(currentData, container);
     } else {
       currentData = await productService.getRegistrosPerdas(currentProfile.loja_id, currentSector);
       renderPerdasCards(currentData, container);

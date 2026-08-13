@@ -152,6 +152,46 @@
         <input type="hidden" id="entry-sector" value="validade">
         <input type="hidden" id="entry-image-url">
 
+        <!-- MODAL DE CADASTRO DE COLABORADOR (EQUIPE) -->
+<div id="modal-employee" class="modal">
+  <div class="modal-content">
+    <div class="modal-drag-handle"></div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="font-family: var(--font-display); font-size: 1.4rem;">CADASTRAR COLABORADOR</h3>
+      <button id="btn-close-modal-emp" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
+    </div>
+
+    <form id="form-employee">
+      <div class="form-group">
+        <label for="emp-name">Nome Completo</label>
+        <input type="text" id="emp-name" required placeholder="Ex: João Souza">
+      </div>
+
+      <div class="form-group">
+        <label for="emp-role">Função / Perfil</label>
+        <select id="emp-role" required>
+          <option value="operador">Operador / Repositor</option>
+          <option value="gerente">Gerente de Setor</option>
+          <option value="administrador">Administrador</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="emp-email">E-mail de Acesso</label>
+        <input type="email" id="emp-email" required placeholder="colaborador@loja.com">
+      </div>
+
+      <div class="form-group">
+        <label for="emp-avatar">URL da Foto / Avatar (Opcional)</label>
+        <input type="url" id="emp-avatar" placeholder="https://exemplo.com/foto.jpg">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Colaborador</button>
+    </form>
+  </div>
+</div>
+
         <!-- Visor Digital do EAN -->
         <div class="visor-produto">
           <div class="visor-header">CÓDIGO DE BARRAS / EAN</div>
