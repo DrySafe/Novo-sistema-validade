@@ -27,14 +27,20 @@
 
   <div class="app-viewport">
     
-    <!-- Topbar Header -->
-    <header class="topbar">
-      <div class="brand-title">ValidaSuper</div>
-      <div class="topbar-actions">
-        <button id="btn-toggle-theme" class="btn-theme-toggle" title="Alternar Tema">🌙</button>
-        <button id="btn-logout" class="btn-theme-toggle" title="Sair">🚪</button>
-      </div>
-    </header>
+   <!-- Topbar Header -->
+<header class="topbar">
+  <div class="brand-title">ValidaSuper</div>
+  
+  <!-- Seletor Dinâmico de Loja -->
+  <div id="store-selector-container" class="hidden">
+    <select id="select-active-store" class="select-store-header"></select>
+  </div>
+
+  <div class="topbar-actions">
+    <button id="btn-toggle-theme" class="btn-theme-toggle" title="Alternar Tema">🌙</button>
+    <button id="btn-logout" class="btn-theme-toggle" title="Sair">🚪</button>
+  </div>
+</header>
 
     <!-- Tela de Login e Cadastro de Loja -->
     <section id="login-screen" class="container">
@@ -192,6 +198,11 @@
         <div class="form-group">
           <label for="entry-product-name">Nome do Produto</label>
           <input type="text" id="entry-product-name" required placeholder="Ex: Leite Integral 1L">
+        </div>
+
+        <div class="form-group">
+          <label for="entry-price">Preço Atual (R$) *</label>
+          <input type="number" id="entry-price" step="0.01" min="0.01" required placeholder="Ex: 5.90">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">

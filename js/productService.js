@@ -139,5 +139,54 @@ export const productService = {
         });
       if (error) throw error;
     }
+  },
+
+  // Atualizar Preço de Custo Inline (Exclusivo ADM / Admin)
+  async updatePrecoCusto(produtoId, novoPrecoCusto) {
+    const valor = parseFloat(novoPrecoCusto);
+    if (isNaN(valor) || valor < 0) throw new Error("Preço de custo inválido.");
+
+    const { data, error } = await supabase
+      .from('produtos')
+      .update({ preco_custo: valor })
+      .eq('id', produtoId)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Ajustado para incluir preco_atual no formulário
+  async createEntry(payload) {
+    // 1. Criar ou Obter produto com preco_atual
+    const { data: prod, error: errProd } = await supabase
+      .from('produtos')
+      .insert({
+        ean: payload.ean,
+        nome: payload.produtoNome,
+        imagem_url: payload.imagemUrl || null,
+        preco_atual: payload.precoAtual || 0.00,
+        loja_id: payload.lojaId
+      })
+      .select('id')
+      .single();
+
+    if (errProd) throw errProd;
+
+    // 2. Criar lote de validade ou registro de perdas
+    if (payload.setor === 'validade') {
+      const { error } = await supabase
+        .from('lotes_validade')
+        .insert({
+          loja_id: payload.lojaId,
+          produto_id: prod.id,
+          lote: payload.lote,
+          quantidade: payload.quantidade,
+          data_vencimento: payload.dataVencimento,
+          localizacao: payload.localizacao,
+          usuario_id: payload.usuarioId
+        });
+      if (error) throw error;
+    }
   }
 };

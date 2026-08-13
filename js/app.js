@@ -11,6 +11,8 @@ let loginScreen = null;
 let appScreen = null;
 let modalEntry = null;
 let modalEmployee = null;
+let userLojas = [];
+let activeLojaId = localStorage.getItem('active_loja_id') || null;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📌 DOM carregado. Inicializando elementos e eventos...');
@@ -23,6 +25,57 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEvents();
   checkSession();
 });
+
+async function setupStoreSelector(profile) {
+  const container = document.getElementById('store-selector-container');
+  const select = document.getElementById('select-active-store');
+  const userRole = (profile.funcao || '').toLowerCase();
+
+  // Operador NÃO vê o seletor
+  if (userRole === 'operador') {
+    container.classList.add('hidden');
+    activeLojaId = profile.loja_id;
+    localStorage.setItem('active_loja_id', activeLojaId);
+    return;
+  }
+
+  // Buscar lojas que o usuário tem acesso
+  let query = supabase.from('usuario_lojas').select('lojas(id, nome)');
+  
+  if (userRole === 'administrador') {
+    // Admin busca todas as lojas cadastradas
+    query = supabase.from('lojas').select('id, nome');
+  } else {
+    query = query.eq('usuario_id', profile.id);
+  }
+
+  const { data, error } = await query;
+  if (error || !data || data.length === 0) return;
+
+  userLojas = userRole === 'administrador' ? data : data.map(d => d.lojas);
+
+  // Preencher dropdown
+  select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
+
+  // Manter selecionada a loja do localStorage ou primeira da lista
+  if (activeLojaId && userLojas.some(l => l.id === activeLojaId)) {
+    select.value = activeLojaId;
+  } else {
+    activeLojaId = userLojas[0].id;
+    select.value = activeLojaId;
+    localStorage.setItem('active_loja_id', activeLojaId);
+  }
+
+  container.classList.remove('hidden');
+
+  // Evento de troca de loja
+  select.addEventListener('change', (e) => {
+    activeLojaId = e.target.value;
+    localStorage.setItem('active_loja_id', activeLojaId);
+    console.log(`🏬 Loja ativa alterada para: ${activeLojaId}`);
+    loadSectorData(); // Recarrega produtos da nova loja
+  });
+}
 
 async function checkSession() {
   console.log('🔍 Verificando sessão ativa...');
@@ -77,6 +130,70 @@ function showLoginScreen() {
   document.getElementById('bottom-nav')?.classList.add('hidden');
 }
 
+function renderValidadeCards(data, container) {
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';
+    return;
+  }
+
+  const userRole = (currentProfile.funcao || '').toLowerCase();
+  const podeEditarCusto = ['adm', 'administrador'].includes(userRole);
+
+  container.innerHTML = data.map(item => `
+    <div class="product-card" data-id="${item.produto_id || item.id}">
+      <img src="${item.imagem_url || DEFAULT_AVATAR}" alt="Foto">
+      <div class="product-info">
+        <div class="product-title">${item.produto_nome || item.produtos?.nome || 'Produto Sem Nome'}</div>
+        
+        <div class="product-sub">
+          <span>Qtd: <strong>${item.quantidade} un</strong></span>
+          <span>Preço Venda: <strong>R$ ${parseFloat(item.preco_atual || 0).toFixed(2)}</strong></span>
+        </div>
+
+        ${podeEditarCusto ? `
+          <div class="product-sub" style="margin-top:0.4rem;">
+            <span>Custo: </span>
+            <span class="inline-cost-wrapper">
+              R$ <input type="number" 
+                        step="0.01" 
+                        class="input-inline-cost" 
+                        data-prod-id="${item.produto_id || item.id}" 
+                        value="${item.preco_custo || '0.00'}" />
+            </span>
+          </div>
+        ` : ''}
+      </div>
+      <div>
+        <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua || 'OK'}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Eventos para atualização Inline do Preço de Custo
+  if (podeEditarCusto) {
+    container.querySelectorAll('.input-inline-cost').forEach(input => {
+      const salvarCusto = async () => {
+        const prodId = input.dataset.prodId;
+        const novoValor = input.value;
+        try {
+          await productService.updatePrecoCusto(prodId, novoValor);
+          input.style.borderColor = '#4ade80'; // Feedback verde de sucesso
+          setTimeout(() => input.style.borderColor = '', 1500);
+        } catch (err) {
+          alert('Erro ao atualizar preço de custo: ' + err.message);
+        }
+      };
+
+      input.addEventListener('blur', salvarCusto);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          input.blur();
+        }
+      });
+    });
+  }
+}
+
 // Função Unificada para fechar todos os modais e desligar a câmera
 async function closeAllModals() {
   if (typeof window.pararScanner === 'function') {
@@ -122,6 +239,33 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
   }
+}
+
+async createEntry(payload) {
+  // 1. Busca ou cria o produto na tabela global 'produtos'
+  const produtoId = await this.getOrCreateProduto(
+    payload.ean, 
+    payload.produtoNome, 
+    payload.imagemUrl, 
+    payload.precoAtual
+  );
+
+  // 2. Insere o lote vinculado à LOJA ATIVA do usuário
+  if (payload.setor === 'validade') {
+    const { error } = await supabase
+      .from('lotes_validade')
+      .insert({
+        loja_id: payload.lojaId,
+        produto_id: produtoId,
+        lote: payload.lote,
+        quantidade: payload.quantidade,
+        data_vencimento: payload.dataVencimento,
+        localizacao: payload.localizacao,
+        usuario_id: payload.usuarioId
+      });
+    if (error) throw error;
+  }
+}
 
   // 2. TELA DE LOGIN E CADASTRO DE LOJA
   const btnShowRegister = document.getElementById('btn-show-register');
@@ -332,11 +476,12 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
       e.preventDefault();
       try {
         await productService.createEntry({
-          lojaId: currentProfile.loja_id,
+          lojaId: activeLojaId || currentProfile.loja_id,
           usuarioId: currentProfile.id,
           setor: currentSector,
           ean: document.getElementById('entry-ean').value,
           produtoNome: document.getElementById('entry-product-name').value,
+          precoAtual: parseFloat(document.getElementById('entry-price').value), // 👈 Preço Atual Capturado
           imagemUrl: document.getElementById('entry-image-url').value,
           lote: document.getElementById('entry-batch').value,
           quantidade: parseInt(document.getElementById('entry-qty').value),
@@ -356,7 +501,6 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
       }
     });
   }
-}
 
 async function loadSectorData() {
   const container = document.getElementById('product-card-container');
