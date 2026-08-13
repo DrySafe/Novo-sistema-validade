@@ -463,7 +463,7 @@ function renderEquipeCards(members, container) {
   `).join('');
 }
 
-// Cards da Régua de Validade e Vencidos
+// Cards da Régua de Validade e Vencidos (ÚNICA DECLARAÇÃO DA FUNÇÃO)
 function renderValidadeCards(data, container) {
   if (!data || data.length === 0) {
     container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';

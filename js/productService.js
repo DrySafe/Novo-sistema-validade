@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 
 export const productService = {
+
   // 1. Consulta API externa Open Food Facts
   async fetchEanExternalApi(ean) {
     try {
@@ -34,30 +35,45 @@ export const productService = {
     return null;
   },
 
-  // 2. Busca ou cria o produto localmente no Supabase
-  async getOrCreateProduto(ean, nomeInformado, imagemUrlInformada) {
+  // 2. Busca ou cria o produto localmente no Supabase (Atualizado com Preço Atual)
+  async getOrCreateProduto(ean, nomeInformado, imagemUrlInformada, precoAtualInformado) {
     const { data: existing } = await supabase
       .from('produtos')
-      .select('id, nome, imagem_url')
+      .select('id, nome, imagem_url, preco_atual')
       .eq('ean', ean)
       .maybeSingle();
 
     if (existing) {
+      const updates = {};
+      
+      // Atualiza foto se não tinha
       if (!existing.imagem_url && imagemUrlInformada) {
+        updates.imagem_url = imagemUrlInformada;
+      }
+
+      // Atualiza o preço atual se for informado um novo valor válido
+      if (precoAtualInformado && precoAtualInformado > 0) {
+        updates.preco_atual = precoAtualInformado;
+      }
+
+      if (Object.keys(updates).length > 0) {
         await supabase
           .from('produtos')
-          .update({ imagem_url: imagemUrlInformada })
+          .update(updates)
           .eq('id', existing.id);
       }
+
       return existing.id;
     }
 
+    // Se o produto não existe no banco, cria o registro completo
     const { data: newProd, error } = await supabase
       .from('produtos')
       .insert({
         ean,
         nome: nomeInformado || 'Produto Sem Descrição',
-        imagem_url: imagemUrlInformada || null
+        imagem_url: imagemUrlInformada || null,
+        preco_atual: precoAtualInformado || 0.00
       })
       .select('id')
       .single();
@@ -87,7 +103,7 @@ export const productService = {
 
     const { data: lotesVencidos, error: errLotes } = await supabase
       .from('lotes_validade')
-      .select('*, produtos(ean, nome, imagem_url), perfis(nome)')
+      .select('*, produtos(ean, nome, imagem_url, preco_atual, preco_custo), perfis(nome)')
       .eq('loja_id', lojaId)
       .lte('data_vencimento', hoje)
       .order('data_vencimento', { ascending: true });
@@ -96,11 +112,11 @@ export const productService = {
     return lotesVencidos;
   },
 
-  // 5. Busca registros de perdas (Vencidos, Avarias, Uso Loja)
+  // 5. Busca registros de perdas (Avarias / Uso Loja)
   async getRegistrosPerdas(lojaId, tipo) {
     const { data, error } = await supabase
       .from('registros_perdas')
-      .select('*, produtos(ean, nome, categoria, imagem_url), perfis(nome)')
+      .select('*, produtos(ean, nome, categoria, imagem_url, preco_atual), perfis(nome)')
       .eq('loja_id', lojaId)
       .eq('tipo', tipo)
       .order('created_at', { ascending: false });
@@ -109,39 +125,7 @@ export const productService = {
     return data;
   },
 
-  // 6. Salva novos lançamentos no Supabase
-  async createEntry(payload) {
-    const produtoId = await this.getOrCreateProduto(payload.ean, payload.produtoNome, payload.imagemUrl);
-
-    if (payload.setor === 'validade') {
-      const { error } = await supabase
-        .from('lotes_validade')
-        .insert({
-          loja_id: payload.lojaId,
-          produto_id: produtoId,
-          lote: payload.lote,
-          quantidade: payload.quantidade,
-          data_vencimento: payload.dataVencimento,
-          localizacao: payload.localizacao,
-          usuario_id: payload.usuarioId
-        });
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('registros_perdas')
-        .insert({
-          loja_id: payload.lojaId,
-          produto_id: produtoId,
-          tipo: payload.setor,
-          quantidade: payload.quantidade,
-          motivo: payload.motivo,
-          usuario_id: payload.usuarioId
-        });
-      if (error) throw error;
-    }
-  },
-
-  // Atualizar Preço de Custo Inline (Exclusivo ADM / Admin)
+  // 6. Atualizar Preço de Custo Inline (Exclusivo ADM / Admin)
   async updatePrecoCusto(produtoId, novoPrecoCusto) {
     const valor = parseFloat(novoPrecoCusto);
     if (isNaN(valor) || valor < 0) throw new Error("Preço de custo inválido.");
@@ -156,8 +140,9 @@ export const productService = {
     return data;
   },
 
-  // Ajustado para incluir preco_atual no formulário
+  // 7. Salva novos lançamentos no Supabase (Método Único)
   async createEntry(payload) {
+    // A) Busca ou cria o produto e salva o Preço Atual
     const produtoId = await this.getOrCreateProduto(
       payload.ean, 
       payload.produtoNome, 
@@ -165,6 +150,7 @@ export const productService = {
       payload.precoAtual
     );
 
+    // B) Lançamento do setor "validade" -> Tabela lotes_validade
     if (payload.setor === 'validade') {
       const { error } = await supabase
         .from('lotes_validade')
@@ -178,7 +164,9 @@ export const productService = {
           usuario_id: payload.usuarioId
         });
       if (error) throw error;
-    } else {
+    } 
+    // C) Lançamento de perdas (avarias / uso_loja) -> Tabela registros_perdas
+    else {
       const { error } = await supabase
         .from('registros_perdas')
         .insert({
