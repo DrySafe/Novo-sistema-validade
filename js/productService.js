@@ -158,32 +158,35 @@ export const productService = {
 
   // Ajustado para incluir preco_atual no formulário
   async createEntry(payload) {
-    // 1. Criar ou Obter produto com preco_atual
-    const { data: prod, error: errProd } = await supabase
-      .from('produtos')
-      .insert({
-        ean: payload.ean,
-        nome: payload.produtoNome,
-        imagem_url: payload.imagemUrl || null,
-        preco_atual: payload.precoAtual || 0.00,
-        loja_id: payload.lojaId
-      })
-      .select('id')
-      .single();
+    const produtoId = await this.getOrCreateProduto(
+      payload.ean, 
+      payload.produtoNome, 
+      payload.imagemUrl, 
+      payload.precoAtual
+    );
 
-    if (errProd) throw errProd;
-
-    // 2. Criar lote de validade ou registro de perdas
     if (payload.setor === 'validade') {
       const { error } = await supabase
         .from('lotes_validade')
         .insert({
           loja_id: payload.lojaId,
-          produto_id: prod.id,
+          produto_id: produtoId,
           lote: payload.lote,
           quantidade: payload.quantidade,
           data_vencimento: payload.dataVencimento,
           localizacao: payload.localizacao,
+          usuario_id: payload.usuarioId
+        });
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('registros_perdas')
+        .insert({
+          loja_id: payload.lojaId,
+          produto_id: produtoId,
+          tipo: payload.setor,
+          quantidade: payload.quantidade,
+          motivo: payload.motivo,
           usuario_id: payload.usuarioId
         });
       if (error) throw error;
