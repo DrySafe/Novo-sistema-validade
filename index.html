@@ -33,25 +33,60 @@
       </div>
     </header>
 
-    <!-- Tela de Login -->
-    <section id="login-screen" class="container">
-      <div style="text-align: center; margin-top: 3rem; margin-bottom: 2rem;">
-        <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--primary);">VALIDASUPER</h1>
-        <p style="color: var(--text-muted);">Controle de Validades e Perdas Operacionais</p>
-      </div>
+    <!-- Tela de Login e Cadastro de Loja -->
+<section id="login-screen" class="container">
+  <div style="text-align: center; margin-top: 2rem; margin-bottom: 1.5rem;">
+    <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--primary);">VALIDASUPER</h1>
+    <p style="color: var(--text-muted);">Controle de Validades e Perdas Operacionais</p>
+  </div>
 
-      <form id="form-login">
-        <div class="form-group">
-          <label for="login-email">E-mail Corporativo</label>
-          <input type="email" id="login-email" required placeholder="operador@loja.com">
-        </div>
-        <div class="form-group">
-          <label for="login-password">Senha</label>
-          <input type="password" id="login-password" required placeholder="••••••••">
-        </div>
-        <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
-      </form>
-    </section>
+  <!-- Form Login Padrão -->
+  <form id="form-login">
+    <div class="form-group">
+      <label for="login-email">E-mail Corporativo</label>
+      <input type="email" id="login-email" required placeholder="operador@loja.com">
+    </div>
+    <div class="form-group">
+      <label for="login-password">Senha</label>
+      <input type="password" id="login-password" required placeholder="••••••••">
+    </div>
+    <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
+    <button type="button" id="btn-show-register" class="btn btn-secondary" style="margin-top: 0.75rem;">
+      🏬 Cadastrar Minha Loja (SaaS)
+    </button>
+  </form>
+
+  <!-- Form Cadastro de Nova Loja (Inicia Oculto) -->
+  <form id="form-register-store" class="hidden">
+    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary);">CADASTRAR NOVA UNIDADE</h3>
+    
+    <div class="form-group">
+      <label for="reg-store-name">Nome da Loja / Supermercado</label>
+      <input type="text" id="reg-store-name" required placeholder="Ex: Supermercado Centro">
+    </div>
+    <div class="form-group">
+      <label for="reg-cnpj">CNPJ</label>
+      <input type="text" id="reg-cnpj" placeholder="00.000.000/0001-00">
+    </div>
+    <div class="form-group">
+      <label for="reg-admin-name">Nome do Gerente / Admin</label>
+      <input type="text" id="reg-admin-name" required placeholder="Ex: Carlos Silva">
+    </div>
+    <div class="form-group">
+      <label for="reg-email">E-mail de Acesso</label>
+      <input type="email" id="reg-email" required placeholder="gerente@loja.com">
+    </div>
+    <div class="form-group">
+      <label for="reg-password">Senha de Acesso</label>
+      <input type="password" id="reg-password" required placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Criar Loja e Acessar</button>
+    <button type="button" id="btn-show-login" class="btn btn-secondary" style="margin-top: 0.75rem;">
+      ← Voltar para o Login
+    </button>
+  </form>
+</section>
 
     <!-- Tela Principal do App -->
     <main id="app-screen" class="container hidden">
@@ -77,25 +112,29 @@
       </div>
     </main>
 
-    <!-- Bottom Navigation Bar (Fixa em Mobile) -->
     <nav id="bottom-nav" class="bottom-nav hidden">
-      <button class="nav-item active" data-sector="validade">
-        <span class="nav-icon">📅</span>
-        <span>Validade</span>
-      </button>
-      <button class="nav-item" data-sector="vencidos">
-        <span class="nav-icon">🚫</span>
-        <span>Vencidos</span>
-      </button>
-      <button class="nav-item" data-sector="uso_loja">
-        <span class="nav-icon">🏪</span>
-        <span>Uso Loja</span>
-      </button>
-      <button class="nav-item" data-sector="avarias">
-        <span class="nav-icon">📦</span>
-        <span>Avarias</span>
-      </button>
-    </nav>
+  <button class="nav-item active" data-sector="validade">
+    <span class="nav-icon">📅</span>
+    <span>Validade</span>
+  </button>
+  <button class="nav-item" data-sector="vencidos">
+    <span class="nav-icon">🚫</span>
+    <span>Vencidos</span>
+  </button>
+  <button class="nav-item" data-sector="uso_loja">
+    <span class="nav-icon">🏪</span>
+    <span>Uso Loja</span>
+  </button>
+  <button class="nav-item" data-sector="avarias">
+    <span class="nav-icon">📦</span>
+    <span>Avarias</span>
+  </button>
+  <!-- Nova Aba da Equipe -->
+  <button class="nav-item" data-sector="equipe">
+    <span class="nav-icon">👥</span>
+    <span>Equipe</span>
+  </button>
+</nav>
 
   </div>
 

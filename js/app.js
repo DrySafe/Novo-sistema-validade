@@ -76,6 +76,45 @@ if (btnToggleTheme) {
     // Salva a escolha do usuário
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   });
+
+  // Alternar entre formulário de Login e Cadastro de Loja
+const btnShowRegister = document.getElementById('btn-show-register');
+const btnShowLogin = document.getElementById('btn-show-login');
+const formLogin = document.getElementById('form-login');
+const formRegisterStore = document.getElementById('form-register-store');
+
+if (btnShowRegister && btnShowLogin) {
+  btnShowRegister.addEventListener('click', () => {
+    formLogin.classList.add('hidden');
+    formRegisterStore.classList.remove('hidden');
+  });
+
+  btnShowLogin.addEventListener('click', () => {
+    formRegisterStore.classList.add('hidden');
+    formLogin.classList.remove('hidden');
+  });
+}
+
+// Submissão do Cadastro de Nova Loja
+if (formRegisterStore) {
+  formRegisterStore.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await authService.registerNewStore({
+        nomeLoja: document.getElementById('reg-store-name').value,
+        cnpj: document.getElementById('reg-cnpj').value,
+        nomeAdmin: document.getElementById('reg-admin-name').value,
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-password').value
+      });
+
+      alert('Loja e perfil criados com sucesso!');
+      await checkSession();
+    } catch (err) {
+      alert('Erro ao cadastrar loja: ' + err.message);
+    }
+  });
+}
 }""
 
   // 2. EVENTO DE LOGIN
@@ -196,7 +235,32 @@ if (btnToggleTheme) {
     });
   }
 
-  // 8. ENVIO DO FORMULÁRIO DE LANÇAMENTO
+  // 8. Renderiza os Cards dos Funcionários da Loja
+function renderEquipeCards(members, container) {
+  if (!members || members.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum colaborador cadastrado nesta loja.</div>';
+    return;
+  }
+
+  container.innerHTML = members.map(user => `
+    <div class="product-card">
+      <img src="${user.foto_url || 'https://via.placeholder.com/56?text=User'}" 
+           alt="Avatar" 
+           style="border-radius: 50%; object-fit: cover;">
+      <div class="product-info">
+        <div class="product-title">${user.nome}</div>
+        <div class="product-sub">
+          <span>Função: <strong style="text-transform: capitalize;">${user.funcao}</strong></span>
+        </div>
+      </div>
+      <div>
+        <span class="badge-regua badge-60" style="font-size: 0.75rem;">Ativo</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+  // 9. ENVIO DO FORMULÁRIO DE LANÇAMENTO
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
     formEntry.addEventListener('submit', async (e) => {
