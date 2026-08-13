@@ -1,6 +1,5 @@
-import { authService } from '../js/authService.js';
-import { productService } from '../js/productService.js';
-import { reportService } from '../js/reportService.js';
+import { authService } from './js/authService.js';
+import { productService } from './js/productService.js';
 
 let currentProfile = null;
 let currentSector = 'validade';
@@ -10,14 +9,15 @@ let currentData = [];
 let loginScreen = null;
 let appScreen = null;
 let modalEntry = null;
+let modalEmployee = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📌 DOM carregado. Inicializando elementos e eventos...');
   
-  // Mapeia elementos principais
   loginScreen = document.getElementById('login-screen');
   appScreen = document.getElementById('app-screen');
   modalEntry = document.getElementById('modal-entry');
+  modalEmployee = document.getElementById('modal-employee');
 
   setupEvents();
   checkSession();
@@ -31,8 +31,11 @@ async function checkSession() {
     console.log('👤 Perfil retornado do banco:', currentProfile);
 
     if (currentProfile) {
-      document.getElementById('display-user-name').textContent = currentProfile.nome;
-      document.getElementById('display-store-name').textContent = currentProfile.lojas?.nome || 'Loja';
+      const elemUser = document.getElementById('display-user-name');
+      const elemStore = document.getElementById('display-store-name');
+
+      if (elemUser) elemUser.textContent = currentProfile.nome;
+      if (elemStore) elemStore.textContent = currentProfile.lojas?.nome || 'Loja';
 
       loginScreen.classList.add('hidden');
       appScreen.classList.remove('hidden');
@@ -55,70 +58,80 @@ function showLoginScreen() {
   document.getElementById('bottom-nav')?.classList.add('hidden');
 }
 
-function setupEvents() {
-// 1. ALTERNAR TEMA (DARK / LIGHT) COM PERSISTÊNCIA
-const btnToggleTheme = document.getElementById('btn-toggle-theme');
-
-// Carrega o tema salvo anteriormente (se houver)
-if (localStorage.getItem('theme') === 'dark') {
-  document.body.classList.add('dark');
-  if (btnToggleTheme) btnToggleTheme.textContent = '☀️';
-}
-
-if (btnToggleTheme) {
-  btnToggleTheme.addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-    const isDark = document.body.classList.contains('dark');
-    
-    // Atualiza o ícone do botão
-    btnToggleTheme.textContent = isDark ? '☀️' : '🌙';
-    
-    // Salva a escolha do usuário
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  });
-
-  // Alternar entre formulário de Login e Cadastro de Loja
-const btnShowRegister = document.getElementById('btn-show-register');
-const btnShowLogin = document.getElementById('btn-show-login');
-const formLogin = document.getElementById('form-login');
-const formRegisterStore = document.getElementById('form-register-store');
-
-if (btnShowRegister && btnShowLogin) {
-  btnShowRegister.addEventListener('click', () => {
-    formLogin.classList.add('hidden');
-    formRegisterStore.classList.remove('hidden');
-  });
-
-  btnShowLogin.addEventListener('click', () => {
-    formRegisterStore.classList.add('hidden');
-    formLogin.classList.remove('hidden');
-  });
-}
-
-// Submissão do Cadastro de Nova Loja
-if (formRegisterStore) {
-  formRegisterStore.addEventListener('submit', async (e) => {
-    e.preventDefault();
+// Função Unificada para fechar todos os modais e desligar a câmera
+async function closeAllModals() {
+  if (typeof window.pararScanner === 'function') {
     try {
-      await authService.registerNewStore({
-        nomeLoja: document.getElementById('reg-store-name').value,
-        cnpj: document.getElementById('reg-cnpj').value,
-        nomeAdmin: document.getElementById('reg-admin-name').value,
-        email: document.getElementById('reg-email').value,
-        password: document.getElementById('reg-password').value
-      });
-
-      alert('Loja e perfil criados com sucesso!');
-      await checkSession();
-    } catch (err) {
-      alert('Erro ao cadastrar loja: ' + err.message);
+      await window.pararScanner();
+    } catch (e) {
+      console.warn('Erro ao desligar o scanner:', e);
     }
+  }
+
+  const cameraContainer = document.getElementById('camera-container');
+  if (cameraContainer) cameraContainer.classList.add('hidden');
+
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.classList.remove('active');
   });
 }
-}""
 
-  // 2. EVENTO DE LOGIN
+function setupEvents() {
+  // 1. ALTERNAR TEMA (DARK / LIGHT)
+  const btnToggleTheme = document.getElementById('btn-toggle-theme');
+
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    if (btnToggleTheme) btnToggleTheme.textContent = '☀️';
+  }
+
+  if (btnToggleTheme) {
+    btnToggleTheme.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      btnToggleTheme.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+  }
+
+  // 2. TELA DE LOGIN E CADASTRO DE LOJA
+  const btnShowRegister = document.getElementById('btn-show-register');
+  const btnShowLogin = document.getElementById('btn-show-login');
   const formLogin = document.getElementById('form-login');
+  const formRegisterStore = document.getElementById('form-register-store');
+
+  if (btnShowRegister && btnShowLogin) {
+    btnShowRegister.addEventListener('click', () => {
+      formLogin.classList.add('hidden');
+      formRegisterStore.classList.remove('hidden');
+    });
+
+    btnShowLogin.addEventListener('click', () => {
+      formRegisterStore.classList.add('hidden');
+      formLogin.classList.remove('hidden');
+    });
+  }
+
+  if (formRegisterStore) {
+    formRegisterStore.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await authService.registerNewStore({
+          nomeLoja: document.getElementById('reg-store-name').value,
+          cnpj: document.getElementById('reg-cnpj').value,
+          nomeAdmin: document.getElementById('reg-admin-name').value,
+          email: document.getElementById('reg-email').value,
+          password: document.getElementById('reg-password').value
+        });
+
+        alert('Loja e perfil criados com sucesso!');
+        await checkSession();
+      } catch (err) {
+        alert('Erro ao cadastrar loja: ' + err.message);
+      }
+    });
+  }
+
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -134,7 +147,7 @@ if (formRegisterStore) {
     });
   }
 
-  // 3. EVENTO DE LOGOUT
+  // 3. LOGOUT
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) {
     btnLogout.addEventListener('click', async () => {
@@ -143,9 +156,11 @@ if (formRegisterStore) {
     });
   }
 
-  // 4. BOTTOM NAV - NAVEGAÇÃO ENTRE SETORES
+  // 4. BOTTOM NAV (TROCA DE ABAS)
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      closeAllModals();
+
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       const target = e.currentTarget;
       target.classList.add('active');
@@ -154,62 +169,56 @@ if (formRegisterStore) {
     });
   });
 
-  // 5. MODAL BOTTOM-SHEET
-  // Abertura dinâmica do Modal correto (Produto vs Equipe)
-const btnOpenModal = document.getElementById('btn-open-modal');
-const modalEntry = document.getElementById('modal-entry');
-const modalEmployee = document.getElementById('modal-employee');
+  // 5. ABERTURA E FECHAMENTO DE MODAIS
+  const btnOpenModal = document.getElementById('btn-open-modal');
+  if (btnOpenModal) {
+    btnOpenModal.addEventListener('click', () => {
+      closeAllModals();
 
-if (btnOpenModal) {
-  btnOpenModal.addEventListener('click', () => {
-    // Se estiver na aba da Equipe, abre o Modal de Funcionários
-    if (currentSector === 'equipe') {
-      if (modalEmployee) modalEmployee.classList.add('active');
-    } else {
-      // Caso contrário, abre o Modal de Lançamentos de Produtos
-      document.getElementById('entry-sector').value = currentSector;
-      const isValidade = currentSector === 'validade';
-      document.getElementById('field-group-validity').style.display = isValidade ? 'grid' : 'none';
-      if (modalEntry) modalEntry.classList.add('active');
-    }
-  });
-}
+      if (currentSector === 'equipe') {
+        if (modalEmployee) modalEmployee.classList.add('active');
+      } else {
+        const entrySector = document.getElementById('entry-sector');
+        if (entrySector) entrySector.value = currentSector;
+        
+        const isValidade = currentSector === 'validade';
+        const fieldValidade = document.getElementById('field-group-validity');
+        if (fieldValidade) fieldValidade.style.display = isValidade ? 'grid' : 'none';
 
-// Fechamento do Modal de Equipe
-const btnCloseModalEmp = document.getElementById('btn-close-modal-emp');
-if (btnCloseModalEmp && modalEmployee) {
-  btnCloseModalEmp.addEventListener('click', () => {
-    modalEmployee.classList.remove('active');
-  });
-}
+        if (modalEntry) modalEntry.classList.add('active');
+      }
+    });
+  }
 
-// Envios do Formulário de Cadastro de Colaborador
-const formEmployee = document.getElementById('form-employee');
-if (formEmployee) {
-  formEmployee.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      await authService.addEmployee({
-        lojaId: currentProfile.loja_id,
-        nome: document.getElementById('emp-name').value,
-        funcao: document.getElementById('emp-role').value,
-        email: document.getElementById('emp-email').value,
-        avatarUrl: document.getElementById('emp-avatar').value
-      });
+  // Botões de fechar "X"
+  document.getElementById('btn-close-modal')?.addEventListener('click', closeAllModals);
+  document.getElementById('btn-close-modal-emp')?.addEventListener('click', closeAllModals);
 
-      alert('Colaborador cadastrado com sucesso!');
-      if (modalEmployee) modalEmployee.classList.remove('active');
-      formEmployee.reset();
-      
-      // Recarrega a lista da equipe
-      loadSectorData();
-    } catch (err) {
-      alert('Erro ao cadastrar colaborador: ' + err.message);
-    }
-  });
-}
+  // 6. FORMULÁRIO DE COLABORADOR
+  const formEmployee = document.getElementById('form-employee');
+  if (formEmployee) {
+    formEmployee.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await authService.addEmployee({
+          lojaId: currentProfile.loja_id,
+          nome: document.getElementById('emp-name').value,
+          funcao: document.getElementById('emp-role').value,
+          email: document.getElementById('emp-email').value,
+          avatarUrl: document.getElementById('emp-avatar').value
+        });
 
-  // 6. CONSULTA AUTOMÁTICA DE EAN VIA OPEN FOOD FACTS
+        alert('Colaborador cadastrado com sucesso!');
+        await closeAllModals();
+        formEmployee.reset();
+        loadSectorData();
+      } catch (err) {
+        alert('Erro ao cadastrar colaborador: ' + err.message);
+      }
+    });
+  }
+
+  // 7. CONSULTA EAN (BLUR)
   const entryEanInput = document.getElementById('entry-ean');
   if (entryEanInput) {
     entryEanInput.addEventListener('blur', async () => {
@@ -237,7 +246,7 @@ if (formEmployee) {
     });
   }
 
-  // 7. SCANNER DE CÂMERA
+  // 8. CÂMERA SCANNER
   const btnToggleCamera = document.getElementById('btn-toggle-camera');
   const cameraContainer = document.getElementById('camera-container');
 
@@ -266,32 +275,7 @@ if (formEmployee) {
     });
   }
 
-  // 8. Renderiza os Cards dos Funcionários da Loja
-function renderEquipeCards(members, container) {
-  if (!members || members.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum colaborador cadastrado nesta loja.</div>';
-    return;
-  }
-
-  container.innerHTML = members.map(user => `
-    <div class="product-card">
-      <img src="${user.foto_url || 'https://via.placeholder.com/56?text=User'}" 
-           alt="Avatar" 
-           style="border-radius: 50%; object-fit: cover;">
-      <div class="product-info">
-        <div class="product-title">${user.nome}</div>
-        <div class="product-sub">
-          <span>Função: <strong style="text-transform: capitalize;">${user.funcao}</strong></span>
-        </div>
-      </div>
-      <div>
-        <span class="badge-regua badge-60" style="font-size: 0.75rem;">Ativo</span>
-      </div>
-    </div>
-  `).join('');
-}
-
-  // 9. ENVIO DO FORMULÁRIO DE LANÇAMENTO
+  // 9. FORMULÁRIO DE PRODUTO
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
     formEntry.addEventListener('submit', async (e) => {
@@ -311,7 +295,7 @@ function renderEquipeCards(members, container) {
           motivo: document.getElementById('entry-reason')?.value || ''
         });
 
-        await closeModalHandler();
+        await closeAllModals();
         formEntry.reset();
         const previewBox = document.getElementById('product-preview-box');
         if (previewBox) previewBox.classList.add('hidden');
@@ -335,7 +319,6 @@ async function loadSectorData() {
       currentData = await productService.getReguaVencimentos(currentProfile.loja_id);
       renderValidadeCards(currentData, container);
     } else if (currentSector === 'equipe') {
-      // Busca membros da equipe
       currentData = await authService.getTeamMembers(currentProfile.loja_id);
       renderEquipeCards(currentData, container);
     } else {
@@ -368,6 +351,30 @@ function renderValidadeCards(data, container) {
       </div>
       <div>
         <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderEquipeCards(members, container) {
+  if (!members || members.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum colaborador cadastrado nesta loja.</div>';
+    return;
+  }
+
+  container.innerHTML = members.map(user => `
+    <div class="product-card">
+      <img src="${user.foto_url || 'https://via.placeholder.com/56?text=User'}" 
+           alt="Avatar" 
+           style="border-radius: 50%; object-fit: cover;">
+      <div class="product-info">
+        <div class="product-title">${user.nome}</div>
+        <div class="product-sub">
+          <span>Função: <strong style="text-transform: capitalize;">${user.funcao}</strong></span>
+        </div>
+      </div>
+      <div>
+        <span class="badge-regua badge-60" style="font-size: 0.75rem;">Ativo</span>
       </div>
     </div>
   `).join('');

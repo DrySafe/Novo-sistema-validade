@@ -34,77 +34,76 @@
     </header>
 
     <!-- Tela de Login e Cadastro de Loja -->
-<section id="login-screen" class="container">
-  <div style="text-align: center; margin-top: 2rem; margin-bottom: 1.5rem;">
-    <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--primary);">VALIDASUPER</h1>
-    <p style="color: var(--text-muted);">Controle de Validades e Perdas Operacionais</p>
-  </div>
+    <section id="login-screen" class="container">
+      <div style="text-align: center; margin-top: 2rem; margin-bottom: 1.5rem;">
+        <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--primary);">VALIDASUPER</h1>
+        <p style="color: var(--text-muted);">Controle de Validades e Perdas Operacionais</p>
+      </div>
 
-  <!-- Form Login Padrão -->
-  <form id="form-login">
-    <div class="form-group">
-      <label for="login-email">E-mail Corporativo</label>
-      <input type="email" id="login-email" required placeholder="operador@loja.com">
-    </div>
-    <div class="form-group">
-      <label for="login-password">Senha</label>
-      <input type="password" id="login-password" required placeholder="••••••••">
-    </div>
-    <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
-    <button type="button" id="btn-show-register" class="btn btn-secondary" style="margin-top: 0.75rem;">
-      🏬 Cadastrar Minha Loja (SaaS)
-    </button>
-  </form>
+      <!-- Form Login Padrão -->
+      <form id="form-login">
+        <div class="form-group">
+          <label for="login-email">E-mail Corporativo</label>
+          <input type="email" id="login-email" required placeholder="operador@loja.com">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
+        <button type="button" id="btn-show-register" class="btn btn-secondary" style="margin-top: 0.75rem;">
+          🏬 Cadastrar Minha Loja (SaaS)
+        </button>
+      </form>
 
-  <!-- Form Cadastro de Nova Loja (Inicia Oculto) -->
-  <form id="form-register-store" class="hidden">
-    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary);">CADASTRAR NOVA UNIDADE</h3>
-    
-    <div class="form-group">
-      <label for="reg-store-name">Nome da Loja / Supermercado</label>
-      <input type="text" id="reg-store-name" required placeholder="Ex: Supermercado Centro">
-    </div>
-    <div class="form-group">
-      <label for="reg-cnpj">CNPJ</label>
-      <input type="text" id="reg-cnpj" placeholder="00.000.000/0001-00">
-    </div>
-    <div class="form-group">
-      <label for="reg-admin-name">Nome do Gerente / Admin</label>
-      <input type="text" id="reg-admin-name" required placeholder="Ex: Carlos Silva">
-    </div>
-    <div class="form-group">
-      <label for="reg-email">E-mail de Acesso</label>
-      <input type="email" id="reg-email" required placeholder="gerente@loja.com">
-    </div>
-    <div class="form-group">
-      <label for="reg-password">Senha de Acesso</label>
-      <input type="password" id="reg-password" required placeholder="Mínimo 6 caracteres">
-    </div>
+      <!-- Form Cadastro de Nova Loja (Inicia Oculto) -->
+      <form id="form-register-store" class="hidden">
+        <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary);">CADASTRAR NOVA UNIDADE</h3>
+        
+        <div class="form-group">
+          <label for="reg-store-name">Nome da Loja / Supermercado</label>
+          <input type="text" id="reg-store-name" required placeholder="Ex: Supermercado Centro">
+        </div>
+        <div class="form-group">
+          <label for="reg-cnpj">CNPJ</label>
+          <input type="text" id="reg-cnpj" placeholder="00.000.000/0001-00">
+        </div>
+        <div class="form-group">
+          <label for="reg-admin-name">Nome do Gerente / Admin</label>
+          <input type="text" id="reg-admin-name" required placeholder="Ex: Carlos Silva">
+        </div>
+        <div class="form-group">
+          <label for="reg-email">E-mail de Acesso</label>
+          <input type="email" id="reg-email" required placeholder="gerente@loja.com">
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Senha de Acesso</label>
+          <input type="password" id="reg-password" required placeholder="Mínimo 6 caracteres">
+        </div>
 
-    <button type="submit" class="btn btn-primary">Criar Loja e Acessar</button>
-    <button type="button" id="btn-show-login" class="btn btn-secondary" style="margin-top: 0.75rem;">
-      ← Voltar para o Login
-    </button>
-  </form>
-</section>
+        <button type="submit" class="btn btn-primary">Criar Loja e Acessar</button>
+        <button type="button" id="btn-show-login" class="btn btn-secondary" style="margin-top: 0.75rem;">
+          ← Voltar para o Login
+        </button>
+      </form>
+    </section>
 
     <!-- Tela Principal do App -->
     <main id="app-screen" class="container hidden">
       
       <!-- Visor Informativo do Usuário -->
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-  <div>
-    <!-- Elementos com as IDs que o JS está procurando -->
-    <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
-      Olá, <strong id="display-user-name" style="color: var(--text-main);">Carregando...</strong>
-    </span>
-    <h3 id="display-store-name" style="font-family: var(--font-display); font-size: 1.3rem;">Loja --</h3>
-  </div>
-  
-  <button id="btn-open-modal" class="btn btn-primary" style="width: auto; min-height: 44px; padding: 0 1rem;">
-    + Cadastrar
-  </button>
-</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
+            Olá, <strong id="display-user-name" style="color: var(--text-main);">Carregando...</strong>
+          </span>
+          <h3 id="display-store-name" style="font-family: var(--font-display); font-size: 1.3rem;">Loja --</h3>
+        </div>
+        
+        <button id="btn-open-modal" class="btn btn-primary" style="width: auto; min-height: 44px; padding: 0 1rem;">
+          + Cadastrar
+        </button>
+      </div>
 
       <!-- Card Lista de Produtos -->
       <div id="product-card-container" class="product-card-list">
@@ -112,85 +111,45 @@
       </div>
     </main>
 
+    <!-- Bottom Nav -->
     <nav id="bottom-nav" class="bottom-nav hidden">
-  <button class="nav-item active" data-sector="validade">
-    <span class="nav-icon">📅</span>
-    <span>Validade</span>
-  </button>
-  <button class="nav-item" data-sector="vencidos">
-    <span class="nav-icon">🚫</span>
-    <span>Vencidos</span>
-  </button>
-  <button class="nav-item" data-sector="uso_loja">
-    <span class="nav-icon">🏪</span>
-    <span>Uso Loja</span>
-  </button>
-  <button class="nav-item" data-sector="avarias">
-    <span class="nav-icon">📦</span>
-    <span>Avarias</span>
-  </button>
-  <!-- Nova Aba da Equipe -->
-  <button class="nav-item" data-sector="equipe">
-    <span class="nav-icon">👥</span>
-    <span>Equipe</span>
-  </button>
-</nav>
+      <button class="nav-item active" data-sector="validade">
+        <span class="nav-icon">📅</span>
+        <span>Validade</span>
+      </button>
+      <button class="nav-item" data-sector="vencidos">
+        <span class="nav-icon">🚫</span>
+        <span>Vencidos</span>
+      </button>
+      <button class="nav-item" data-sector="uso_loja">
+        <span class="nav-icon">🏪</span>
+        <span>Uso Loja</span>
+      </button>
+      <button class="nav-item" data-sector="avarias">
+        <span class="nav-icon">📦</span>
+        <span>Avarias</span>
+      </button>
+      <button class="nav-item" data-sector="equipe">
+        <span class="nav-icon">👥</span>
+        <span>Equipe</span>
+      </button>
+    </nav>
 
   </div>
 
-  <!-- Modal Bottom-Sheet para Novo Registro -->
+  <!-- MODAL 1: LANÇAMENTO DE PRODUTO -->
   <div id="modal-entry" class="modal">
     <div class="modal-content">
       <div class="modal-drag-handle"></div>
       
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 id="modal-title" style="font-family: var(--font-display); font-size: 1.4rem;">NOVO LANÇAMENTO</h3>
-        <button id="btn-close-modal" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
+        <button type="button" id="btn-close-modal" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
       </div>
 
       <form id="form-entry">
         <input type="hidden" id="entry-sector" value="validade">
         <input type="hidden" id="entry-image-url">
-
-        <!-- MODAL DE CADASTRO DE COLABORADOR (EQUIPE) -->
-<div id="modal-employee" class="modal">
-  <div class="modal-content">
-    <div class="modal-drag-handle"></div>
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-      <h3 style="font-family: var(--font-display); font-size: 1.4rem;">CADASTRAR COLABORADOR</h3>
-      <button id="btn-close-modal-emp" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
-    </div>
-
-    <form id="form-employee">
-      <div class="form-group">
-        <label for="emp-name">Nome Completo</label>
-        <input type="text" id="emp-name" required placeholder="Ex: João Souza">
-      </div>
-
-      <div class="form-group">
-        <label for="emp-role">Função / Perfil</label>
-        <select id="emp-role" required>
-          <option value="operador">Operador / Repositor</option>
-          <option value="gerente">Gerente de Setor</option>
-          <option value="administrador">Administrador</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="emp-email">E-mail de Acesso</label>
-        <input type="email" id="emp-email" required placeholder="colaborador@loja.com">
-      </div>
-
-      <div class="form-group">
-        <label for="emp-avatar">URL da Foto / Avatar (Opcional)</label>
-        <input type="url" id="emp-avatar" placeholder="https://exemplo.com/foto.jpg">
-      </div>
-
-      <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Colaborador</button>
-    </form>
-  </div>
-</div>
 
         <!-- Visor Digital do EAN -->
         <div class="visor-produto">
@@ -235,7 +194,7 @@
         <div id="field-group-validity" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label for="entry-expiration">Vencimento</label>
-            <input type="date" id="entry-expiration" required>
+            <input type="date" id="entry-expiration">
           </div>
           <div class="form-group">
             <label for="entry-location">Local</label>
@@ -247,6 +206,46 @@
         </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Confirmar Lançamento</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CADASTRO DE COLABORADOR (INDEPENDENTE) -->
+  <div id="modal-employee" class="modal">
+    <div class="modal-content">
+      <div class="modal-drag-handle"></div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-family: var(--font-display); font-size: 1.4rem;">CADASTRAR COLABORADOR</h3>
+        <button type="button" id="btn-close-modal-emp" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="form-employee">
+        <div class="form-group">
+          <label for="emp-name">Nome Completo</label>
+          <input type="text" id="emp-name" required placeholder="Ex: João Souza">
+        </div>
+
+        <div class="form-group">
+          <label for="emp-role">Função / Perfil</label>
+          <select id="emp-role" required>
+            <option value="operador">Operador / Repositor</option>
+            <option value="gerente">Gerente de Setor</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="emp-email">E-mail de Acesso</label>
+          <input type="email" id="emp-email" required placeholder="colaborador@loja.com">
+        </div>
+
+        <div class="form-group">
+          <label for="emp-avatar">URL da Foto / Avatar (Opcional)</label>
+          <input type="url" id="emp-avatar" placeholder="https://exemplo.com/foto.jpg">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Colaborador</button>
       </form>
     </div>
   </div>
