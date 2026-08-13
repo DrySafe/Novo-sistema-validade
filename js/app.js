@@ -37,6 +37,24 @@ async function checkSession() {
       if (elemUser) elemUser.textContent = currentProfile.nome;
       if (elemStore) elemStore.textContent = currentProfile.lojas?.nome || 'Loja';
 
+      // ============================================================
+      // CONTROLE DE VISIBILIDADE DO BOTÃO EQUIPE POR PERFIL
+      // ============================================================
+      const btnEquipe = document.getElementById('nav-item-equipe');
+      if (btnEquipe) {
+        // Converte a função para minúsculas para evitar problemas de grafia
+        const userRole = (currentProfile.funcao || '').toLowerCase();
+        
+        // Perfis permitidos
+        const allowedRoles = ['administrador', 'admin', 'gestor', 'gerente'];
+
+        if (allowedRoles.includes(userRole)) {
+          btnEquipe.classList.remove('hidden');
+        } else {
+          btnEquipe.classList.add('hidden');
+        }
+      }
+
       loginScreen.classList.add('hidden');
       appScreen.classList.remove('hidden');
       document.getElementById('bottom-nav')?.classList.remove('hidden');
