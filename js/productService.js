@@ -3,24 +3,32 @@ import { supabase } from './supabaseClient.js';
 export const productService = {
   // 1. Busca na Open Food Facts quando o produto não existir localmente
   async fetchEanExternalApi(ean) {
-    try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ean}.json`);
-      if (!response.ok) return null;
+  try {
+    // Garantia de HTTPS na chamada da API
+    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ean}.json`);
+    if (!response.ok) return null;
 
-      const data = await response.json();
-      if (data.status === 1 && data.product) {
-        const prod = data.product;
-        return {
-          nome: prod.product_name_pt || prod.product_name || '',
-          categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
-          imagem_url: prod.image_front_url || prod.image_url || ''
-        };
+    const data = await response.json();
+    if (data.status === 1 && data.product) {
+      const prod = data.product;
+      
+      // Força HTTPS no link da imagem para evitar bloqueio de Mixed Content na Vercel
+      let imageUrl = prod.image_front_url || prod.image_url || '';
+      if (imageUrl.startsWith('http://')) {
+        imageUrl = imageUrl.replace('http://', 'https://');
       }
-    } catch (error) {
-      console.warn('Erro ao consultar a API Open Food Facts:', error);
+
+      return {
+        nome: prod.product_name_pt || prod.product_name || '',
+        categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
+        imagem_url: imageUrl
+      };
     }
-    return null;
-  },
+  } catch (error) {
+    console.warn('Erro ao consultar a API Open Food Facts na Vercel:', error);
+  }
+  return null;
+}
 
   // 2. Busca o produto localmente. Se não achar, consulta a API e salva local
   async getOrCreateProduto(ean, nomeInformado, imagemUrlInformada) {
