@@ -2,31 +2,37 @@ import { supabase } from './supabaseClient.js';
 
 export const productService = {
   // 1. Consulta API externa Open Food Facts
-  async fetchEanExternalApi(ean) {
-    try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${ean}.json`);
-      if (!response.ok) return null;
-
-      const data = await response.json();
-      if (data.status === 1 && data.product) {
-        const prod = data.product;
-        
-        let imageUrl = prod.image_front_url || prod.image_url || '';
-        if (imageUrl.startsWith('http://')) {
-          imageUrl = imageUrl.replace('http://', 'https://');
-        }
-
-        return {
-          nome: prod.product_name_pt || prod.product_name || '',
-          categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
-          imagem_url: imageUrl
-        };
+async fetchEanExternalApi(ean) {
+  try {
+    // API v0/v2 com User-Agent customizado para evitar bloqueios de taxa/CORS e erro 502
+    const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`, {
+      headers: {
+        'User-Agent': 'ValidaSuperApp - Web - Version 1.0 - www.validadeeco.vercel.app'
       }
-    } catch (error) {
-      console.warn('Erro ao consultar a API Open Food Facts:', error);
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (data.status === 1 && data.product) {
+      const prod = data.product;
+      
+      let imageUrl = prod.image_front_url || prod.image_url || '';
+      if (imageUrl.startsWith('http://')) {
+        imageUrl = imageUrl.replace('http://', 'https://');
+      }
+
+      return {
+        nome: prod.product_name_pt || prod.product_name || '',
+        categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
+        imagem_url: imageUrl
+      };
     }
-    return null;
-  },
+  } catch (error) {
+    console.warn('Open Food Facts indisponível ou produto não cadastrado:', error);
+  }
+  return null;
+},
 
   // 2. Busca ou cria o produto localmente no Supabase
   async getOrCreateProduto(ean, nomeInformado, imagemUrlInformada) {
