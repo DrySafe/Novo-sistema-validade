@@ -256,7 +256,6 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
       });
     if (error) throw error;
   }
-}
 
   // 2. TELA DE LOGIN E CADASTRO DE LOJA
   const btnShowRegister = document.getElementById('btn-show-register');
