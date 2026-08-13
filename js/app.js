@@ -325,23 +325,7 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
     });
   }
 
-// 10. Busca Produtos Vencidos (Lotes com data <= HOJE + Registros de baixa por Vencimento)
-async getProdutosVencidos(lojaId) {
-  const hoje = new Date().toISOString().split('T')[0];
-
-  // Busca lotes cadastrados em validade que já passaram do prazo
-  const { data: lotesVencidos, error: errLotes } = await supabase
-    .from('lotes_validade')
-    .select('*, produtos(ean, nome, imagem_url), perfis(nome)')
-    .eq('loja_id', lojaId)
-    .lte('data_vencimento', hoje)
-    .order('data_vencimento', { ascending: true });
-
-  if (errLotes) throw errLotes;
-  return lotesVencidos;
-}
-
-  // 11. FORMULÁRIO DE PRODUTO
+  // 9. FORMULÁRIO DE PRODUTO
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
     formEntry.addEventListener('submit', async (e) => {
