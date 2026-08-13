@@ -30,6 +30,7 @@ export const authService = {
   },
 
   // 1. CRIAR NOVA LOJA (Self-Service Onboarding)
+  // 1. CRIAR NOVA LOJA (Self-Service Onboarding)
   async registerNewStore({ nomeLoja, cnpj, nomeAdmin, email, password }) {
     // A) Criar o registro na tabela 'lojas'
     const { data: loja, error: errorLoja } = await supabase
@@ -51,7 +52,7 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar usuário: " + errorAuth.message);
 
-    // C) Vincular o usuário recém-criado na tabela 'perfis' como Administrador
+    // C) Vincular o usuário na tabela 'perfis' como Administrador
     const { error: errorPerfil } = await supabase
       .from('perfis')
       .insert({
@@ -63,8 +64,18 @@ export const authService = {
 
     if (errorPerfil) throw new Error("Erro ao salvar perfil do Administrador: " + errorPerfil.message);
 
+    // D) Adicionar o vínculo na tabela pivô 'usuario_lojas' (N:N)
+    const { error: errorPivo } = await supabase
+      .from('usuario_lojas')
+      .insert({
+        usuario_id: authData.user.id,
+        loja_id: loja.id
+      });
+
+    if (errorPivo) console.warn("Aviso ao vincular usuário_lojas:", errorPivo.message);
+
     return authData;
-  },
+  }
 
   // 2. LISTAR COLABORADORES DA MINHA LOJA
   async getTeamMembers(lojaId) {

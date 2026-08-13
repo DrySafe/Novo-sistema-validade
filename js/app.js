@@ -241,15 +241,6 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
   }
 }
 
-async createEntry(payload) {
-  // 1. Busca ou cria o produto na tabela global 'produtos'
-  const produtoId = await this.getOrCreateProduto(
-    payload.ean, 
-    payload.produtoNome, 
-    payload.imagemUrl, 
-    payload.precoAtual
-  );
-
   // 2. Insere o lote vinculado à LOJA ATIVA do usuário
   if (payload.setor === 'validade') {
     const { error } = await supabase
@@ -481,7 +472,7 @@ async createEntry(payload) {
           setor: currentSector,
           ean: document.getElementById('entry-ean').value,
           produtoNome: document.getElementById('entry-product-name').value,
-          precoAtual: parseFloat(document.getElementById('entry-price').value), // 👈 Preço Atual Capturado
+          precoAtual: parseFloat(document.getElementById('entry-price')?.value || 0),
           imagemUrl: document.getElementById('entry-image-url').value,
           lote: document.getElementById('entry-batch').value,
           quantidade: parseInt(document.getElementById('entry-qty').value),
@@ -512,9 +503,6 @@ async function loadSectorData() {
     if (currentSector === 'validade') {
       // Chamada correta via productService
       currentData = await productService.getReguaVencimentos(currentProfile.loja_id);
-      renderValidadeCards(currentData, container);
-    } else if (currentSector === 'vencidos') {
-      currentData = await productService.getProdutosVencidos(currentProfile.loja_id);
       renderValidadeCards(currentData, container);
     } else if (currentSector === 'equipe') {
       currentData = await authService.getTeamMembers(currentProfile.loja_id);
