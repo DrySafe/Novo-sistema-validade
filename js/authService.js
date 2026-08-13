@@ -1,20 +1,20 @@
 import { supabase } from './supabaseClient.js';
 
 export const authService = {
-  // Login padrão
+  // 1. Login padrão
   async login(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   },
 
-  // Logout
+  // 2. Logout
   async logout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   },
 
-  // Retorna perfil do usuário logado + dados da loja
+  // 3. Retorna perfil do usuário logado + dados da loja principal
   async getCurrentProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -29,8 +29,7 @@ export const authService = {
     return data;
   },
 
-  // 1. CRIAR NOVA LOJA (Self-Service Onboarding)
-  // 1. CRIAR NOVA LOJA (Self-Service Onboarding)
+  // 4. CRIAR NOVA LOJA (Self-Service Onboarding SaaS Multi-loja)
   async registerNewStore({ nomeLoja, cnpj, nomeAdmin, email, password }) {
     // A) Criar o registro na tabela 'lojas'
     const { data: loja, error: errorLoja } = await supabase
@@ -52,7 +51,7 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar usuário: " + errorAuth.message);
 
-    // C) Vincular o usuário na tabela 'perfis' como Administrador
+    // C) Vincular o usuário recém-criado na tabela 'perfis' como Administrador
     const { error: errorPerfil } = await supabase
       .from('perfis')
       .insert({
@@ -72,12 +71,12 @@ export const authService = {
         loja_id: loja.id
       });
 
-    if (errorPivo) console.warn("Aviso ao vincular usuário_lojas:", errorPivo.message);
+    if (errorPivo) console.warn("Aviso ao vincular usuario_lojas:", errorPivo.message);
 
     return authData;
-  }
+  },
 
-  // 2. LISTAR COLABORADORES DA MINHA LOJA
+  // 5. LISTAR COLABORADORES DA MINHA LOJA
   async getTeamMembers(lojaId) {
     const { data, error } = await supabase
       .from('perfis')
@@ -89,10 +88,8 @@ export const authService = {
     return data;
   },
 
-  // 3. CADASTRAR NOVO FUNCIONÁRIO/COLABORADOR
-  async addEmployee({ lojaId, nome, funcao, email, password, avatarUrl }) {
-    // Nota: Como o Supabase Auth cria a sessão do usuário cadastrado, para criar terceiros sem deslogar o admin,
-    // enviamos o perfil direto para a tabela ou via Admin API do Supabase.
+  // 6. CADASTRAR NOVO FUNCIONÁRIO/COLABORADOR
+  async addEmployee({ lojaId, nome, funcao, email, avatarUrl }) {
     const { data, error } = await supabase
       .from('perfis')
       .insert({
