@@ -325,22 +325,6 @@ document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
     });
   }
 
-
-// 9. Busca lista da Régua de Vencimentos (Somente a vencer)
-async getReguaVencimentos(lojaId) {
-  const hoje = new Date().toISOString().split('T')[0];
-
-  const { data, error } = await supabase
-    .from('vw_regua_vencimentos')
-    .select('*')
-    .eq('loja_id', lojaId)
-    .gt('data_vencimento', hoje) // Apenas lotes com vencimento posterior a hoje
-    .order('data_vencimento', { ascending: true });
-
-  if (error) throw error;
-  return data;
-},
-
 // 10. Busca Produtos Vencidos (Lotes com data <= HOJE + Registros de baixa por Vencimento)
 async getProdutosVencidos(lojaId) {
   const hoje = new Date().toISOString().split('T')[0];
@@ -398,10 +382,10 @@ async function loadSectorData() {
 
   try {
     if (currentSector === 'validade') {
+      // Chamada correta via productService
       currentData = await productService.getReguaVencimentos(currentProfile.loja_id);
       renderValidadeCards(currentData, container);
     } else if (currentSector === 'vencidos') {
-      // Busca automaticamente todos os produtos com data de vencimento <= HOJE
       currentData = await productService.getProdutosVencidos(currentProfile.loja_id);
       renderValidadeCards(currentData, container);
     } else if (currentSector === 'equipe') {

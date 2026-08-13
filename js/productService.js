@@ -2,37 +2,37 @@ import { supabase } from './supabaseClient.js';
 
 export const productService = {
   // 1. Consulta API externa Open Food Facts
-async fetchEanExternalApi(ean) {
-  try {
-    // API v0/v2 com User-Agent customizado para evitar bloqueios de taxa/CORS e erro 502
-    const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`, {
-      headers: {
-        'User-Agent': 'ValidaSuperApp - Web - Version 1.0 - www.validadeeco.vercel.app'
+  async fetchEanExternalApi(ean) {
+    try {
+      // API v0/v2 com User-Agent customizado para evitar bloqueios de taxa/CORS e erro 502
+      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`, {
+        headers: {
+          'User-Agent': 'ValidaSuperApp - Web - Version 1.0 - www.validadeeco.vercel.app'
+        }
+      });
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (data.status === 1 && data.product) {
+        const prod = data.product;
+        
+        let imageUrl = prod.image_front_url || prod.image_url || '';
+        if (imageUrl.startsWith('http://')) {
+          imageUrl = imageUrl.replace('http://', 'https://');
+        }
+
+        return {
+          nome: prod.product_name_pt || prod.product_name || '',
+          categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
+          imagem_url: imageUrl
+        };
       }
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    if (data.status === 1 && data.product) {
-      const prod = data.product;
-      
-      let imageUrl = prod.image_front_url || prod.image_url || '';
-      if (imageUrl.startsWith('http://')) {
-        imageUrl = imageUrl.replace('http://', 'https://');
-      }
-
-      return {
-        nome: prod.product_name_pt || prod.product_name || '',
-        categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
-        imagem_url: imageUrl
-      };
+    } catch (error) {
+      console.warn('Open Food Facts indisponível ou produto não cadastrado:', error);
     }
-  } catch (error) {
-    console.warn('Open Food Facts indisponível ou produto não cadastrado:', error);
-  }
-  return null;
-},
+    return null;
+  },
 
   // 2. Busca ou cria o produto localmente no Supabase
   async getOrCreateProduto(ean, nomeInformado, imagemUrlInformada) {
@@ -68,17 +68,35 @@ async fetchEanExternalApi(ean) {
 
   // 3. Busca lista da Régua de Vencimentos
   async getReguaVencimentos(lojaId) {
+    const hoje = new Date().toISOString().split('T')[0];
+
     const { data, error } = await supabase
       .from('vw_regua_vencimentos')
       .select('*')
       .eq('loja_id', lojaId)
+      .gt('data_vencimento', hoje)
       .order('data_vencimento', { ascending: true });
 
     if (error) throw error;
     return data;
   },
 
-  // 4. Busca registros de perdas (Vencidos, Avarias, Uso Loja)
+  // 4. Busca produtos que já venceram (data <= HOJE)
+  async getProdutosVencidos(lojaId) {
+    const hoje = new Date().toISOString().split('T')[0];
+
+    const { data: lotesVencidos, error: errLotes } = await supabase
+      .from('lotes_validade')
+      .select('*, produtos(ean, nome, imagem_url), perfis(nome)')
+      .eq('loja_id', lojaId)
+      .lte('data_vencimento', hoje)
+      .order('data_vencimento', { ascending: true });
+
+    if (errLotes) throw errLotes;
+    return lotesVencidos;
+  },
+
+  // 5. Busca registros de perdas (Vencidos, Avarias, Uso Loja)
   async getRegistrosPerdas(lojaId, tipo) {
     const { data, error } = await supabase
       .from('registros_perdas')
@@ -91,7 +109,7 @@ async fetchEanExternalApi(ean) {
     return data;
   },
 
-  // 5. Salva novos lançamentos no Supabase
+  // 6. Salva novos lançamentos no Supabase
   async createEntry(payload) {
     const produtoId = await this.getOrCreateProduto(payload.ean, payload.produtoNome, payload.imagemUrl);
 
