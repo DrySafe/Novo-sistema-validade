@@ -1,5 +1,6 @@
 import { authService } from './authService.js';
 import { productService } from './productService.js';
+import { reportService } from './reportService.js';
 
 let currentProfile = null;
 let currentSector = 'validade';
@@ -95,6 +96,16 @@ async function closeAllModals() {
 }
 
 function setupEvents() {
+
+  // Eventos de Exportação Excel e PDF
+document.getElementById('btn-export-excel')?.addEventListener('click', () => {
+  reportService.exportToExcel(currentData, currentSector, currentProfile);
+});
+
+document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+  reportService.exportToPDF(currentData, currentSector, currentProfile);
+});
+  
   // 1. ALTERNAR TEMA (DARK / LIGHT)
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
 
@@ -314,7 +325,39 @@ function setupEvents() {
     });
   }
 
-  // 9. FORMULÁRIO DE PRODUTO
+
+// 9. Busca lista da Régua de Vencimentos (Somente a vencer)
+async getReguaVencimentos(lojaId) {
+  const hoje = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('vw_regua_vencimentos')
+    .select('*')
+    .eq('loja_id', lojaId)
+    .gt('data_vencimento', hoje) // Apenas lotes com vencimento posterior a hoje
+    .order('data_vencimento', { ascending: true });
+
+  if (error) throw error;
+  return data;
+},
+
+// 10. Busca Produtos Vencidos (Lotes com data <= HOJE + Registros de baixa por Vencimento)
+async getProdutosVencidos(lojaId) {
+  const hoje = new Date().toISOString().split('T')[0];
+
+  // Busca lotes cadastrados em validade que já passaram do prazo
+  const { data: lotesVencidos, error: errLotes } = await supabase
+    .from('lotes_validade')
+    .select('*, produtos(ean, nome, imagem_url), perfis(nome)')
+    .eq('loja_id', lojaId)
+    .lte('data_vencimento', hoje)
+    .order('data_vencimento', { ascending: true });
+
+  if (errLotes) throw errLotes;
+  return lotesVencidos;
+}
+
+  // 11. FORMULÁRIO DE PRODUTO
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
     formEntry.addEventListener('submit', async (e) => {
@@ -356,6 +399,10 @@ async function loadSectorData() {
   try {
     if (currentSector === 'validade') {
       currentData = await productService.getReguaVencimentos(currentProfile.loja_id);
+      renderValidadeCards(currentData, container);
+    } else if (currentSector === 'vencidos') {
+      // Busca automaticamente todos os produtos com data de vencimento <= HOJE
+      currentData = await productService.getProdutosVencidos(currentProfile.loja_id);
       renderValidadeCards(currentData, container);
     } else if (currentSector === 'equipe') {
       currentData = await authService.getTeamMembers(currentProfile.loja_id);

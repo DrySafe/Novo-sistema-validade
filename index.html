@@ -19,6 +19,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="js/scanner.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
 </head>
 <body>
 
@@ -105,6 +108,16 @@
         </button>
       </div>
 
+      <!-- Barra de Ações / Exportação de Relatórios -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: flex-end;">
+        <button id="btn-export-excel" class="btn btn-secondary" style="width: auto; padding: 0.5rem 0.8rem; font-size: 0.85rem;">
+          📊 Exportar Excel
+        </button>
+        <button id="btn-export-pdf" class="btn btn-secondary" style="width: auto; padding: 0.5rem 0.8rem; font-size: 0.85rem;">
+          📄 Gerar PDF
+        </button>
+      </div>
+
       <!-- Card Lista de Produtos -->
       <div id="product-card-container" class="product-card-list">
         <!-- Renderizado dinamicamente via JS -->
@@ -113,28 +126,28 @@
 
     <!-- Bottom Nav -->
     <nav id="bottom-nav" class="bottom-nav hidden">
-  <button class="nav-item active" data-sector="validade">
-    <span class="nav-icon">📅</span>
-    <span>Validade</span>
-  </button>
-  <button class="nav-item" data-sector="vencidos">
-    <span class="nav-icon">🚫</span>
-    <span>Vencidos</span>
-  </button>
-  <button class="nav-item" data-sector="uso_loja">
-    <span class="nav-icon">🏪</span>
-    <span>Uso Loja</span>
-  </button>
-  <button class="nav-item" data-sector="avarias">
-    <span class="nav-icon">📦</span>
-    <span>Avarias</span>
-  </button>
-  <!-- Botão da Equipe com ID para controle de acesso -->
-  <button id="nav-item-equipe" class="nav-item hidden" data-sector="equipe">
-    <span class="nav-icon">👥</span>
-    <span>Equipe</span>
-  </button>
-</nav>
+      <button class="nav-item active" data-sector="validade">
+        <span class="nav-icon">📅</span>
+        <span>Validade</span>
+      </button>
+      <button class="nav-item" data-sector="vencidos">
+        <span class="nav-icon">🚫</span>
+        <span>Vencidos</span>
+      </button>
+      <button class="nav-item" data-sector="uso_loja">
+        <span class="nav-icon">🏪</span>
+        <span>Uso Loja</span>
+      </button>
+      <button class="nav-item" data-sector="avarias">
+        <span class="nav-icon">📦</span>
+        <span>Avarias</span>
+      </button>
+      <!-- Botão da Equipe com ID para controle de acesso -->
+      <button id="nav-item-equipe" class="nav-item hidden" data-sector="equipe">
+        <span class="nav-icon">👥</span>
+        <span>Equipe</span>
+      </button>
+    </nav>
 
   </div>
 
