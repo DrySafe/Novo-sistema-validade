@@ -1,5 +1,5 @@
-import { authService } from './js/authService.js';
-import { productService } from './js/productService.js';
+import { authService } from './services/authService.js';
+import { productService } from './services/productService.js';
 
 let currentProfile = null;
 let currentSector = 'validade';
