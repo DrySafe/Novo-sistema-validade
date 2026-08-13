@@ -158,25 +158,42 @@ function setupEvents() {
 
   // 4. BOTTOM NAV (TROCA DE ABAS)
   document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      closeAllModals();
+    btn.addEventListener('click', async (e) => {
+      // Oculta modais ativos ao mudar de aba sem travar o scanner
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
 
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       const target = e.currentTarget;
       target.classList.add('active');
+      
+      // Atualiza o setor ativo global
       currentSector = target.dataset.sector;
+      console.log('📌 Setor alterado para:', currentSector);
+
       loadSectorData();
     });
   });
 
-  // 5. ABERTURA E FECHAMENTO DE MODAIS
+  // 5. ABERTURA DINÂMICA DO MODAL (+ Cadastrar)
   const btnOpenModal = document.getElementById('btn-open-modal');
   if (btnOpenModal) {
     btnOpenModal.addEventListener('click', () => {
-      closeAllModals();
+      console.log('🚀 Clicou em + Cadastrar no setor:', currentSector);
+
+      // Garante que o modal da equipe e de produtos estejam mapeados
+      const mEntry = document.getElementById('modal-entry');
+      const mEmployee = document.getElementById('modal-employee');
+
+      // Fecha qualquer modal que porventura estivesse aberto
+      if (mEntry) mEntry.classList.remove('active');
+      if (mEmployee) mEmployee.classList.remove('active');
 
       if (currentSector === 'equipe') {
-        if (modalEmployee) modalEmployee.classList.add('active');
+        if (mEmployee) {
+          mEmployee.classList.add('active');
+        } else {
+          console.error('❌ Elemento #modal-employee não encontrado no DOM!');
+        }
       } else {
         const entrySector = document.getElementById('entry-sector');
         if (entrySector) entrySector.value = currentSector;
@@ -185,7 +202,11 @@ function setupEvents() {
         const fieldValidade = document.getElementById('field-group-validity');
         if (fieldValidade) fieldValidade.style.display = isValidade ? 'grid' : 'none';
 
-        if (modalEntry) modalEntry.classList.add('active');
+        if (mEntry) {
+          mEntry.classList.add('active');
+        } else {
+          console.error('❌ Elemento #modal-entry não encontrado no DOM!');
+        }
       }
     });
   }
@@ -330,31 +351,8 @@ async function loadSectorData() {
   }
 }
 
-function renderValidadeCards(data, container) {
-  if (!data || data.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';
-    return;
-  }
-
-  container.innerHTML = data.map(item => `
-    <div class="product-card">
-      <img src="${item.imagem_url || 'https://via.placeholder.com/56?text=Sem+Foto'}" alt="Foto">
-      <div class="product-info">
-        <div class="product-title">${item.produto_nome}</div>
-        <div class="product-sub">
-          <span>Lote: <strong>${item.lote}</strong></span>
-          <span>Qtd: <strong>${item.quantidade} un</strong></span>
-        </div>
-        <div class="product-sub" style="margin-top: 0.25rem;">
-          <span>Venc: <strong>${new Date(item.data_vencimento).toLocaleDateString('pt-BR')}</strong></span>
-        </div>
-      </div>
-      <div>
-        <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua}</span>
-      </div>
-    </div>
-  `).join('');
-}
+// Avatar SVG de reserva (não depende de internet/servidor externo)
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='%239ca3af'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
 
 function renderEquipeCards(members, container) {
   if (!members || members.length === 0) {
@@ -364,9 +362,9 @@ function renderEquipeCards(members, container) {
 
   container.innerHTML = members.map(user => `
     <div class="product-card">
-      <img src="${user.foto_url || 'https://via.placeholder.com/56?text=User'}" 
+      <img src="${user.foto_url || DEFAULT_AVATAR}" 
            alt="Avatar" 
-           style="border-radius: 50%; object-fit: cover;">
+           style="border-radius: 50%; object-fit: cover; width: 56px; height: 56px;">
       <div class="product-info">
         <div class="product-title">${user.nome}</div>
         <div class="product-sub">
