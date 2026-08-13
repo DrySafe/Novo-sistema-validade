@@ -378,6 +378,32 @@ function renderEquipeCards(members, container) {
   `).join('');
 }
 
+function renderValidadeCards(data, container) {
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';
+    return;
+  }
+
+  container.innerHTML = data.map(item => `
+    <div class="product-card">
+      <img src="${item.imagem_url || DEFAULT_AVATAR}" alt="Foto">
+      <div class="product-info">
+        <div class="product-title">${item.produto_nome || item.produtos?.nome || 'Produto Sem Nome'}</div>
+        <div class="product-sub">
+          <span>Lote: <strong>${item.lote || 'N/A'}</strong></span>
+          <span>Qtd: <strong>${item.quantidade} un</strong></span>
+        </div>
+        <div class="product-sub" style="margin-top: 0.25rem;">
+          <span>Venc: <strong>${new Date(item.data_vencimento).toLocaleDateString('pt-BR')}</strong></span>
+        </div>
+      </div>
+      <div>
+        <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua || 'OK'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
 function renderPerdasCards(data, container) {
   if (!data || data.length === 0) {
     container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum registro encontrado neste setor.</div>';
