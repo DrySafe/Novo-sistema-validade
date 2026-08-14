@@ -14,19 +14,17 @@ export const authService = {
     if (error) throw error;
   },
 
-  // 3. Retorna perfil do usuário logado + dados da loja principal (com Fallback)
+  // 3. Retorna perfil do usuário logado + dados da loja principal
   async getCurrentProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Tenta buscar o perfil + relacionamento da loja
     const { data, error } = await supabase
       .from('perfis')
       .select('*, lojas(nome, cnpj)')
       .eq('id', user.id)
       .maybeSingle();
 
-    // Se a busca com JOIN falhar ou vier nula, busca apenas o perfil puro
     if (!data) {
       const { data: perfilPuro, error: errPuro } = await supabase
         .from('perfis')
@@ -43,10 +41,8 @@ export const authService = {
     return data;
   },
 
- // 4. CRIAR APENAS CONTA DE USUÁRIO
+  // 4. CRIAR APENAS CONTA DE USUÁRIO
   async registerUser({ nome, email, password }) {
-    // A) Criar a conta de autenticação no Supabase
-    // O nome é passado no raw_user_meta_data para que a Trigger do banco crie o perfil em 'perfis'
     const { data: authData, error: errorAuth } = await supabase.auth.signUp({
       email,
       password,
@@ -57,7 +53,6 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
 
-    // B) Realiza o login imediatamente para gerar o token JWT da sessão
     await this.login(email, password);
 
     return authData;
@@ -65,7 +60,6 @@ export const authService = {
 
   // 5. CADASTRAR UMA LOJA PARA O USUÁRIO LOGADO (PÓS-LOGIN)
   async createStoreForUser({ nomeLoja, cnpj, usuarioId }) {
-    // A) Inserir nova loja
     const { data: loja, error: errorLoja } = await supabase
       .from('lojas')
       .insert({ nome: nomeLoja, cnpj })
@@ -74,7 +68,6 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
 
-    // B) Vincular a loja criada ao perfil do usuário
     const { error: errorPerfil } = await supabase
       .from('perfis')
       .update({ loja_id: loja.id })
@@ -82,7 +75,6 @@ export const authService = {
 
     if (errorPerfil) throw new Error("Erro ao vincular loja ao perfil: " + errorPerfil.message);
 
-    // C) Inserir vínculo na tabela pivô N:N
     await supabase
       .from('usuario_lojas')
       .insert({ usuario_id: usuarioId, loja_id: loja.id });
@@ -90,7 +82,19 @@ export const authService = {
     return loja;
   },
 
-  // 6. CADASTRAR NOVO FUNCIONÁRIO/COLABORADOR
+  // 6. LISTAR COLABORADORES DA LOJA ATIVA
+  async getTeamMembers(lojaId) {
+    const { data, error } = await supabase
+      .from('perfis')
+      .select('*')
+      .eq('loja_id', lojaId)
+      .order('nome', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // 7. CADASTRAR NOVO FUNCIONÁRIO/COLABORADOR
   async addEmployee({ lojaId, nome, funcao, email, avatarUrl }) {
     const { data, error } = await supabase
       .from('perfis')
