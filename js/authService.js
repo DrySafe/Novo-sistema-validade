@@ -14,18 +14,32 @@ export const authService = {
     if (error) throw error;
   },
 
-  // 3. Retorna perfil do usuário logado + dados da loja principal
+  // 3. Retorna perfil do usuário logado + dados da loja principal (com Fallback)
   async getCurrentProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    // Tenta buscar o perfil + relacionamento da loja
     const { data, error } = await supabase
       .from('perfis')
       .select('*, lojas(nome, cnpj)')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(`Perfil não encontrado para o ID: ${user.id}`);
+    // Se a busca com JOIN falhar ou vier nula, busca apenas o perfil puro
+    if (!data) {
+      const { data: perfilPuro, error: errPuro } = await supabase
+        .from('perfis')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (errPuro || !perfilPuro) {
+        throw new Error(`Perfil não encontrado para o ID: ${user.id}`);
+      }
+      return perfilPuro;
+    }
+
     return data;
   },
 
