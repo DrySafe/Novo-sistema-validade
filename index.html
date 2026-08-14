@@ -65,36 +65,31 @@
         </button>
       </form>
 
-      <!-- Form Cadastro de Nova Loja (Inicia Oculto) -->
-      <form id="form-register-store" class="hidden">
-        <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary);">CADASTRAR NOVA UNIDADE</h3>
+      <!-- Form Cadastro de Usuário (Inicia Oculto) -->
+      <form id="form-register-user" class="hidden">
+        <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary);">CRIAR MINHA CONTA</h3>
         
         <div class="form-group">
-          <label for="reg-store-name">Nome da Loja / Supermercado</label>
-          <input type="text" id="reg-store-name" required placeholder="Ex: Supermercado Centro">
+          <label for="reg-user-name">Nome Completo</label>
+          <input type="text" id="reg-user-name" required placeholder="Ex: Carlos Silva">
         </div>
         <div class="form-group">
-          <label for="reg-cnpj">CNPJ</label>
-          <input type="text" id="reg-cnpj" placeholder="00.000.000/0001-00">
+          <label for="reg-user-email">E-mail Corporativo</label>
+          <input type="email" id="reg-user-email" required placeholder="seuemail@loja.com">
         </div>
         <div class="form-group">
-          <label for="reg-admin-name">Nome do Gerente / Admin</label>
-          <input type="text" id="reg-admin-name" required placeholder="Ex: Carlos Silva">
-        </div>
-        <div class="form-group">
-          <label for="reg-email">E-mail de Acesso</label>
-          <input type="email" id="reg-email" required placeholder="gerente@loja.com">
-        </div>
-        <div class="form-group">
-          <label for="reg-password">Senha de Acesso</label>
-          <input type="password" id="reg-password" required placeholder="Mínimo 6 caracteres">
+          <label for="reg-user-password">Senha de Acesso</label>
+          <input type="password" id="reg-user-password" required placeholder="Mínimo 6 caracteres">
         </div>
 
-        <button type="submit" class="btn btn-primary">Criar Loja e Acessar</button>
+        <button type="submit" class="btn btn-primary">Criar Conta</button>
         <button type="button" id="btn-show-login" class="btn btn-secondary" style="margin-top: 0.75rem;">
           ← Voltar para o Login
         </button>
       </form>
+
+      <!-- Botão para alternar exibição no form de login -->
+      <!-- DICA: Altere o texto do botão do form-login de "Cadastrar Minha Loja" para "Criar Minha Conta" -->
     </section>
 
     <!-- Tela Principal do App -->

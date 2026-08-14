@@ -29,50 +29,67 @@ export const authService = {
     return data;
   },
 
- // 4. CRIAR NOVA LOJA (Self-Service Onboarding SaaS Multi-loja)
-  async registerNewStore({ nomeLoja, cnpj, nomeAdmin, email, password }) {
-    // A) Criar o registro na tabela 'lojas'
-    const { data: loja, error: errorLoja } = await supabase
-      .from('lojas')
-      .insert({ nome: nomeLoja, cnpj })
-      .select('id')
-      .single();
-
-    if (errorLoja) throw new Error("Erro ao criar a loja: " + errorLoja.message);
-
-    // B) Criar a conta de autenticação passando a loja_id nos metadados
-    // O banco de dados (Trigger) criará o perfil e o vínculo N:N automaticamente!
+ // 4. CRIAR APENAS CONTA DE USUÁRIO
+  async registerUser({ nome, email, password }) {
+    // A) Criar o usuário no Supabase Auth
     const { data: authData, error: errorAuth } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { 
-          nome: nomeAdmin,
-          loja_id: loja.id 
-        }
+        data: { nome }
       }
     });
 
-    if (errorAuth) throw new Error("Erro ao criar usuário: " + errorAuth.message);
+    if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
 
-    // C) Realizar login automático para gerar a sessão
+    // B) Efetua o login imediato para obter a sessão JWT
     if (!authData.session) {
       await this.login(email, password);
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // C) Insere o perfil do usuário (Sem loja inicialmente)
+    const { error: errorPerfil } = await supabase
+      .from('perfis')
+      .insert({
+        id: user.id,
+        nome: nome,
+        funcao: 'administrador' // Pode iniciar como Admin/Gestor por padrão
+      });
+
+    if (errorPerfil && !errorPerfil.message.includes('duplicate')) {
+      throw new Error("Erro ao criar perfil de usuário: " + errorPerfil.message);
     }
 
     return authData;
   },
 
-  // 5. LISTAR COLABORADORES DA MINHA LOJA
-  async getTeamMembers(lojaId) {
-    const { data, error } = await supabase
-      .from('perfis')
-      .select('*')
-      .eq('loja_id', lojaId)
-      .order('nome', { ascending: true });
+  // 5. CADASTRAR UMA LOJA PARA O USUÁRIO LOGADO (PÓS-LOGIN)
+  async createStoreForUser({ nomeLoja, cnpj, usuarioId }) {
+    // A) Inserir nova loja
+    const { data: loja, error: errorLoja } = await supabase
+      .from('lojas')
+      .insert({ nome: nomeLoja, cnpj })
+      .select('id, nome')
+      .single();
 
-    if (error) throw error;
-    return data;
+    if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
+
+    // B) Vincular a loja criada ao perfil do usuário
+    const { error: errorPerfil } = await supabase
+      .from('perfis')
+      .update({ loja_id: loja.id })
+      .eq('id', usuarioId);
+
+    if (errorPerfil) throw new Error("Erro ao vincular loja ao perfil: " + errorPerfil.message);
+
+    // C) Inserir vínculo na tabela pivô N:N
+    await supabase
+      .from('usuario_lojas')
+      .insert({ usuario_id: usuarioId, loja_id: loja.id });
+
+    return loja;
   },
 
   // 6. CADASTRAR NOVO FUNCIONÁRIO/COLABORADOR

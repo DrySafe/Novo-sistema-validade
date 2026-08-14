@@ -38,6 +38,25 @@ async function checkSession() {
     console.log('👤 Perfil retornado do banco:', currentProfile);
 
     if (currentProfile) {
+      // SE O USUÁRIO AINDA NÃO TEM LOJA VINCULADA (Novo Onboarding)
+      if (!currentProfile.loja_id && !currentProfile.lojas) {
+        const nomeLoja = prompt(`Olá ${currentProfile.nome}! Para começar, digite o nome do seu Supermercado/Loja:`);
+        if (nomeLoja) {
+          const novaLoja = await authService.createStoreForUser({
+            nomeLoja,
+            cnpj: '',
+            usuarioId: currentProfile.id
+          });
+          currentProfile.loja_id = novaLoja.id;
+          currentProfile.lojas = novaLoja;
+        } else {
+          alert("Você precisa cadastrar uma loja para utilizar o ValidaSuper.");
+          await authService.logout();
+          showLoginScreen();
+          return;
+        }
+      }
+
       const elemUser = document.getElementById('display-user-name');
       const elemStore = document.getElementById('display-store-name');
 
@@ -202,23 +221,22 @@ function setupEvents() {
     });
   }
 
-  // Submit Cadastro de Nova Loja
-  if (formRegisterStore) {
-    formRegisterStore.addEventListener('submit', async (e) => {
+  // Submit Cadastro de Novo Usuário
+  const formRegisterUser = document.getElementById('form-register-user');
+  if (formRegisterUser) {
+    formRegisterUser.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        await authService.registerNewStore({
-          nomeLoja: document.getElementById('reg-store-name').value,
-          cnpj: document.getElementById('reg-cnpj').value,
-          nomeAdmin: document.getElementById('reg-admin-name').value,
-          email: document.getElementById('reg-email').value,
-          password: document.getElementById('reg-password').value
+        await authService.registerUser({
+          nome: document.getElementById('reg-user-name').value,
+          email: document.getElementById('reg-user-email').value,
+          password: document.getElementById('reg-user-password').value
         });
 
-        alert('Loja e perfil criados com sucesso!');
+        alert('Conta criada com sucesso!');
         await checkSession();
       } catch (err) {
-        alert('Erro ao cadastrar loja: ' + err.message);
+        alert('Erro ao criar conta: ' + err.message);
       }
     });
   }
