@@ -51,7 +51,12 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar usuário: " + errorAuth.message);
 
-    // C) Vincular o usuário recém-criado na tabela 'perfis' como Administrador
+    // C) Garante a sessão ativa para passar na política de RLS do Supabase
+    if (authData.session) {
+      await supabase.auth.setSession(authData.session);
+    }
+
+    // Vincular o usuário recém-criado na tabela 'perfis' como Administrador
     const { error: errorPerfil } = await supabase
       .from('perfis')
       .insert({
