@@ -42,24 +42,23 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
 
-    // B) Efetua o login imediato para obter a sessão JWT
-    if (!authData.session) {
-      await this.login(email, password);
-    }
+    // B) Efetua login para garantir a sessão e o token JWT ativo
+    const loginData = await this.login(email, password);
+    const userId = loginData.user?.id || authData.user?.id;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!userId) throw new Error("Não foi possível validar o ID do usuário cadastrado.");
 
-    // C) Insere o perfil do usuário (Sem loja inicialmente)
+    // C) Insere o perfil do usuário (Sem loja vinculada inicialmente)
     const { error: errorPerfil } = await supabase
       .from('perfis')
-      .insert({
-        id: user.id,
+      .upsert({
+        id: userId,
         nome: nome,
-        funcao: 'administrador' // Pode iniciar como Admin/Gestor por padrão
-      });
+        funcao: 'administrador'
+      }, { onConflict: 'id' });
 
-    if (errorPerfil && !errorPerfil.message.includes('duplicate')) {
-      throw new Error("Erro ao criar perfil de usuário: " + errorPerfil.message);
+    if (errorPerfil) {
+      throw new Error("Erro ao salvar perfil: " + errorPerfil.message);
     }
 
     return authData;
