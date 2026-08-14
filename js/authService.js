@@ -31,7 +31,8 @@ export const authService = {
 
  // 4. CRIAR APENAS CONTA DE USUÁRIO
   async registerUser({ nome, email, password }) {
-    // A) Criar o usuário no Supabase Auth
+    // A) Criar a conta de autenticação no Supabase
+    // O nome é passado no raw_user_meta_data para que a Trigger do banco crie o perfil em 'perfis'
     const { data: authData, error: errorAuth } = await supabase.auth.signUp({
       email,
       password,
@@ -42,24 +43,8 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
 
-    // B) Efetua login para garantir a sessão e o token JWT ativo
-    const loginData = await this.login(email, password);
-    const userId = loginData.user?.id || authData.user?.id;
-
-    if (!userId) throw new Error("Não foi possível validar o ID do usuário cadastrado.");
-
-    // C) Insere o perfil do usuário (Sem loja vinculada inicialmente)
-    const { error: errorPerfil } = await supabase
-      .from('perfis')
-      .upsert({
-        id: userId,
-        nome: nome,
-        funcao: 'administrador'
-      }, { onConflict: 'id' });
-
-    if (errorPerfil) {
-      throw new Error("Erro ao salvar perfil: " + errorPerfil.message);
-    }
+    // B) Realiza o login imediatamente para gerar o token JWT da sessão
+    await this.login(email, password);
 
     return authData;
   },
