@@ -207,16 +207,16 @@ function setupEvents() {
   const btnShowRegister = document.getElementById('btn-show-register');
   const btnShowLogin = document.getElementById('btn-show-login');
   const formLogin = document.getElementById('form-login');
-  const formRegisterStore = document.getElementById('form-register-store');
+  const formRegisterUser = document.getElementById('form-register-user');
 
   if (btnShowRegister && btnShowLogin) {
     btnShowRegister.addEventListener('click', () => {
       formLogin.classList.add('hidden');
-      formRegisterStore.classList.remove('hidden');
+      formRegisterUser?.classList.remove('hidden');
     });
 
     btnShowLogin.addEventListener('click', () => {
-      formRegisterStore.classList.add('hidden');
+      formRegisterUser?.classList.add('hidden');
       formLogin.classList.remove('hidden');
     });
   }
