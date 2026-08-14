@@ -29,7 +29,7 @@ export const authService = {
     return data;
   },
 
-  // 4. CRIAR NOVA LOJA (Self-Service Onboarding SaaS Multi-loja)
+ // 4. CRIAR NOVA LOJA (Self-Service Onboarding SaaS Multi-loja)
   async registerNewStore({ nomeLoja, cnpj, nomeAdmin, email, password }) {
     // A) Criar o registro na tabela 'lojas'
     const { data: loja, error: errorLoja } = await supabase
@@ -40,43 +40,25 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar a loja: " + errorLoja.message);
 
-    // B) Criar a conta de autenticação no Supabase Auth
+    // B) Criar a conta de autenticação passando a loja_id nos metadados
+    // O banco de dados (Trigger) criará o perfil e o vínculo N:N automaticamente!
     const { data: authData, error: errorAuth } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { nome: nomeAdmin }
+        data: { 
+          nome: nomeAdmin,
+          loja_id: loja.id 
+        }
       }
     });
 
     if (errorAuth) throw new Error("Erro ao criar usuário: " + errorAuth.message);
 
-    // C) Garante a sessão ativa para passar na política de RLS do Supabase
-    if (authData.session) {
-      await supabase.auth.setSession(authData.session);
+    // C) Realizar login automático para gerar a sessão
+    if (!authData.session) {
+      await this.login(email, password);
     }
-
-    // Vincular o usuário recém-criado na tabela 'perfis' como Administrador
-    const { error: errorPerfil } = await supabase
-      .from('perfis')
-      .insert({
-        id: authData.user.id,
-        loja_id: loja.id,
-        nome: nomeAdmin,
-        funcao: 'administrador'
-      });
-
-    if (errorPerfil) throw new Error("Erro ao salvar perfil do Administrador: " + errorPerfil.message);
-
-    // D) Adicionar o vínculo na tabela pivô 'usuario_lojas' (N:N)
-    const { error: errorPivo } = await supabase
-      .from('usuario_lojas')
-      .insert({
-        usuario_id: authData.user.id,
-        loja_id: loja.id
-      });
-
-    if (errorPivo) console.warn("Aviso ao vincular usuario_lojas:", errorPivo.message);
 
     return authData;
   },
