@@ -203,7 +203,7 @@ function setupEvents() {
     });
   }
 
-  // Alternar Login e Cadastro SaaS
+  // 2. TELA DE LOGIN E CADASTRO DE USUÁRIO
   const btnShowRegister = document.getElementById('btn-show-register');
   const btnShowLogin = document.getElementById('btn-show-login');
   const formLogin = document.getElementById('form-login');
@@ -211,18 +211,17 @@ function setupEvents() {
 
   if (btnShowRegister && btnShowLogin) {
     btnShowRegister.addEventListener('click', () => {
-      formLogin.classList.add('hidden');
-      formRegisterUser?.classList.remove('hidden');
+      if (formLogin) formLogin.classList.add('hidden');
+      if (formRegisterUser) formRegisterUser.classList.remove('hidden');
     });
 
     btnShowLogin.addEventListener('click', () => {
-      formRegisterUser?.classList.add('hidden');
-      formLogin.classList.remove('hidden');
+      if (formRegisterUser) formRegisterUser.classList.add('hidden');
+      if (formLogin) formLogin.classList.remove('hidden');
     });
   }
 
   // Submit Cadastro de Novo Usuário
-  const formRegisterUser = document.getElementById('form-register-user');
   if (formRegisterUser) {
     formRegisterUser.addEventListener('submit', async (e) => {
       e.preventDefault();
