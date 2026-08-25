@@ -724,8 +724,12 @@ async function loadSectorData() {
   }
 }
 
-// Função Global para abrir Modal de Edição de Usuário
+// Função Global para abrir Modal de Edição de Usuário com Reset de Pilha
 window.openEditUserModal = function(id, nome, funcao) {
+  // 1. Fecha qualquer outro modal aberto no momento
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+
+  // 2. Preenche os campos
   const inputId = document.getElementById('edit-user-id');
   const inputNome = document.getElementById('edit-user-name');
   const inputFuncao = document.getElementById('edit-user-role');
@@ -735,10 +739,11 @@ window.openEditUserModal = function(id, nome, funcao) {
   if (inputNome) inputNome.value = nome;
   if (inputFuncao) inputFuncao.value = funcao;
 
+  // 3. Abre diretamente o modal correto
   if (modal) {
     modal.classList.add('active');
   } else {
-    console.error("Modal #modal-edit-user não encontrado no DOM.");
+    alert("Erro: Formulário de edição (#modal-edit-user) não encontrado.");
   }
 };
 
