@@ -73,18 +73,25 @@ async function checkSession() {
       currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
       updateCycleTopbarDisplay();
 
-      // Controle de visibilidade da aba Equipe
+      // Controle de visibilidade das funções de Administrador
+      const userRole = (currentProfile.funcao || '').toLowerCase();
+      const isAdmin = ['administrador', 'admin'].includes(userRole);
+
+      // Botão da aba Equipe
       const btnEquipe = document.getElementById('nav-item-equipe');
       if (btnEquipe) {
-        const userRole = (currentProfile.funcao || '').toLowerCase();
-        const allowedRoles = ['administrador', 'admin', 'gestor', 'gerente'];
-
-        if (allowedRoles.includes(userRole)) {
+        if (['administrador', 'admin', 'gestor', 'gerente'].includes(userRole)) {
           btnEquipe.classList.remove('hidden');
         } else {
           btnEquipe.classList.add('hidden');
         }
       }
+
+      // Botões de Loja no Header (Admin apenas)
+      const btnAddStore = document.getElementById('btn-add-new-store');
+      const btnEditStore = document.getElementById('btn-open-edit-store');
+      if (btnAddStore) btnAddStore.classList.toggle('hidden', !isAdmin);
+      if (btnEditStore) btnEditStore.classList.toggle('hidden', !isAdmin);
 
       loginScreen.classList.add('hidden');
       appScreen.classList.remove('hidden');
@@ -485,6 +492,19 @@ function setupEvents() {
   document.getElementById('btn-close-modal-edit-store')?.addEventListener('click', closeAllModals);
   document.getElementById('btn-close-modal-edit-user')?.addEventListener('click', closeAllModals);
 
+  // Botão "Editar Loja Atual" no Header (Admin)
+  document.getElementById('btn-open-edit-store')?.addEventListener('click', () => {
+    const lojaId = activeLojaId || currentProfile.loja_id;
+    const nomeAtual = currentProfile.lojas?.nome || '';
+    const cnpjAtual = currentProfile.lojas?.cnpj || '';
+
+    document.getElementById('edit-store-id').value = lojaId;
+    document.getElementById('edit-store-name').value = nomeAtual;
+    document.getElementById('edit-store-cnpj').value = cnpjAtual;
+
+    document.getElementById('modal-edit-store')?.classList.add('active');
+  });
+
   // Botão "Gerar Nova Loja" (Admin)
   document.getElementById('btn-add-new-store')?.addEventListener('click', async () => {
     const nomeLoja = prompt("Digite o nome da nova Unidade/Loja:");
@@ -577,6 +597,14 @@ async function loadSectorData() {
   }
 }
 
+// Função Global para abrir Modal de Edição de Usuário
+window.openEditUserModal = function(id, nome, funcao) {
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('edit-user-name').value = nome;
+  document.getElementById('edit-user-role').value = funcao;
+  document.getElementById('modal-edit-user')?.classList.add('active');
+};
+
 // Cards da Equipe
 function renderEquipeCards(members, container) {
   if (!members || members.length === 0) {
@@ -599,10 +627,8 @@ function renderEquipeCards(members, container) {
       <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
         <span class="badge-regua badge-60" style="font-size: 0.75rem;">Ativo</span>
         ${podeEditar ? `
-          <button type="button" class="btn-edit-user btn btn-secondary" 
-                  data-id="${user.id}" 
-                  data-nome="${user.nome}" 
-                  data-funcao="${user.funcao}" 
+          <button type="button" class="btn btn-secondary" 
+                  onclick="window.openEditUserModal('${user.id}', '${user.nome}', '${user.funcao}')"
                   style="padding: 2px 8px; font-size: 0.75rem;">
             ✏️ Editar
           </button>
@@ -610,21 +636,6 @@ function renderEquipeCards(members, container) {
       </div>
     </div>
   `).join('');
-
-  // Ativa evento de clique nos botões de edição da equipe
-  container.querySelectorAll('.btn-edit-user').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = e.currentTarget.dataset.id;
-      const nome = e.currentTarget.dataset.nome;
-      const funcao = e.currentTarget.dataset.funcao;
-
-      document.getElementById('edit-user-id').value = id;
-      document.getElementById('edit-user-name').value = nome;
-      document.getElementById('edit-user-role').value = funcao;
-
-      document.getElementById('modal-edit-user')?.classList.add('active');
-    });
-  });
 }
 
 // Cards da Régua de Validade e Vencidos

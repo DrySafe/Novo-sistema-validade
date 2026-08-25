@@ -37,9 +37,14 @@
   </div>
 
   <div class="topbar-actions">
-    <button id="btn-toggle-theme" class="btn-theme-toggle" title="Alternar Tema">🌙</button>
-    <button id="btn-logout" class="btn-theme-toggle" title="Sair">🚪</button>
-  </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <!-- Botões Admin para Gestão de Lojas -->
+        <button type="button" id="btn-add-new-store" class="btn-icon hidden" title="Gerar Nova Loja">➕🏬</button>
+        <button type="button" id="btn-open-edit-store" class="btn-icon hidden" title="Editar Loja Atual">✏️🏬</button>
+        
+        <button type="button" id="btn-toggle-theme" class="btn-icon" title="Alternar Tema">🌙</button>
+        <button type="button" id="btn-logout" class="btn-icon" title="Sair">🚪</button>
+      </div>
 </header>
 
     <!-- Tela de Login e Cadastro de Loja -->
