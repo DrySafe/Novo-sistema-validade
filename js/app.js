@@ -465,7 +465,7 @@ function setupEvents() {
             payload.forcarInsercao = true;
             await productService.createEntry(payload);
           } else {
-            return; // Cancela se o usuário não quiser forçar
+            return;
           }
         }
 
