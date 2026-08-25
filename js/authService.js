@@ -108,5 +108,33 @@ export const authService = {
 
     if (error) throw new Error("Erro ao salvar funcionário: " + error.message);
     return data;
+  },
+
+  // 8. GESTÃO DE LOJAS (ADMIN)
+  async updateStore(lojaId, { nome, cnpj }) {
+    const { data, error } = await supabase
+      .from('lojas')
+      .update({ nome, cnpj })
+      .eq('id', lojaId)
+      .select();
+
+    if (error) throw new Error("Erro ao atualizar loja: " + error.message);
+    return data;
+  },
+
+  // 9. EDITAR USUÁRIO / PERFIL (ADMIN)
+  async updateUserProfile(usuarioId, { nome, funcao, lojaId }) {
+    const { data, error } = await supabase
+      .from('perfis')
+      .update({
+        nome,
+        funcao,
+        loja_id: lojaId || null
+      })
+      .eq('id', usuarioId)
+      .select();
+
+    if (error) throw new Error("Erro ao atualizar perfil: " + error.message);
+    return data;
   }
 };

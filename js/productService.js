@@ -46,7 +46,10 @@ export const productService = {
     if (existing) {
       const updates = {};
       if (!existing.imagem_url && imagemUrlInformada) updates.imagem_url = imagemUrlInformada;
-      if (precoAtualInformado && precoAtualInformado > 0) updates.preco_atual = precoAtualInformado;
+      // Garante a atualização do preço de venda caso um novo valor seja informado
+      if (precoAtualInformado && parseFloat(precoAtualInformado) > 0) {
+        updates.preco_atual = parseFloat(precoAtualInformado);
+      }
 
       if (Object.keys(updates).length > 0) {
         await supabase.from('produtos').update(updates).eq('id', existing.id);

@@ -424,8 +424,8 @@ function setupEvents() {
   // Submit Lançamento de Produto com Trava Inteligente de Duplicidade
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
-    formEntry.addEventListener('submit', async (e, forcar = false) => {
-      if (e) e.preventDefault();
+    formEntry.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
       const payload = {
         lojaId: activeLojaId || currentProfile.loja_id,
@@ -440,11 +440,11 @@ function setupEvents() {
         dataVencimento: document.getElementById('entry-expiration').value,
         localizacao: document.getElementById('entry-location').value,
         motivo: document.getElementById('entry-reason')?.value || '',
-        forcarInsercao: forcar
+        forcarInsercao: false
       };
 
       try {
-        const result = await productService.createEntry(payload);
+        let result = await productService.createEntry(payload);
 
         // SE DETECTAR DUPLICIDADE, EXIBE ALERTA INFORMATIVO E OPÇÃO DE FORÇAR
         if (result.isDuplicado) {
@@ -465,7 +465,7 @@ function setupEvents() {
             payload.forcarInsercao = true;
             await productService.createEntry(payload);
           } else {
-            return;
+            return; // Cancela se o usuário não quiser forçar
           }
         }
 
@@ -477,6 +477,72 @@ function setupEvents() {
         loadSectorData();
       } catch (err) {
         alert('Erro ao salvar registro: ' + err.message);
+      }
+    });
+  }
+  
+  // Modais de Edição (Admin)
+  document.getElementById('btn-close-modal-edit-store')?.addEventListener('click', closeAllModals);
+  document.getElementById('btn-close-modal-edit-user')?.addEventListener('click', closeAllModals);
+
+  // Botão "Gerar Nova Loja" (Admin)
+  document.getElementById('btn-add-new-store')?.addEventListener('click', async () => {
+    const nomeLoja = prompt("Digite o nome da nova Unidade/Loja:");
+    if (!nomeLoja) return;
+
+    try {
+      const novaLoja = await authService.createStoreForUser({
+        nomeLoja,
+        cnpj: '',
+        usuarioId: currentProfile.id
+      });
+      alert(`Nova loja "${novaLoja.nome}" criada com sucesso!`);
+      await setupStoreSelector();
+    } catch (err) {
+      alert("Erro ao criar nova loja: " + err.message);
+    }
+  });
+
+  // Submit Editar Loja
+  const formEditStore = document.getElementById('form-edit-store');
+  if (formEditStore) {
+    formEditStore.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const storeId = document.getElementById('edit-store-id').value;
+      const nome = document.getElementById('edit-store-name').value;
+      const cnpj = document.getElementById('edit-store-cnpj').value;
+
+      try {
+        await authService.updateStore(storeId, { nome, cnpj });
+        alert('Dados da loja atualizados com sucesso!');
+        await closeAllModals();
+        await setupStoreSelector();
+      } catch (err) {
+        alert('Erro ao atualizar loja: ' + err.message);
+      }
+    });
+  }
+
+  // Submit Editar Perfil de Usuário
+  const formEditUser = document.getElementById('form-edit-user');
+  if (formEditUser) {
+    formEditUser.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userId = document.getElementById('edit-user-id').value;
+      const nome = document.getElementById('edit-user-name').value;
+      const funcao = document.getElementById('edit-user-role').value;
+
+      try {
+        await authService.updateUserProfile(userId, {
+          nome,
+          funcao,
+          lojaId: activeLojaId || currentProfile.loja_id
+        });
+        alert('Perfil atualizado com sucesso!');
+        await closeAllModals();
+        loadSectorData();
+      } catch (err) {
+        alert('Erro ao atualizar usuário: ' + err.message);
       }
     });
   }
@@ -518,6 +584,9 @@ function renderEquipeCards(members, container) {
     return;
   }
 
+  const userRole = (currentProfile.funcao || '').toLowerCase();
+  const podeEditar = ['administrador', 'admin', 'gerente'].includes(userRole);
+
   container.innerHTML = members.map(user => `
     <div class="product-card">
       <img src="${user.foto_url || DEFAULT_AVATAR}" alt="Avatar" style="border-radius: 50%; object-fit: cover; width: 56px; height: 56px;">
@@ -527,11 +596,35 @@ function renderEquipeCards(members, container) {
           <span>Função: <strong style="text-transform: capitalize;">${user.funcao}</strong></span>
         </div>
       </div>
-      <div>
+      <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
         <span class="badge-regua badge-60" style="font-size: 0.75rem;">Ativo</span>
+        ${podeEditar ? `
+          <button type="button" class="btn-edit-user btn btn-secondary" 
+                  data-id="${user.id}" 
+                  data-nome="${user.nome}" 
+                  data-funcao="${user.funcao}" 
+                  style="padding: 2px 8px; font-size: 0.75rem;">
+            ✏️ Editar
+          </button>
+        ` : ''}
       </div>
     </div>
   `).join('');
+
+  // Ativa evento de clique nos botões de edição da equipe
+  container.querySelectorAll('.btn-edit-user').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      const nome = e.currentTarget.dataset.nome;
+      const funcao = e.currentTarget.dataset.funcao;
+
+      document.getElementById('edit-user-id').value = id;
+      document.getElementById('edit-user-name').value = nome;
+      document.getElementById('edit-user-role').value = funcao;
+
+      document.getElementById('modal-edit-user')?.classList.add('active');
+    });
+  });
 }
 
 // Cards da Régua de Validade e Vencidos

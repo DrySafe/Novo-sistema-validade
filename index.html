@@ -246,6 +246,56 @@
           <input type="text" id="emp-name" required placeholder="Ex: João Souza">
         </div>
 
+        <!-- Modal Editar Loja (Admin) -->
+  <div id="modal-edit-store" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">EDITAR UNIDADE / LOJA</h3>
+        <button type="button" id="btn-close-modal-edit-store" class="btn-close">&times;</button>
+      </div>
+      <form id="form-edit-store">
+        <input type="hidden" id="edit-store-id">
+        <div class="form-group">
+          <label for="edit-store-name">Nome da Loja</label>
+          <input type="text" id="edit-store-name" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-store-cnpj">CNPJ</label>
+          <input type="text" id="edit-store-cnpj">
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Editar Usuário (Admin) -->
+  <div id="modal-edit-user" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">EDITAR COLABORADOR</h3>
+        <button type="button" id="btn-close-modal-edit-user" class="btn-close">&times;</button>
+      </div>
+      <form id="form-edit-user">
+        <input type="hidden" id="edit-user-id">
+        <div class="form-group">
+          <label for="edit-user-name">Nome Completo</label>
+          <input type="text" id="edit-user-name" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-user-role">Função / Cargo</label>
+          <select id="edit-user-role" required>
+            <option value="operador">Operador / Repositor</option>
+            <option value="gerente">Gerente de Setor</option>
+            <option value="precificacao">Setor de Precificação</option>
+            <option value="adm">ADM / Auditoria</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
         <div class="form-group">
           <label for="emp-role">Função / Perfil</label>
           <select id="emp-role" required>
