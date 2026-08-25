@@ -195,39 +195,81 @@ async function setupStoreSelector() {
   }
 }
 
-// Torna a função de fechar modais acessível globalmente pelos botões X
-window.closeAllModals = async function() {
+// Fechar modais de forma síncrona e instantânea (Sem travar a execução)
+window.closeAllModals = function() {
+  // 1. Remove imediatamente a classe active de todos os modais
+  document.querySelectorAll('.modal').forEach(m => {
+    m.classList.remove('active');
+  });
+
+  // 2. Desliga a câmera em segundo plano sem bloquear a interface
   if (typeof window.pararScanner === 'function') {
-    try { await window.pararScanner(); } catch (e) {}
+    try {
+      window.pararScanner().catch(err => console.warn('Aviso ao fechar scanner:', err));
+    } catch (e) {
+      // Ignora silenciosamente
+    }
   }
 
   const cameraContainer = document.getElementById('camera-container');
   if (cameraContainer) cameraContainer.classList.add('hidden');
-
-  // Oculta todos os modais
-  document.querySelectorAll('.modal').forEach(m => {
-    m.classList.remove('active');
-  });
 };
 
-// Handler Global para Abrir Edição de Colaborador na Aba Equipe
-window.openEditUserModal = async function(id, nome, funcao) {
-  await window.closeAllModals();
+// Handler Global para Editar Colaborador
+window.openEditUserModal = function(id, nome, funcao) {
+  window.closeAllModals();
 
-  const inputId = document.getElementById('edit-user-id');
-  const inputNome = document.getElementById('edit-user-name');
-  const inputFuncao = document.getElementById('edit-user-role');
-  const modal = document.getElementById('modal-edit-user');
+  setTimeout(() => {
+    const inputId = document.getElementById('edit-user-id');
+    const inputNome = document.getElementById('edit-user-name');
+    const inputFuncao = document.getElementById('edit-user-role');
+    const modal = document.getElementById('modal-edit-user');
 
-  if (inputId) inputId.value = id;
-  if (inputNome) inputNome.value = nome;
-  if (inputFuncao) inputFuncao.value = funcao;
+    if (inputId) inputId.value = id;
+    if (inputNome) inputNome.value = nome;
+    if (inputFuncao) inputFuncao.value = funcao;
 
-  if (modal) {
-    modal.classList.add('active');
-  } else {
-    alert("Erro: O modal #modal-edit-user não foi encontrado.");
-  }
+    if (modal) {
+      modal.classList.add('active');
+    } else {
+      console.error("Modal #modal-edit-user não encontrado.");
+    }
+  }, 50);
+};
+
+// Handler Global para Abrir o Modal de Perfil/Gestão (Avatar Badge)
+window.openUserProfileModal = function() {
+  window.closeAllModals();
+
+  setTimeout(() => {
+    if (!currentProfile) {
+      alert("Perfil ainda não carregado.");
+      return;
+    }
+
+    const inputSelfName = document.getElementById('self-name');
+    const inputSelfRole = document.getElementById('self-role');
+    const inputStoreName = document.getElementById('profile-store-name');
+    const inputStoreCnpj = document.getElementById('profile-store-cnpj');
+
+    if (inputSelfName) inputSelfName.value = currentProfile.nome || '';
+    if (inputSelfRole) inputSelfRole.value = (currentProfile.funcao || 'Operador').toUpperCase();
+    if (inputStoreName) inputStoreName.value = currentProfile.lojas?.nome || '';
+    if (inputStoreCnpj) inputStoreCnpj.value = currentProfile.lojas?.cnpj || '';
+
+    const userRole = (currentProfile.funcao || '').toLowerCase();
+    const isAdmin = ['administrador', 'admin'].includes(userRole);
+
+    const btnGestaoLoja = document.getElementById('tab-btn-gestao-loja');
+    const btnNovaLoja = document.getElementById('tab-btn-nova-loja');
+    if (btnGestaoLoja) btnGestaoLoja.style.display = isAdmin ? 'block' : 'none';
+    if (btnNovaLoja) btnNovaLoja.style.display = isAdmin ? 'block' : 'none';
+
+    const modalProfile = document.getElementById('modal-user-profile');
+    if (modalProfile) {
+      modalProfile.classList.add('active');
+    }
+  }, 50);
 };
 
 // ============================================================

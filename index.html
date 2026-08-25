@@ -39,8 +39,9 @@
   <div class="topbar-actions">
     <div style="display: flex; gap: 0.5rem; align-items: center;">
         <!-- Badge de Iniciais do Usuário (Abre Painel de Gestão) -->
-        <button type="button" id="btn-user-avatar-badge" class="avatar-badge" title="Minha Conta & Gestão">
+        <button type="button" id="btn-user-avatar-badge" class="avatar-badge" onclick="window.openUserProfileModal()" title="Minha Conta & Gestão">
           <span id="user-initials">--</span>
+        </button>
         </button>
 
         <button type="button" id="btn-toggle-theme" class="btn-icon" title="Alternar Tema">🌙</button>

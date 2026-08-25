@@ -194,21 +194,23 @@ body.dark .avatar-badge {
    ESTRUTURA COMPLETA DE MODAIS E ROLAGEM (CORREÇÃO DE TELA)
    ============================================================ */
 
+/* Posicionamento Absoluto e Imutável de Modais */
 .modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 9999;
-  justify-content: center;
-  align-items: flex-start; /* Evita que o topo do modal corte no celular */
-  padding: 1rem;
-  overflow-y: auto; /* Rolagem geral quando a tela for pequena */
-  box-sizing: border-box;
+  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(5px) !important;
+  z-index: 99999 !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 1rem !important;
+  box-sizing: border-box !important;
 }
 
 .modal.active {
@@ -216,23 +218,23 @@ body.dark .avatar-badge {
 }
 
 .modal-content {
-  background-color: var(--surface);
-  color: var(--text-main);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 500px;
-  margin: 1.5rem auto;
-  padding: 1.5rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-  position: relative;
-  max-height: calc(100vh - 3rem);
-  overflow-y: auto; /* Rolagem interna para formulários compridos */
+  background-color: var(--surface, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+  border-radius: 16px !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  position: relative !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  margin: auto !important;
 }
 
 body.dark .modal-content {
-  background-color: #1f2937;
-  color: #f9fafb;
-  border: 1px solid #374151;
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+  border: 1px solid #374151 !important;
 }
 
 /* Cabeçalho do Modal */
