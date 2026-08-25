@@ -65,6 +65,17 @@ async function checkSession() {
       if (elemUser) elemUser.textContent = currentProfile.nome;
       if (elemStore) elemStore.textContent = currentProfile.lojas?.nome || 'Loja';
 
+      // Calcula Iniciais para a Avatar Badge (Ex: "Daniel de Souza Regis" -> "DR")
+      const initialsElem = document.getElementById('user-initials');
+      if (initialsElem && currentProfile.nome) {
+        const partes = currentProfile.nome.trim().split(/\s+/);
+        let iniciais = partes[0][0].toUpperCase();
+        if (partes.length > 1) {
+          iniciais += partes[partes.length - 1][0].toUpperCase();
+        }
+        initialsElem.textContent = iniciais;
+      }
+
       // Configura seletor de loja (múltiplas lojas)
       await setupStoreSelector();
 
@@ -570,6 +581,115 @@ function setupEvents() {
         loadSectorData();
       } catch (err) {
         alert('Erro ao atualizar usuário: ' + err.message);
+      }
+    });
+  }
+
+  // Abrir Modal de Perfil/Gestão pela Avatar Badge
+  document.getElementById('btn-user-avatar-badge')?.addEventListener('click', () => {
+    if (!currentProfile) return;
+
+    // Preenche dados atuais
+    document.getElementById('self-name').value = currentProfile.nome || '';
+    document.getElementById('self-role').value = (currentProfile.funcao || 'Operador').toUpperCase();
+    document.getElementById('profile-store-name').value = currentProfile.lojas?.nome || '';
+    document.getElementById('profile-store-cnpj').value = currentProfile.lojas?.cnpj || '';
+
+    // Exibe/oculta botões de gestão de loja se for Admin
+    const userRole = (currentProfile.funcao || '').toLowerCase();
+    const isAdmin = ['administrador', 'admin'].includes(userRole);
+
+    const btnGestaoLoja = document.getElementById('tab-btn-gestao-loja');
+    const btnNovaLoja = document.getElementById('tab-btn-nova-loja');
+    if (btnGestaoLoja) btnGestaoLoja.style.display = isAdmin ? 'block' : 'none';
+    if (btnNovaLoja) btnNovaLoja.style.display = isAdmin ? 'block' : 'none';
+
+    document.getElementById('modal-user-profile')?.classList.add('active');
+  });
+
+  document.getElementById('btn-close-modal-profile')?.addEventListener('click', closeAllModals);
+
+  // Alternar Abas Internas do Modal
+  const fSelf = document.getElementById('form-edit-self-profile');
+  const fStore = document.getElementById('form-manage-current-store');
+  const fNewStore = document.getElementById('form-create-new-store');
+
+  document.getElementById('tab-btn-meu-perfil')?.addEventListener('click', () => {
+    fSelf?.classList.remove('hidden');
+    fStore?.classList.add('hidden');
+    fNewStore?.classList.add('hidden');
+  });
+
+  document.getElementById('tab-btn-gestao-loja')?.addEventListener('click', () => {
+    fSelf?.classList.add('hidden');
+    fStore?.classList.remove('hidden');
+    fNewStore?.classList.add('hidden');
+  });
+
+  document.getElementById('tab-btn-nova-loja')?.addEventListener('click', () => {
+    fSelf?.classList.add('hidden');
+    fStore?.classList.add('hidden');
+    fNewStore?.classList.remove('hidden');
+  });
+
+  // Submit 1: Atualizar Nome do Próprio Usuário
+  if (fSelf) {
+    fSelf.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const novoNome = document.getElementById('self-name').value;
+      try {
+        await authService.updateUserProfile(currentProfile.id, {
+          nome: novoNome,
+          funcao: currentProfile.funcao,
+          lojaId: currentProfile.loja_id
+        });
+        currentProfile.nome = novoNome;
+        alert('Seu nome foi atualizado com sucesso!');
+        await closeAllModals();
+        await checkSession();
+      } catch (err) {
+        alert('Erro ao atualizar perfil: ' + err.message);
+      }
+    });
+  }
+
+  // Submit 2: Editar Dados da Loja Atual
+  if (fStore) {
+    fStore.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const lojaId = activeLojaId || currentProfile.loja_id;
+      const nome = document.getElementById('profile-store-name').value;
+      const cnpj = document.getElementById('profile-store-cnpj').value;
+
+      try {
+        await authService.updateStore(lojaId, { nome, cnpj });
+        alert('Dados da loja atualizados com sucesso!');
+        await closeAllModals();
+        await setupStoreSelector();
+      } catch (err) {
+        alert('Erro ao atualizar loja: ' + err.message);
+      }
+    });
+  }
+
+  // Submit 3: Criar Nova Loja
+  if (fNewStore) {
+    fNewStore.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('new-store-name').value;
+      const cnpj = document.getElementById('new-store-cnpj').value;
+
+      try {
+        await authService.createStoreForUser({
+          nomeLoja: nome,
+          cnpj,
+          usuarioId: currentProfile.id
+        });
+        alert('Nova loja criada com sucesso!');
+        await closeAllModals();
+        await setupStoreSelector();
+      } catch (err) {
+        alert('Erro ao criar loja: ' + err.message);
       }
     });
   }
