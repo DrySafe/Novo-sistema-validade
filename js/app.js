@@ -195,23 +195,40 @@ async function setupStoreSelector() {
   }
 }
 
-// Fechar Modais e Câmeras
-async function closeAllModals() {
+// Torna a função de fechar modais acessível globalmente pelos botões X
+window.closeAllModals = async function() {
   if (typeof window.pararScanner === 'function') {
-    try {
-      await window.pararScanner();
-    } catch (e) {
-      console.warn('Erro ao desligar o scanner:', e);
-    }
+    try { await window.pararScanner(); } catch (e) {}
   }
 
   const cameraContainer = document.getElementById('camera-container');
   if (cameraContainer) cameraContainer.classList.add('hidden');
 
-  document.querySelectorAll('.modal').forEach(modal => {
-    modal.classList.remove('active');
+  // Oculta todos os modais
+  document.querySelectorAll('.modal').forEach(m => {
+    m.classList.remove('active');
   });
-}
+};
+
+// Handler Global para Abrir Edição de Colaborador na Aba Equipe
+window.openEditUserModal = async function(id, nome, funcao) {
+  await window.closeAllModals();
+
+  const inputId = document.getElementById('edit-user-id');
+  const inputNome = document.getElementById('edit-user-name');
+  const inputFuncao = document.getElementById('edit-user-role');
+  const modal = document.getElementById('modal-edit-user');
+
+  if (inputId) inputId.value = id;
+  if (inputNome) inputNome.value = nome;
+  if (inputFuncao) inputFuncao.value = funcao;
+
+  if (modal) {
+    modal.classList.add('active');
+  } else {
+    alert("Erro: O modal #modal-edit-user não foi encontrado.");
+  }
+};
 
 // ============================================================
 // LISTENERS E MANIPULAÇÃO DE EVENTOS
@@ -585,27 +602,30 @@ function setupEvents() {
     });
   }
 
-  // Abrir Modal de Perfil/Gestão pela Avatar Badge
-  document.getElementById('btn-user-avatar-badge')?.addEventListener('click', () => {
-    if (!currentProfile) return;
+  // Clique na Avatar Badge das Iniciais
+  const btnAvatar = document.getElementById('btn-user-avatar-badge');
+  if (btnAvatar) {
+    btnAvatar.addEventListener('click', async () => {
+      await window.closeAllModals();
 
-    // Preenche dados atuais
-    document.getElementById('self-name').value = currentProfile.nome || '';
-    document.getElementById('self-role').value = (currentProfile.funcao || 'Operador').toUpperCase();
-    document.getElementById('profile-store-name').value = currentProfile.lojas?.nome || '';
-    document.getElementById('profile-store-cnpj').value = currentProfile.lojas?.cnpj || '';
+      if (!currentProfile) return;
 
-    // Exibe/oculta botões de gestão de loja se for Admin
-    const userRole = (currentProfile.funcao || '').toLowerCase();
-    const isAdmin = ['administrador', 'admin'].includes(userRole);
+      document.getElementById('self-name').value = currentProfile.nome || '';
+      document.getElementById('self-role').value = (currentProfile.funcao || 'Operador').toUpperCase();
+      document.getElementById('profile-store-name').value = currentProfile.lojas?.nome || '';
+      document.getElementById('profile-store-cnpj').value = currentProfile.lojas?.cnpj || '';
 
-    const btnGestaoLoja = document.getElementById('tab-btn-gestao-loja');
-    const btnNovaLoja = document.getElementById('tab-btn-nova-loja');
-    if (btnGestaoLoja) btnGestaoLoja.style.display = isAdmin ? 'block' : 'none';
-    if (btnNovaLoja) btnNovaLoja.style.display = isAdmin ? 'block' : 'none';
+      const userRole = (currentProfile.funcao || '').toLowerCase();
+      const isAdmin = ['administrador', 'admin'].includes(userRole);
 
-    document.getElementById('modal-user-profile')?.classList.add('active');
-  });
+      const btnGestaoLoja = document.getElementById('tab-btn-gestao-loja');
+      const btnNovaLoja = document.getElementById('tab-btn-nova-loja');
+      if (btnGestaoLoja) btnGestaoLoja.style.display = isAdmin ? 'block' : 'none';
+      if (btnNovaLoja) btnNovaLoja.style.display = isAdmin ? 'block' : 'none';
+
+      document.getElementById('modal-user-profile')?.classList.add('active');
+    });
+  }
 
   document.getElementById('btn-close-modal-profile')?.addEventListener('click', closeAllModals);
 
@@ -724,12 +744,10 @@ async function loadSectorData() {
   }
 }
 
-// Função Global para abrir Modal de Edição de Usuário com Reset de Pilha
-window.openEditUserModal = function(id, nome, funcao) {
-  // 1. Fecha qualquer outro modal aberto no momento
-  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+// Handler Global para Abrir Edição de Colaborador na Aba Equipe
+window.openEditUserModal = async function(id, nome, funcao) {
+  await window.closeAllModals();
 
-  // 2. Preenche os campos
   const inputId = document.getElementById('edit-user-id');
   const inputNome = document.getElementById('edit-user-name');
   const inputFuncao = document.getElementById('edit-user-role');
@@ -739,11 +757,10 @@ window.openEditUserModal = function(id, nome, funcao) {
   if (inputNome) inputNome.value = nome;
   if (inputFuncao) inputFuncao.value = funcao;
 
-  // 3. Abre diretamente o modal correto
   if (modal) {
     modal.classList.add('active');
   } else {
-    alert("Erro: Formulário de edição (#modal-edit-user) não encontrado.");
+    alert("Erro: O modal #modal-edit-user não foi encontrado.");
   }
 };
 
