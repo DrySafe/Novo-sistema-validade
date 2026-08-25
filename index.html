@@ -27,27 +27,27 @@
 
   <div class="app-viewport">
     
-   <!-- Topbar Header -->
-<header class="topbar">
-  <div class="brand-title">ValidaSuper</div>
-  
-  <!-- Seletor Dinâmico de Loja -->
-  <div id="store-selector-container" class="hidden">
-    <select id="select-active-store" class="select-store-header"></select>
-  </div>
-
-  <div class="topbar-actions">
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <!-- Badge de Iniciais do Usuário (Abre Painel de Gestão) -->
-        <button type="button" id="btn-user-avatar-badge" class="avatar-badge" onclick="window.openUserProfileModal()" title="Minha Conta & Gestão">
-          <span id="user-initials">--</span>
-        </button>
-        </button>
-
-        <button type="button" id="btn-toggle-theme" class="btn-icon" title="Alternar Tema">🌙</button>
-        <button type="button" id="btn-logout" class="btn-icon" title="Sair">🚪</button>
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="brand-title">ValidaSuper</div>
+      
+      <!-- Seletor Dinâmico de Loja -->
+      <div id="store-selector-container" class="hidden">
+        <select id="select-active-store" class="select-store-header"></select>
       </div>
-</header>
+
+      <div class="topbar-actions">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <!-- Badge de Iniciais do Usuário (Abre Painel de Gestão) -->
+          <button type="button" id="btn-user-avatar-badge" class="avatar-badge" onclick="window.openUserProfileModal()" title="Minha Conta & Gestão">
+            <span id="user-initials">--</span>
+          </button>
+
+          <button type="button" id="btn-toggle-theme" class="btn-icon" title="Alternar Tema">🌙</button>
+          <button type="button" id="btn-logout" class="btn-icon" title="Sair">🚪</button>
+        </div>
+      </div>
+    </header>
 
     <!-- Tela de Login e Cadastro de Loja -->
     <section id="login-screen" class="container">
@@ -94,14 +94,10 @@
           ← Voltar para o Login
         </button>
       </form>
-
-      <!-- Botão para alternar exibição no form de login -->
-      <!-- DICA: Altere o texto do botão do form-login de "Cadastrar Minha Loja" para "Criar Minha Conta" -->
     </section>
 
     <!-- Tela Principal do App -->
     <main id="app-screen" class="container hidden">
-      
       <!-- Visor Informativo do Usuário -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <div>
@@ -150,7 +146,6 @@
         <span class="nav-icon">📦</span>
         <span>Avarias</span>
       </button>
-      <!-- Botão da Equipe com ID para controle de acesso -->
       <button id="nav-item-equipe" class="nav-item hidden" data-sector="equipe">
         <span class="nav-icon">👥</span>
         <span>Equipe</span>
@@ -159,21 +154,22 @@
 
   </div>
 
+  <!-- ============================================================ -->
+  <!-- MODAIS INDEPENDENTES E ISOLADOS (SEM ANINHAMENTO)            -->
+  <!-- ============================================================ -->
+
   <!-- MODAL 1: LANÇAMENTO DE PRODUTO -->
   <div id="modal-entry" class="modal">
     <div class="modal-content">
-      <div class="modal-drag-handle"></div>
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 id="modal-title" style="font-family: var(--font-display); font-size: 1.4rem;">NOVO LANÇAMENTO</h3>
-        <button type="button" id="btn-close-modal" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
+      <div class="modal-header">
+        <h3 id="modal-title" class="modal-title">NOVO LANÇAMENTO</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
       </div>
 
       <form id="form-entry">
         <input type="hidden" id="entry-sector" value="validade">
         <input type="hidden" id="entry-image-url">
 
-        <!-- Visor Digital do EAN -->
         <div class="visor-produto">
           <div class="visor-header">CÓDIGO DE BARRAS / EAN</div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -182,13 +178,11 @@
           </div>
         </div>
 
-        <!-- Câmera do Scanner -->
         <div id="camera-container" class="hidden" style="position: relative; width: 100%; height: 200px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 1rem;">
           <video id="scanner-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
           <div style="position: absolute; inset: 20%; border: 2px dashed #ef4444; border-radius: 8px; pointer-events: none;"></div>
         </div>
 
-        <!-- Preview do Produto Encontrado -->
         <div id="product-preview-box" class="hidden" style="display: flex; align-items: center; gap: 1rem; background: var(--surface-panel); padding: 0.75rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border);">
           <img id="preview-img" src="" alt="Foto" style="width: 48px; height: 48px; object-fit: contain; border-radius: 8px; background: #fff;">
           <div>
@@ -237,14 +231,12 @@
     </div>
   </div>
 
-  <!-- MODAL 2: CADASTRO DE COLABORADOR (INDEPENDENTE) -->
+  <!-- MODAL 2: CADASTRO DE COLABORADOR (EQUIPE) -->
   <div id="modal-employee" class="modal">
     <div class="modal-content">
-      <div class="modal-drag-handle"></div>
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h3 style="font-family: var(--font-display); font-size: 1.4rem;">CADASTRAR COLABORADOR</h3>
-        <button type="button" id="btn-close-modal-emp" style="background:none; border:none; color:var(--text-muted); font-size: 1.5rem; cursor:pointer;">&times;</button>
+      <div class="modal-header">
+        <h3 class="modal-title">CADASTRAR COLABORADOR</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
       </div>
 
       <form id="form-employee">
@@ -252,45 +244,45 @@
           <label for="emp-name">Nome Completo</label>
           <input type="text" id="emp-name" required placeholder="Ex: João Souza">
         </div>
-
-       <!-- Modal Gestão de Unidade / Loja (Criar ou Editar) -->
-  <div id="modal-store-manage" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modal-store-title" class="modal-title">GESTÃO DE UNIDADE / LOJA</h3>
-        <button type="button" id="btn-close-modal-store" class="btn-close">&times;</button>
-      </div>
-      <form id="form-store-manage">
-        <input type="hidden" id="store-manage-id">
         <div class="form-group">
-          <label for="store-manage-name">Nome do Supermercado / Loja</label>
-          <input type="text" id="store-manage-name" required placeholder="Ex: Supermercado Centro">
+          <label for="emp-role">Função / Perfil</label>
+          <select id="emp-role" required>
+            <option value="operador">Operador / Repositor</option>
+            <option value="gerente">Gerente de Setor</option>
+            <option value="precificacao">Setor de Precificação</option>
+            <option value="adm">ADM / Auditoria</option>
+            <option value="administrador">Administrador</option>
+          </select>
         </div>
         <div class="form-group">
-          <label for="store-manage-cnpj">CNPJ</label>
-          <input type="text" id="store-manage-cnpj" placeholder="00.000.000/0001-00">
+          <label for="emp-email">E-mail de Acesso</label>
+          <input type="email" id="emp-email" required placeholder="colaborador@loja.com">
         </div>
-        <button type="submit" id="btn-submit-store" class="btn btn-primary">Salvar Loja</button>
+        <div class="form-group">
+          <label for="emp-avatar">URL da Foto (Opcional)</label>
+          <input type="url" id="emp-avatar" placeholder="https://exemplo.com/foto.jpg">
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Colaborador</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal Editar Usuário / Colaborador (Equipe) -->
+  <!-- MODAL 3: EDITAR COLABORADOR (EQUIPE) -->
   <div id="modal-edit-user" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title">EDITAR COLABORADOR</h3>
-        <button type="button" class="btn-close" onclick="closeAllModals()">&times;</button>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
       </div>
       <form id="form-edit-user">
         <input type="hidden" id="edit-user-id">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="edit-user-name" style="display:block; margin-bottom:0.25rem;">Nome Completo</label>
-          <input type="text" id="edit-user-name" required style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="edit-user-name">Nome Completo</label>
+          <input type="text" id="edit-user-name" required>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="edit-user-role" style="display:block; margin-bottom:0.25rem;">Função / Cargo</label>
-          <select id="edit-user-role" required style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="edit-user-role">Função / Cargo</label>
+          <select id="edit-user-role" required>
             <option value="operador">Operador / Repositor</option>
             <option value="gerente">Gerente de Setor</option>
             <option value="precificacao">Setor de Precificação</option>
@@ -298,55 +290,19 @@
             <option value="administrador">Administrador</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; margin-top: 0.5rem;">Salvar Alterações</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Alterações</button>
       </form>
     </div>
   </div>
 
-  <!-- Modal Cadastrar Colaborador (Equipe) -->
-  <div id="modal-employee" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">CADASTRAR COLABORADOR</h3>
-        <button type="button" class="btn-close" onclick="closeAllModals()">&times;</button>
-      </div>
-      <form id="form-employee">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="emp-name" style="display:block; margin-bottom:0.25rem;">Nome Completo</label>
-          <input type="text" id="emp-name" required placeholder="Ex: João da Silva" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
-        </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="emp-role" style="display:block; margin-bottom:0.25rem;">Função / Perfil</label>
-          <select id="emp-role" required style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
-            <option value="operador">Operador / Repositor</option>
-            <option value="gerente">Gerente de Setor</option>
-            <option value="precificacao">Setor de Precificação</option>
-            <option value="adm">ADM / Auditoria</option>
-            <option value="administrador">Administrador</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="emp-email" style="display:block; margin-bottom:0.25rem;">E-mail de Acesso</label>
-          <input type="email" id="emp-email" required placeholder="colaborador@loja.com" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
-        </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="emp-avatar" style="display:block; margin-bottom:0.25rem;">URL da Foto (Opcional)</label>
-          <input type="url" id="emp-avatar" placeholder="https://exemplo.com/foto.jpg" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; margin-top: 0.5rem;">Salvar Colaborador</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal Unificado de Perfil e Gestão de Lojas -->
+  <!-- MODAL 4: UNIFICADO DE PERFIL E GESTÃO DE LOJAS -->
   <div id="modal-user-profile" class="modal">
     <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
         <h3 class="modal-title">MINHA CONTA & GESTÃO</h3>
-        <button type="button" class="btn-close" onclick="closeAllModals()">&times;</button>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
       </div>
 
-      <!-- Abas Internas -->
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
         <button type="button" id="tab-btn-meu-perfil" class="btn btn-secondary" style="flex:1; font-size:0.8rem;">👤 Meu Perfil</button>
         <button type="button" id="tab-btn-gestao-loja" class="btn btn-secondary" style="flex:1; font-size:0.8rem;">🏬 Editar Loja</button>
@@ -355,41 +311,41 @@
 
       <!-- SEÇÃO 1: Editar Próprio Usuário -->
       <form id="form-edit-self-profile">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="self-name" style="display:block; margin-bottom:0.25rem;">Nome Completo</label>
-          <input type="text" id="self-name" required style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="self-name">Nome Completo</label>
+          <input type="text" id="self-name" required>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="self-role" style="display:block; margin-bottom:0.25rem;">Função Atual</label>
-          <input type="text" id="self-role" disabled style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); opacity: 0.7; background: rgba(0,0,0,0.05);">
+        <div class="form-group">
+          <label for="self-role">Função Atual</label>
+          <input type="text" id="self-role" disabled style="opacity: 0.7; background: rgba(0,0,0,0.05);">
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;">Salvar Meu Nome</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Meu Nome</button>
       </form>
 
       <!-- SEÇÃO 2: Editar Loja Atual -->
       <form id="form-manage-current-store" class="hidden">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="profile-store-name" style="display:block; margin-bottom:0.25rem;">Nome da Unidade / Loja</label>
-          <input type="text" id="profile-store-name" required style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="profile-store-name">Nome da Unidade / Loja</label>
+          <input type="text" id="profile-store-name" required>
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="profile-store-cnpj" style="display:block; margin-bottom:0.25rem;">CNPJ</label>
-          <input type="text" id="profile-store-cnpj" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="profile-store-cnpj">CNPJ</label>
+          <input type="text" id="profile-store-cnpj">
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;">Atualizar Dados da Loja</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Atualizar Dados da Loja</button>
       </form>
 
       <!-- SEÇÃO 3: Criar Nova Loja -->
       <form id="form-create-new-store" class="hidden">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="new-store-name" style="display:block; margin-bottom:0.25rem;">Nome do Novo Supermercado</label>
-          <input type="text" id="new-store-name" required placeholder="Ex: Filial Bairro Novo" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="new-store-name">Nome do Novo Supermercado</label>
+          <input type="text" id="new-store-name" required placeholder="Ex: Filial Bairro Novo">
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="new-store-cnpj" style="display:block; margin-bottom:0.25rem;">CNPJ (Opcional)</label>
-          <input type="text" id="new-store-cnpj" placeholder="00.000.000/0001-00" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="new-store-cnpj">CNPJ (Opcional)</label>
+          <input type="text" id="new-store-cnpj" placeholder="00.000.000/0001-00">
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;">Criar Nova Unidade</button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Criar Nova Unidade</button>
       </form>
     </div>
   </div>

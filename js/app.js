@@ -195,27 +195,27 @@ async function setupStoreSelector() {
   }
 }
 
-// Fechar modais de forma síncrona e instantânea (Sem travar a execução)
+// Função Global Imutável para Fechar TODOS os Modais Instantaneamente
 window.closeAllModals = function() {
-  // 1. Remove imediatamente a classe active de todos os modais
+  // 1. Remove a classe .active de todos os modais sem travar a interface
   document.querySelectorAll('.modal').forEach(m => {
     m.classList.remove('active');
   });
 
-  // 2. Desliga a câmera em segundo plano sem bloquear a interface
-  if (typeof window.pararScanner === 'function') {
-    try {
-      window.pararScanner().catch(err => console.warn('Aviso ao fechar scanner:', err));
-    } catch (e) {
-      // Ignora silenciosamente
-    }
-  }
-
+  // 2. Tenta desligar o scanner de forma segura em background
   const cameraContainer = document.getElementById('camera-container');
   if (cameraContainer) cameraContainer.classList.add('hidden');
+
+  if (typeof window.pararScanner === 'function') {
+    try {
+      window.pararScanner();
+    } catch (e) {
+      // Ignora silenciosamente erros do scanner
+    }
+  }
 };
 
-// Handler Global para Editar Colaborador
+// Handler Global para Abrir Modal de Edição de Colaborador na Aba Equipe
 window.openEditUserModal = function(id, nome, funcao) {
   window.closeAllModals();
 
@@ -232,20 +232,17 @@ window.openEditUserModal = function(id, nome, funcao) {
     if (modal) {
       modal.classList.add('active');
     } else {
-      console.error("Modal #modal-edit-user não encontrado.");
+      console.error("Modal #modal-edit-user não encontrado no DOM.");
     }
-  }, 50);
+  }, 30);
 };
 
-// Handler Global para Abrir o Modal de Perfil/Gestão (Avatar Badge)
+// Handler Global para Abrir Perfil de Usuário (Avatar Badge)
 window.openUserProfileModal = function() {
   window.closeAllModals();
 
   setTimeout(() => {
-    if (!currentProfile) {
-      alert("Perfil ainda não carregado.");
-      return;
-    }
+    if (!currentProfile) return;
 
     const inputSelfName = document.getElementById('self-name');
     const inputSelfRole = document.getElementById('self-role');
@@ -269,7 +266,7 @@ window.openUserProfileModal = function() {
     if (modalProfile) {
       modalProfile.classList.add('active');
     }
-  }, 50);
+  }, 30);
 };
 
 // ============================================================
