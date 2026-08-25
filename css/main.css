@@ -165,3 +165,31 @@ html, body {
   letter-spacing: 2px;
   color: #f8fafc;
 }
+
+/* Correção Visual do Dark Mode para os Botões e Seletor do Header */
+body.dark .btn-icon {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #f3f4f6 !important;
+  border-radius: 8px;
+  padding: 6px 10px;
+  transition: all 0.2s ease;
+}
+
+body.dark .btn-icon:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: var(--primary) !important;
+}
+
+body.dark #select-active-store {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+body.dark #select-active-store option {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}

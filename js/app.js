@@ -488,57 +488,64 @@ function setupEvents() {
     });
   }
   
-  // Modais de Edição (Admin)
-  document.getElementById('btn-close-modal-edit-store')?.addEventListener('click', closeAllModals);
+  // Fechar Modais Admin
+  document.getElementById('btn-close-modal-store')?.addEventListener('click', closeAllModals);
   document.getElementById('btn-close-modal-edit-user')?.addEventListener('click', closeAllModals);
 
-  // Botão "Editar Loja Atual" no Header (Admin)
+  // Botão "➕ Criar Nova Loja" (Admin)
+  document.getElementById('btn-add-new-store')?.addEventListener('click', () => {
+    document.getElementById('store-manage-id').value = '';
+    document.getElementById('store-manage-name').value = '';
+    document.getElementById('store-manage-cnpj').value = '';
+    document.getElementById('modal-store-title').textContent = 'CADASTRAR NOVA UNIDADE';
+    document.getElementById('btn-submit-store').textContent = 'Criar Unidade';
+
+    document.getElementById('modal-store-manage')?.classList.add('active');
+  });
+
+  // Botão "✏️ Editar Loja Atual" (Admin)
   document.getElementById('btn-open-edit-store')?.addEventListener('click', () => {
     const lojaId = activeLojaId || currentProfile.loja_id;
     const nomeAtual = currentProfile.lojas?.nome || '';
     const cnpjAtual = currentProfile.lojas?.cnpj || '';
 
-    document.getElementById('edit-store-id').value = lojaId;
-    document.getElementById('edit-store-name').value = nomeAtual;
-    document.getElementById('edit-store-cnpj').value = cnpjAtual;
+    document.getElementById('store-manage-id').value = lojaId;
+    document.getElementById('store-manage-name').value = nomeAtual;
+    document.getElementById('store-manage-cnpj').value = cnpjAtual;
+    document.getElementById('modal-store-title').textContent = 'EDITAR UNIDADE ATUAL';
+    document.getElementById('btn-submit-store').textContent = 'Salvar Alterações';
 
-    document.getElementById('modal-edit-store')?.classList.add('active');
+    document.getElementById('modal-store-manage')?.classList.add('active');
   });
 
-  // Botão "Gerar Nova Loja" (Admin)
-  document.getElementById('btn-add-new-store')?.addEventListener('click', async () => {
-    const nomeLoja = prompt("Digite o nome da nova Unidade/Loja:");
-    if (!nomeLoja) return;
-
-    try {
-      const novaLoja = await authService.createStoreForUser({
-        nomeLoja,
-        cnpj: '',
-        usuarioId: currentProfile.id
-      });
-      alert(`Nova loja "${novaLoja.nome}" criada com sucesso!`);
-      await setupStoreSelector();
-    } catch (err) {
-      alert("Erro ao criar nova loja: " + err.message);
-    }
-  });
-
-  // Submit Editar Loja
-  const formEditStore = document.getElementById('form-edit-store');
-  if (formEditStore) {
-    formEditStore.addEventListener('submit', async (e) => {
+  // Submit Gestão de Loja (Criar ou Editar)
+  const formStoreManage = document.getElementById('form-store-manage');
+  if (formStoreManage) {
+    formStoreManage.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const storeId = document.getElementById('edit-store-id').value;
-      const nome = document.getElementById('edit-store-name').value;
-      const cnpj = document.getElementById('edit-store-cnpj').value;
+      const storeId = document.getElementById('store-manage-id').value;
+      const nome = document.getElementById('store-manage-name').value;
+      const cnpj = document.getElementById('store-manage-cnpj').value;
 
       try {
-        await authService.updateStore(storeId, { nome, cnpj });
-        alert('Dados da loja atualizados com sucesso!');
+        if (storeId) {
+          // Edição
+          await authService.updateStore(storeId, { nome, cnpj });
+          alert('Loja atualizada com sucesso!');
+        } else {
+          // Criação de nova loja
+          await authService.createStoreForUser({
+            nomeLoja: nome,
+            cnpj,
+            usuarioId: currentProfile.id
+          });
+          alert('Nova loja cadastrada com sucesso!');
+        }
+
         await closeAllModals();
         await setupStoreSelector();
       } catch (err) {
-        alert('Erro ao atualizar loja: ' + err.message);
+        alert('Erro ao salvar loja: ' + err.message);
       }
     });
   }
@@ -599,10 +606,20 @@ async function loadSectorData() {
 
 // Função Global para abrir Modal de Edição de Usuário
 window.openEditUserModal = function(id, nome, funcao) {
-  document.getElementById('edit-user-id').value = id;
-  document.getElementById('edit-user-name').value = nome;
-  document.getElementById('edit-user-role').value = funcao;
-  document.getElementById('modal-edit-user')?.classList.add('active');
+  const inputId = document.getElementById('edit-user-id');
+  const inputNome = document.getElementById('edit-user-name');
+  const inputFuncao = document.getElementById('edit-user-role');
+  const modal = document.getElementById('modal-edit-user');
+
+  if (inputId) inputId.value = id;
+  if (inputNome) inputNome.value = nome;
+  if (inputFuncao) inputFuncao.value = funcao;
+
+  if (modal) {
+    modal.classList.add('active');
+  } else {
+    console.error("Modal #modal-edit-user não encontrado no DOM.");
+  }
 };
 
 // Cards da Equipe
