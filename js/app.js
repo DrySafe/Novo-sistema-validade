@@ -1,5 +1,6 @@
 import { authService } from './authService.js';
 import { productService } from './productService.js';
+import { cycleService } from './cycleService.js';
 import { reportService } from './reportService.js';
 import { supabase } from './supabaseClient.js';
 
@@ -10,6 +11,7 @@ const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/20
 let currentProfile = null;
 let currentSector = 'validade';
 let currentData = [];
+let currentCycle = null;
 let userLojas = [];
 let activeLojaId = localStorage.getItem('active_loja_id') || null;
 
@@ -18,7 +20,7 @@ let loginScreen = null;
 let appScreen = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📌 DOM carregado. Inicializando ValidaSuper...');
+  console.log('📌 DOM carregado. Inicializando ValidaSuper com Esteira de Lotes...');
   
   loginScreen = document.getElementById('login-screen');
   appScreen = document.getElementById('app-screen');
@@ -28,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// VERIFICAÇÃO DE SESSÃO E CARREGAMENTO INICIAL
+// VERIFICAÇÃO DE SESSÃO E CARREGAMENTO DO CICLO
 // ============================================================
 async function checkSession() {
   console.log('🔍 Verificando sessão ativa...');
@@ -66,6 +68,11 @@ async function checkSession() {
       // Configura seletor de loja (múltiplas lojas)
       await setupStoreSelector();
 
+      // Carrega ou gera o Lote Ativo do Ciclo
+      const lojaAlvo = activeLojaId || currentProfile.loja_id;
+      currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
+      updateCycleTopbarDisplay();
+
       // Controle de visibilidade da aba Equipe
       const btnEquipe = document.getElementById('nav-item-equipe');
       if (btnEquipe) {
@@ -83,7 +90,7 @@ async function checkSession() {
       appScreen.classList.remove('hidden');
       document.getElementById('bottom-nav')?.classList.remove('hidden');
 
-      console.log('✅ Login realizado com sucesso!');
+      console.log('✅ Login e Ciclo carregados com sucesso!');
       loadSectorData();
     } else {
       showLoginScreen();
@@ -100,6 +107,19 @@ function showLoginScreen() {
   document.getElementById('bottom-nav')?.classList.add('hidden');
 }
 
+// Atualiza o Visor do Lote Atual no Topo do App
+function updateCycleTopbarDisplay() {
+  const elemStore = document.getElementById('display-store-name');
+  if (elemStore && currentCycle) {
+    elemStore.innerHTML = `
+      ${currentProfile.lojas?.nome || 'Loja'} 
+      <span style="font-size:0.8rem; background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:6px; margin-left:6px; font-family:var(--font-mono);">
+        LOTE: ${currentCycle.codigo_lote} (${currentCycle.status})
+      </span>
+    `;
+  }
+}
+
 // Configuração do Seletor Multiloja no Topbar
 async function setupStoreSelector() {
   const container = document.getElementById('store-selector-container');
@@ -108,7 +128,6 @@ async function setupStoreSelector() {
 
   const userRole = (currentProfile.funcao || '').toLowerCase();
 
-  // Operador não altera loja
   if (userRole === 'operador') {
     container.classList.add('hidden');
     activeLojaId = currentProfile.loja_id;
@@ -144,10 +163,13 @@ async function setupStoreSelector() {
 
     container.classList.remove('hidden');
 
-    select.onchange = (e) => {
+    select.onchange = async (e) => {
       activeLojaId = e.target.value;
       localStorage.setItem('active_loja_id', activeLojaId);
       console.log(`🏬 Loja alterada para: ${activeLojaId}`);
+
+      currentCycle = await cycleService.getOrCreateActiveCycle(activeLojaId);
+      updateCycleTopbarDisplay();
       loadSectorData();
     };
   } catch (err) {
@@ -203,7 +225,7 @@ function setupEvents() {
     });
   }
 
-  // 2. TELA DE LOGIN E CADASTRO DE USUÁRIO
+  // Alternar Login e Cadastro de Usuário
   const btnShowRegister = document.getElementById('btn-show-register');
   const btnShowLogin = document.getElementById('btn-show-login');
   const formLogin = document.getElementById('form-login');
@@ -283,7 +305,12 @@ function setupEvents() {
   document.getElementById('btn-open-modal')?.addEventListener('click', () => {
     const userRole = (currentProfile.funcao || '').toLowerCase();
 
-    // Bloqueia o perfil ADM de cadastrar produtos
+    // Bloqueia se o lote não estiver em edição ou se o perfil for ADM
+    if (currentCycle && currentCycle.status !== 'EM EDIÇÃO' && currentSector !== 'equipe') {
+      alert(`O Lote ${currentCycle.codigo_lote} está com status "${currentCycle.status}" e não permite novos cadastros.`);
+      return;
+    }
+
     if (userRole === 'adm' && currentSector !== 'equipe') {
       alert("Atenção: O perfil ADM não tem permissão para inserir novos produtos.");
       return;
@@ -394,26 +421,53 @@ function setupEvents() {
     });
   }
 
-  // Submit Lançamento de Produto
+  // Submit Lançamento de Produto com Trava Inteligente de Duplicidade
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
-    formEntry.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    formEntry.addEventListener('submit', async (e, forcar = false) => {
+      if (e) e.preventDefault();
+
+      const payload = {
+        lojaId: activeLojaId || currentProfile.loja_id,
+        usuarioId: currentProfile.id,
+        setor: currentSector,
+        ean: document.getElementById('entry-ean').value,
+        produtoNome: document.getElementById('entry-product-name').value,
+        precoAtual: parseFloat(document.getElementById('entry-price')?.value || 0),
+        imagemUrl: document.getElementById('entry-image-url').value,
+        lote: document.getElementById('entry-batch').value,
+        quantidade: parseInt(document.getElementById('entry-qty').value),
+        dataVencimento: document.getElementById('entry-expiration').value,
+        localizacao: document.getElementById('entry-location').value,
+        motivo: document.getElementById('entry-reason')?.value || '',
+        forcarInsercao: forcar
+      };
+
       try {
-        await productService.createEntry({
-          lojaId: activeLojaId || currentProfile.loja_id,
-          usuarioId: currentProfile.id,
-          setor: currentSector,
-          ean: document.getElementById('entry-ean').value,
-          produtoNome: document.getElementById('entry-product-name').value,
-          precoAtual: parseFloat(document.getElementById('entry-price')?.value || 0),
-          imagemUrl: document.getElementById('entry-image-url').value,
-          lote: document.getElementById('entry-batch').value,
-          quantidade: parseInt(document.getElementById('entry-qty').value),
-          dataVencimento: document.getElementById('entry-expiration').value,
-          localizacao: document.getElementById('entry-location').value,
-          motivo: document.getElementById('entry-reason')?.value || ''
-        });
+        const result = await productService.createEntry(payload);
+
+        // SE DETECTAR DUPLICIDADE, EXIBE ALERTA INFORMATIVO E OPÇÃO DE FORÇAR
+        if (result.isDuplicado) {
+          const dup = result.registroExistente;
+          const dataHora = new Date(dup.created_at).toLocaleString('pt-BR');
+          const quemCadastrou = dup.perfis?.nome || 'Outro Operador';
+
+          const confirmar = confirm(
+            `⚠️ ATENÇÃO: PRODUTO JÁ CADASTRADO NESTE LOTE!\n\n` +
+            `• Cadastrado por: ${quemCadastrou}\n` +
+            `• Local: ${dup.localizacao}\n` +
+            `• Data/Hora: ${dataHora}\n` +
+            `• Lote: ${dup.lote} | Qtd: ${dup.quantidade} un\n\n` +
+            `Deseja adicionar esse produto novamente mesmo assim?`
+          );
+
+          if (confirmar) {
+            payload.forcarInsercao = true;
+            await productService.createEntry(payload);
+          } else {
+            return;
+          }
+        }
 
         await closeAllModals();
         formEntry.reset();
@@ -480,7 +534,7 @@ function renderEquipeCards(members, container) {
   `).join('');
 }
 
-// Cards da Régua de Validade e Vencidos (ÚNICA DECLARAÇÃO DA FUNÇÃO)
+// Cards da Régua de Validade e Vencidos
 function renderValidadeCards(data, container) {
   if (!data || data.length === 0) {
     container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';
@@ -521,7 +575,6 @@ function renderValidadeCards(data, container) {
     </div>
   `).join('');
 
-  // Adiciona evento blur / Enter para o input de preço de custo
   if (podeEditarCusto) {
     container.querySelectorAll('.input-inline-cost').forEach(input => {
       const salvarCusto = async () => {
