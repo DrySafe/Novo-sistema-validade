@@ -958,6 +958,7 @@ function renderPerdasCards(data, container) {
   `).join('');
 }
 
+// Retorna a classe CSS correspondente para a badge da régua
 function getBadgeClass(status) {
   if (!status) return 'badge-60';
   if (status.includes('Crítico')) return 'badge-7';
