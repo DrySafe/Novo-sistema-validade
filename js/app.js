@@ -46,17 +46,17 @@ async function checkSession() {
     currentProfile = await authService.getCurrentProfile();
     console.log('👤 Perfil retornado do banco:', currentProfile);
 
-   // SE O USUÁRIO AINDA NÃO TEM LOJA VINCULADA (Novo Onboarding Fluido)
+    if (currentProfile) {
+      // SE O USUÁRIO AINDA NÃO TEM LOJA VINCULADA (Onboarding Fluido)
       if (!currentProfile.loja_id && !currentProfile.lojas) {
-        // Exibe o modal elegante de onboarding
         const modalOnboarding = document.getElementById('modal-onboarding');
         if (modalOnboarding) {
           modalOnboarding.classList.add('active');
         }
-        return; // Aguarda a submissão do formulário do modal
+        return; // Interrompe o carregamento até o formulário de onboarding ser enviado
       }
 
-      // Atualiza cabeçalho e informações do usuário na tela
+      // Atualiza os seletores e visores da tela
       const elemUser = document.getElementById('display-user-name');
       const elemStore = document.getElementById('display-store-name');
 
@@ -74,30 +74,28 @@ async function checkSession() {
         initialsElem.textContent = iniciais;
       }
 
-      // Configura seletor de lojas e lote ativo
+      // Configura o seletor de loja e o ciclo ativo
       await setupStoreSelector();
 
       const lojaAlvo = activeLojaId || currentProfile.loja_id;
       currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
       updateCycleTopbarDisplay();
 
-      // Controle de visibilidade com base no cargo/perfil
+      // Controle de visibilidade de abas e botões administrativos
       const userRole = (currentProfile.funcao || '').toLowerCase();
       const isAdmin = ['administrador', 'admin'].includes(userRole);
 
-      // Exibição do botão da aba Equipe
       const btnEquipe = document.getElementById('nav-item-equipe');
       if (btnEquipe) {
         btnEquipe.classList.toggle('hidden', !['administrador', 'admin', 'gestor', 'gerente'].includes(userRole));
       }
 
-      // Exibição dos botões de Gestão de Loja no Header
       const btnAddStore = document.getElementById('btn-add-new-store');
       const btnEditStore = document.getElementById('btn-open-edit-store');
       if (btnAddStore) btnAddStore.classList.toggle('hidden', !isAdmin);
       if (btnEditStore) btnEditStore.classList.toggle('hidden', !isAdmin);
 
-      // Exibe tela principal e oculta login
+      // Exibe a interface do aplicativo
       if (loginScreen) loginScreen.classList.add('hidden');
       if (appScreen) appScreen.classList.remove('hidden');
       document.getElementById('bottom-nav')?.classList.remove('hidden');
@@ -113,25 +111,12 @@ async function checkSession() {
   }
 }
 
-// Exibe a tela de login e oculta elementos protegidos da interface
+// Exibe a tela de login e oculta elementos protegidos
 function showLoginScreen() {
   if (loginScreen) loginScreen.classList.remove('hidden');
   if (appScreen) appScreen.classList.add('hidden');
   document.getElementById('bottom-nav')?.classList.add('hidden');
   document.getElementById('store-selector-container')?.classList.add('hidden');
-}
-
-// Atualiza o Visor do Lote Atual no Topo do App
-function updateCycleTopbarDisplay() {
-  const elemStore = document.getElementById('display-store-name');
-  if (elemStore && currentCycle) {
-    elemStore.innerHTML = `
-      ${currentProfile.lojas?.nome || 'Loja'} 
-      <span style="font-size:0.8rem; background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:6px; margin-left:6px; font-family:var(--font-mono);">
-        LOTE: ${currentCycle.codigo_lote} (${currentCycle.status})
-      </span>
-    `;
-  }
 }
 
 /* ============================================================
