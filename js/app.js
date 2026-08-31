@@ -46,24 +46,14 @@ async function checkSession() {
     currentProfile = await authService.getCurrentProfile();
     console.log('👤 Perfil retornado do banco:', currentProfile);
 
-    if (currentProfile) {
-      // Caso 1: Novo usuário sem loja cadastrada no Onboarding
+   // SE O USUÁRIO AINDA NÃO TEM LOJA VINCULADA (Novo Onboarding Fluido)
       if (!currentProfile.loja_id && !currentProfile.lojas) {
-        const nomeLoja = prompt(`Olá ${currentProfile.nome}! Para começar, digite o nome do seu Supermercado/Loja:`);
-        if (nomeLoja) {
-          const novaLoja = await authService.createStoreForUser({
-            nomeLoja,
-            cnpj: '',
-            usuarioId: currentProfile.id
-          });
-          currentProfile.loja_id = novaLoja.id;
-          currentProfile.lojas = novaLoja;
-        } else {
-          alert("Você precisa cadastrar uma loja para utilizar o ValidaSuper.");
-          await authService.logout();
-          showLoginScreen();
-          return;
+        // Exibe o modal elegante de onboarding
+        const modalOnboarding = document.getElementById('modal-onboarding');
+        if (modalOnboarding) {
+          modalOnboarding.classList.add('active');
         }
+        return; // Aguarda a submissão do formulário do modal
       }
 
       // Atualiza cabeçalho e informações do usuário na tela
@@ -709,6 +699,42 @@ function setupEvents() {
         await checkSession();
       } catch (err) {
         alert('Erro ao criar nova loja: ' + err.message);
+      }
+    });
+  }
+  // Submit: Formulário de Onboarding da Primeira Loja
+  const formOnboarding = document.getElementById('form-onboarding-store');
+  if (formOnboarding) {
+    formOnboarding.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const payloadLoja = {
+        nomeLoja: document.getElementById('ob-store-name').value,
+        razaoSocial: document.getElementById('ob-razao-social').value,
+        cnpj: document.getElementById('ob-store-cnpj').value,
+        ie: document.getElementById('ob-store-ie').value,
+        logradouro: document.getElementById('ob-logradouro').value,
+        numero: document.getElementById('ob-numero').value,
+        bairro: document.getElementById('ob-bairro').value,
+        cidade: document.getElementById('ob-cidade').value,
+        uf: document.getElementById('ob-uf').value.toUpperCase(),
+        cep: document.getElementById('ob-cep').value,
+        telefone: document.getElementById('ob-telefone').value,
+        usuarioId: currentProfile.id
+      };
+
+      try {
+        const novaLoja = await authService.createStoreForUser(payloadLoja);
+        currentProfile.loja_id = novaLoja.id;
+        currentProfile.lojas = novaLoja;
+
+        window.closeAllModals();
+        formOnboarding.reset();
+
+        // Recarrega a sessão e inicializa a aplicação
+        await checkSession();
+      } catch (err) {
+        alert('Erro ao cadastrar loja: ' + err.message);
       }
     });
   }
