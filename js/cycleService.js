@@ -22,14 +22,17 @@ export const cycleService = {
 
     if (errGerar) throw new Error("Erro ao gerar novo código de lote: " + errGerar.message);
 
-    // Retorna os dados do lote recém-criado
+    // Retorna os dados do lote recém-criado de forma segura
     const { data: loteCriado, error: errBusca } = await supabase
       .from('ciclos_lotes')
       .select('*')
       .eq('id', novoLote[0].novo_id)
-      .single();
+      .maybeSingle();
 
     if (errBusca) throw errBusca;
+    if (!loteCriado) {
+      throw new Error("Não foi possível carregar o lote criado. Verifique as permissões da loja.");
+    }
 
     // Registra evento na auditoria
     await this.registrarAuditoria({
