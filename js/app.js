@@ -123,6 +123,8 @@ function showLoginScreen() {
   if (loginScreen) loginScreen.classList.remove('hidden');
   if (appScreen) appScreen.classList.add('hidden');
   document.getElementById('bottom-nav')?.classList.add('hidden');
+  // Garante que o seletor de lojas no topo fique OCULTO na tela de login
+  document.getElementById('store-selector-container')?.classList.add('hidden');
 }
 
 // Atualiza o Visor do Lote Atual no Topo do App
@@ -270,6 +272,27 @@ window.openUserProfileModal = function() {
 // LISTENERS E MANIPULAÇÃO DE EVENTOS
 // ============================================================
 function setupEvents() {
+
+  // Evento do Botão Deletar Colaborador (Modal de Edição)
+  document.getElementById('btn-delete-user')?.addEventListener('click', async () => {
+    const userId = document.getElementById('edit-user-id').value;
+    const userName = document.getElementById('edit-user-name').value;
+
+    if (!userId) return;
+
+    const confirmar = confirm(`⚠️ Tem certeza que deseja excluir o colaborador "${userName}"?\nEsta ação não poderá ser desfeita.`);
+    
+    if (confirmar) {
+      try {
+        await authService.deleteEmployee(userId);
+        alert('Colaborador removido com sucesso!');
+        window.closeAllModals();
+        loadSectorData();
+      } catch (err) {
+        alert('Erro ao excluir colaborador: ' + err.message);
+      }
+    }
+  });
 
   // Exportação Excel e PDF
   document.getElementById('btn-export-excel')?.addEventListener('click', () => {

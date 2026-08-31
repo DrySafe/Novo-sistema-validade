@@ -150,5 +150,16 @@ export const authService = {
 
     if (error) throw new Error("Erro ao atualizar perfil: " + error.message);
     return data;
+  },
+  
+  // 10. DELETAR COLABORADOR / USUÁRIO (ADMIN)
+  async deleteEmployee(usuarioId) {
+    const { error } = await supabase
+      .from('perfis')
+      .delete()
+      .eq('id', usuarioId);
+
+    if (error) throw new Error("Erro ao excluir usuário: " + error.message);
+    return true;
   }
 };
