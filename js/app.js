@@ -155,11 +155,8 @@ async function setupStoreSelector() {
 
   try {
     let query;
-    if (userRole === 'administrador') {
-      query = supabase.from('lojas').select('id, nome');
-    } else {
-      query = supabase.from('usuario_lojas').select('lojas(id, nome)').eq('usuario_id', currentProfile.id);
-    }
+    // Restringe para que administradores vejam apenas as lojas vinculadas a eles na tabela associativa
+    query = supabase.from('usuario_lojas').select('lojas(id, nome)').eq('usuario_id', currentProfile.id);
 
     const { data, error } = await query;
     if (error || !data || data.length === 0) {
