@@ -1,20 +1,25 @@
 import { supabase } from './supabaseClient.js';
 
 export const authService = {
-  // 1. Login padrão
+
+  /* ============================================================
+     SEÇÃO 1: AUTENTICAÇÃO E SESSÃO (SUPABASE AUTH)
+     ============================================================ */
+
+  // 1.1 Login Padrão por E-mail e Senha
   async login(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   },
 
-  // 2. Logout
+  // 1.2 Encerra a Sessão do Usuário
   async logout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   },
 
-  // 3. Retorna perfil do usuário logado + dados da loja principal
+  // 1.3 Obtém o Perfil Completo do Usuário Logado e Dados da Loja Principal
   async getCurrentProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -41,7 +46,7 @@ export const authService = {
     return data;
   },
 
-  // 4. CRIAR APENAS CONTA DE USUÁRIO
+  // 1.4 Cadastro de Nova Conta de Usuário (Self-Register)
   async registerUser({ nome, email, password }) {
     const { data: authData, error: errorAuth } = await supabase.auth.signUp({
       email,
@@ -54,13 +59,16 @@ export const authService = {
     if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
 
     await this.login(email, password);
-
     return authData;
   },
 
-  // 5. CADASTRAR UMA LOJA PARA O USUÁRIO LOGADO (PÓS-LOGIN)
+  /* ============================================================
+     SEÇÃO 2: GESTÃO E VÍNCULO DE UNIDADES / LOJAS
+     ============================================================ */
+
+  // 2.1 Cadastra Nova Loja para o Usuário Logado e Registra Tabela Associativa
   async createStoreForUser({ nomeLoja, cnpj, usuarioId }) {
-    // 1. Insere a nova loja
+    // Insere a nova unidade comercial
     const { data: loja, error: errorLoja } = await supabase
       .from('lojas')
       .insert({ nome: nomeLoja, cnpj })
@@ -69,14 +77,14 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
 
-    // 2. Atualiza o perfil caso ele ainda não tenha nenhuma loja associada
+    // Vincula a loja no perfil principal caso ainda esteja nulo
     await supabase
       .from('perfis')
       .update({ loja_id: loja.id })
       .eq('id', usuarioId)
       .is('loja_id', null);
 
-    // 3. Garante o vínculo na tabela associativa (Evita duplicados usando upsert)
+    // Garante o vínculo do usuário com a nova loja na tabela associativa
     const { error: errorVinculo } = await supabase
       .from('usuario_lojas')
       .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
@@ -86,7 +94,23 @@ export const authService = {
     return loja;
   },
 
-  // 6. LISTAR COLABORADORES DA LOJA ATIVA
+  // 2.2 Atualiza Dados de Uma Loja Existente (Admin)
+  async updateStore(lojaId, { nome, cnpj }) {
+    const { data, error } = await supabase
+      .from('lojas')
+      .update({ nome, cnpj })
+      .eq('id', lojaId)
+      .select();
+
+    if (error) throw new Error("Erro ao atualizar loja: " + error.message);
+    return data;
+  },
+
+  /* ============================================================
+     SEÇÃO 3: GESTÃO DE MEMBROS E COLABORADORES DA EQUIPE
+     ============================================================ */
+
+  // 3.1 Lista Todos os Colaboradores Vinculados a uma Loja Específica
   async getTeamMembers(lojaId) {
     const { data, error } = await supabase
       .from('perfis')
@@ -98,9 +122,9 @@ export const authService = {
     return data;
   },
 
-  // 7. CADASTRAR NOVO FUNCIONÁRIO COM ACESSO DE LOGIN
+  // 3.2 Cadastra Novo Colaborador Gerando Credenciais no Auth
   async addEmployee({ lojaId, nome, funcao, email, password, avatarUrl }) {
-    // 1. Cria a conta oficial de autenticação (Gera o usuário no Supabase Auth)
+    // Registra a conta no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password
@@ -111,7 +135,7 @@ export const authService = {
     const userId = authData.user?.id;
     if (!userId) throw new Error("Ocorreu um erro inesperado ao gerar a conta de acesso.");
 
-    // 2. Insere/Atualiza os dados na tabela 'perfis' com o ID real da conta criada
+    // Vincula a ficha técnica na tabela perfis
     const { data, error } = await supabase
       .from('perfis')
       .upsert({
@@ -128,19 +152,11 @@ export const authService = {
     return data;
   },
 
-  // 8. GESTÃO DE LOJAS (ADMIN)
-  async updateStore(lojaId, { nome, cnpj }) {
-    const { data, error } = await supabase
-      .from('lojas')
-      .update({ nome, cnpj })
-      .eq('id', lojaId)
-      .select();
+  /* ============================================================
+     SEÇÃO 4: ADMINISTRAÇÃO E MANUTENÇÃO DE PERFIS
+     ============================================================ */
 
-    if (error) throw new Error("Erro ao atualizar loja: " + error.message);
-    return data;
-  },
-
-  // 9. EDITAR USUÁRIO / PERFIL (ADMIN)
+  // 4.1 Atualiza Nome, Cargo ou Loja do Perfil de um Usuário
   async updateUserProfile(usuarioId, { nome, funcao, lojaId }) {
     const { data, error } = await supabase
       .from('perfis')
@@ -155,8 +171,8 @@ export const authService = {
     if (error) throw new Error("Erro ao atualizar perfil: " + error.message);
     return data;
   },
-  
-  // 10. DELETAR COLABORADOR / USUÁRIO (ADMIN)
+
+  // 4.2 Exclui o Registro do Colaborador do Banco de Dados
   async deleteEmployee(usuarioId) {
     const { error } = await supabase
       .from('perfis')
@@ -166,4 +182,5 @@ export const authService = {
     if (error) throw new Error("Erro ao excluir usuário: " + error.message);
     return true;
   }
+
 };

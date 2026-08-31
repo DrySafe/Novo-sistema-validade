@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- Permissão CSP para liberar JS das bibliotecas de relatório sem erro de eval -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';">
   <title>ValidaSuper - Prevenção de Perdas</title>
 
   <!-- Tipografia Industrial Fluida -->
@@ -258,14 +260,9 @@
           <label for="emp-email">E-mail de Acesso</label>
           <input type="email" id="emp-email" required placeholder="colaborador@loja.com">
         </div>
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="emp-email" style="display:block; margin-bottom:0.25rem;">E-mail de Acesso</label>
-          <input type="email" id="emp-email" required placeholder="colaborador@loja.com" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
-        </div>
-        <!-- NOVO CAMPO DE SENHA -->
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="emp-password" style="display:block; margin-bottom:0.25rem;">Senha Provisória</label>
-          <input type="password" id="emp-password" required placeholder="Mínimo 6 caracteres" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border);">
+        <div class="form-group">
+          <label for="emp-password">Senha Provisória</label>
+          <input type="password" id="emp-password" required placeholder="Mínimo 6 caracteres">
         </div>
         <div class="form-group">
           <label for="emp-avatar">URL da Foto (Opcional)</label>
@@ -300,7 +297,6 @@
           </select>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Alterações</button>
-        <!-- BOTÃO DE DELETAR USUÁRIO -->
         <button type="button" id="btn-delete-user" class="btn btn-secondary" style="margin-top: 0.5rem; background: #ef4444; color: #fff; border: none;">🗑️ Excluir Colaborador</button>
       </form>
     </div>

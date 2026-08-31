@@ -4,10 +4,14 @@ import { cycleService } from './cycleService.js';
 import { reportService } from './reportService.js';
 import { supabase } from './supabaseClient.js';
 
+/* ============================================================
+   SEÇÃO 1: CONFIGURAÇÕES, CONSTANTES E ESTADOS GLOBAIS
+   ============================================================ */
+
 // Avatar SVG de reserva quando o produto/usuário não tem foto
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='%239ca3af'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
 
-// Variáveis de Estado Globais
+// Variáveis de Estado Globais da Aplicação
 let currentProfile = null;
 let currentSector = 'validade';
 let currentData = [];
@@ -15,12 +19,13 @@ let currentCycle = null;
 let userLojas = [];
 let activeLojaId = localStorage.getItem('active_loja_id') || null;
 
-// Elementos Globais da Interface
+// Elementos Globais das Telas
 let loginScreen = null;
 let appScreen = null;
 
+// Evento Principal de Inicialização do DOM
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📌 DOM carregado. Inicializando ValidaSuper com Esteira de Lotes...');
+  console.log('📌 DOM carregado. Inicializando ValidaSuper...');
   
   loginScreen = document.getElementById('login-screen');
   appScreen = document.getElementById('app-screen');
@@ -29,9 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSession();
 });
 
-// ============================================================
-// VERIFICAÇÃO DE SESSÃO E CARREGAMENTO DO CICLO
-// ============================================================
+/* ============================================================
+   SEÇÃO 2: GERENCIAMENTO DE SESSÃO E CARREGAMENTO DE CICLOS
+   ============================================================ */
+
+// Verifica se existe sessão ativa de usuário e carrega o perfil do banco
 async function checkSession() {
   console.log('🔍 Verificando sessão ativa...');
 
@@ -40,7 +47,7 @@ async function checkSession() {
     console.log('👤 Perfil retornado do banco:', currentProfile);
 
     if (currentProfile) {
-      // SE O USUÁRIO AINDA NÃO TEM LOJA VINCULADA (Novo Onboarding)
+      // Caso 1: Novo usuário sem loja cadastrada no Onboarding
       if (!currentProfile.loja_id && !currentProfile.lojas) {
         const nomeLoja = prompt(`Olá ${currentProfile.nome}! Para começar, digite o nome do seu Supermercado/Loja:`);
         if (nomeLoja) {
@@ -59,6 +66,7 @@ async function checkSession() {
         }
       }
 
+      // Atualiza cabeçalho e informações do usuário na tela
       const elemUser = document.getElementById('display-user-name');
       const elemStore = document.getElementById('display-store-name');
 
@@ -76,36 +84,32 @@ async function checkSession() {
         initialsElem.textContent = iniciais;
       }
 
-      // Configura seletor de loja (múltiplas lojas)
+      // Configura seletor de lojas e lote ativo
       await setupStoreSelector();
 
-      // Carrega ou gera o Lote Ativo do Ciclo
       const lojaAlvo = activeLojaId || currentProfile.loja_id;
       currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
       updateCycleTopbarDisplay();
 
-      // Controle de visibilidade das funções de Administrador
+      // Controle de visibilidade com base no cargo/perfil
       const userRole = (currentProfile.funcao || '').toLowerCase();
       const isAdmin = ['administrador', 'admin'].includes(userRole);
 
-      // Botão da aba Equipe
+      // Exibição do botão da aba Equipe
       const btnEquipe = document.getElementById('nav-item-equipe');
       if (btnEquipe) {
-        if (['administrador', 'admin', 'gestor', 'gerente'].includes(userRole)) {
-          btnEquipe.classList.remove('hidden');
-        } else {
-          btnEquipe.classList.add('hidden');
-        }
+        btnEquipe.classList.toggle('hidden', !['administrador', 'admin', 'gestor', 'gerente'].includes(userRole));
       }
 
-      // Botões de Loja no Header (Admin apenas)
+      // Exibição dos botões de Gestão de Loja no Header
       const btnAddStore = document.getElementById('btn-add-new-store');
       const btnEditStore = document.getElementById('btn-open-edit-store');
       if (btnAddStore) btnAddStore.classList.toggle('hidden', !isAdmin);
       if (btnEditStore) btnEditStore.classList.toggle('hidden', !isAdmin);
 
-      loginScreen.classList.add('hidden');
-      appScreen.classList.remove('hidden');
+      // Exibe tela principal e oculta login
+      if (loginScreen) loginScreen.classList.add('hidden');
+      if (appScreen) appScreen.classList.remove('hidden');
       document.getElementById('bottom-nav')?.classList.remove('hidden');
 
       console.log('✅ Login e Ciclo carregados com sucesso!');
@@ -119,11 +123,11 @@ async function checkSession() {
   }
 }
 
+// Exibe a tela de login e oculta elementos protegidos da interface
 function showLoginScreen() {
   if (loginScreen) loginScreen.classList.remove('hidden');
   if (appScreen) appScreen.classList.add('hidden');
   document.getElementById('bottom-nav')?.classList.add('hidden');
-  // Garante que o seletor de lojas no topo fique OCULTO na tela de login
   document.getElementById('store-selector-container')?.classList.add('hidden');
 }
 
@@ -140,14 +144,17 @@ function updateCycleTopbarDisplay() {
   }
 }
 
-// Configuração do Seletor Multiloja no Topbar
+/* ============================================================
+   SEÇÃO 3: SELETOR DE LOJAS MULTI-UNIDADE
+   ============================================================ */
+
+// Configura o Seletor de Loja no Cabeçalho (Exibe apenas se tiver 2+ lojas)
 async function setupStoreSelector() {
   const container = document.getElementById('store-selector-container');
   const select = document.getElementById('select-active-store');
   if (!container || !select) return;
 
   try {
-    // 1. Busca todas as lojas vinculadas na tabela associativa
     const { data: vinculos, error } = await supabase
       .from('usuario_lojas')
       .select('lojas(id, nome)')
@@ -157,7 +164,7 @@ async function setupStoreSelector() {
 
     userLojas = (vinculos || []).map(d => d.lojas).filter(Boolean);
 
-    // 2. Se a loja principal do perfil não estiver na lista de vínculos, adiciona manualmente
+    // Se a loja principal do perfil não estiver nos vínculos, inclui manualmente
     if (currentProfile.loja_id && currentProfile.lojas) {
       const temPrincipal = userLojas.some(l => l.id === currentProfile.loja_id);
       if (!temPrincipal) {
@@ -165,11 +172,10 @@ async function setupStoreSelector() {
       }
     }
 
-    // 3. REGRA DE EXIBIÇÃO: Se tiver 2 ou mais lojas, exibe o seletor no topo!
+    // REGRA: Se houver 2 ou mais lojas, exibe o seletor no cabeçalho
     if (userLojas.length > 1) {
       select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
 
-      // Garante que a loja ativa esteja selecionada no dropdown
       if (activeLojaId && userLojas.some(l => l.id === activeLojaId)) {
         select.value = activeLojaId;
       } else {
@@ -190,7 +196,6 @@ async function setupStoreSelector() {
         loadSectorData();
       };
     } else {
-      // Se houver apenas 1 loja, oculta o seletor do cabeçalho
       container.classList.add('hidden');
       if (userLojas.length === 1) {
         activeLojaId = userLojas[0].id;
@@ -202,14 +207,16 @@ async function setupStoreSelector() {
   }
 }
 
-// Função Global Imutável para Fechar TODOS os Modais Instantaneamente
+/* ============================================================
+   SEÇÃO 4: HANDLERS E CONTROLE DE MODAIS (GLOBAIS)
+   ============================================================ */
+
+// Fecha todos os modais da tela de forma síncrona
 window.closeAllModals = function() {
-  // 1. Remove a classe .active de todos os modais sem travar a interface
   document.querySelectorAll('.modal').forEach(m => {
     m.classList.remove('active');
   });
 
-  // 2. Tenta desligar o scanner de forma segura em background
   const cameraContainer = document.getElementById('camera-container');
   if (cameraContainer) cameraContainer.classList.add('hidden');
 
@@ -217,12 +224,12 @@ window.closeAllModals = function() {
     try {
       window.pararScanner();
     } catch (e) {
-      // Ignora silenciosamente erros do scanner
+      // Ignora silenciosamente
     }
   }
 };
 
-// Handler Global para Abrir Modal de Edição de Colaborador na Aba Equipe
+// Handler para Abrir Modal de Edição de Colaborador na Aba Equipe
 window.openEditUserModal = function(id, nome, funcao) {
   window.closeAllModals();
 
@@ -244,7 +251,7 @@ window.openEditUserModal = function(id, nome, funcao) {
   }, 30);
 };
 
-// Handler Global para Abrir Perfil de Usuário (Avatar Badge)
+// Handler para Abrir Modal de Perfil e Gestão de Lojas (Avatar Badge)
 window.openUserProfileModal = function() {
   window.closeAllModals();
 
@@ -276,9 +283,10 @@ window.openUserProfileModal = function() {
   }, 30);
 };
 
-// ============================================================
-// LISTENERS E MANIPULAÇÃO DE EVENTOS
-// ============================================================
+/* ============================================================
+   SEÇÃO 5: REGISTRO DE EVENTOS E FORMULÁRIOS
+   ============================================================ */
+
 function setupEvents() {
 
   // Evento do Botão Deletar Colaborador (Modal de Edição)
@@ -302,7 +310,7 @@ function setupEvents() {
     }
   });
 
-  // Exportação Excel e PDF
+  // Exportação para Excel e PDF
   document.getElementById('btn-export-excel')?.addEventListener('click', () => {
     reportService.exportToExcel(currentData, currentSector, currentProfile);
   });
@@ -311,7 +319,7 @@ function setupEvents() {
     reportService.exportToPDF(currentData, currentSector, currentProfile);
   });
   
-  // Tema Claro / Escuro
+  // Alternância de Tema Claro / Escuro
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark');
@@ -327,7 +335,7 @@ function setupEvents() {
     });
   }
 
-  // Alternar Login e Cadastro de Usuário
+  // Alternar Telas de Login e Cadastro de Usuário
   const btnShowRegister = document.getElementById('btn-show-register');
   const btnShowLogin = document.getElementById('btn-show-login');
   const formLogin = document.getElementById('form-login');
@@ -345,7 +353,7 @@ function setupEvents() {
     });
   }
 
-  // Submit Cadastro de Novo Usuário
+  // Submit: Cadastro de Novo Usuário
   if (formRegisterUser) {
     formRegisterUser.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -364,7 +372,7 @@ function setupEvents() {
     });
   }
 
-  // Submit Login Padrão
+  // Submit: Login Padrão
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -380,14 +388,14 @@ function setupEvents() {
     });
   }
 
-  // Logout
+  // Evento de Logout
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
     await authService.logout();
     localStorage.removeItem('active_loja_id');
     location.reload();
   });
 
-  // Troca de Abas (Bottom Nav)
+  // Navegação pelas Abas da Barra Inferior (Bottom Nav)
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
@@ -403,11 +411,10 @@ function setupEvents() {
     });
   });
 
-  // Botão Abrir Modal (+ Cadastrar)
+  // Botão "+ Cadastrar" (Abre modal dependendo da aba ativa)
   document.getElementById('btn-open-modal')?.addEventListener('click', () => {
     const userRole = (currentProfile.funcao || '').toLowerCase();
 
-    // Bloqueia se o lote não estiver em edição ou se o perfil for ADM
     if (currentCycle && currentCycle.status !== 'EM EDIÇÃO' && currentSector !== 'equipe') {
       alert(`O Lote ${currentCycle.codigo_lote} está com status "${currentCycle.status}" e não permite novos cadastros.`);
       return;
@@ -439,11 +446,10 @@ function setupEvents() {
   });
 
   // Botões de fechar modais
-  document.getElementById('btn-close-modal')?.addEventListener('click', closeAllModals);
-  document.getElementById('btn-close-modal-emp')?.addEventListener('click', closeAllModals);
+  document.getElementById('btn-close-modal')?.addEventListener('click', window.closeAllModals);
+  document.getElementById('btn-close-modal-emp')?.addEventListener('click', window.closeAllModals);
 
-  // Submit Cadastrar Colaborador
-  // Submit Cadastrar Colaborador
+  // Submit: Cadastrar Novo Colaborador (Equipe)
   const formEmployee = document.getElementById('form-employee');
   if (formEmployee) {
     formEmployee.addEventListener('submit', async (e) => {
@@ -454,12 +460,12 @@ function setupEvents() {
           nome: document.getElementById('emp-name').value,
           funcao: document.getElementById('emp-role').value,
           email: document.getElementById('emp-email').value,
-          password: document.getElementById('emp-password').value, // Envia a senha
+          password: document.getElementById('emp-password').value,
           avatarUrl: document.getElementById('emp-avatar').value
         });
 
-        alert('Colaborador cadastrado e conta de login criada com sucesso!');
-        await window.closeAllModals();
+        alert('Colaborador cadastrado e conta criada com sucesso!');
+        window.closeAllModals();
         formEmployee.reset();
         loadSectorData();
       } catch (err) {
@@ -468,7 +474,7 @@ function setupEvents() {
     });
   }
 
-  // Consulta de EAN externa
+  // Consulta Externa de EAN (Open Food Facts)
   const entryEanInput = document.getElementById('entry-ean');
   if (entryEanInput) {
     entryEanInput.addEventListener('blur', async () => {
@@ -496,7 +502,7 @@ function setupEvents() {
     });
   }
 
-  // Câmera Scanner
+  // Controle de Câmera e Scanner de Código de Barras
   const btnToggleCamera = document.getElementById('btn-toggle-camera');
   const cameraContainer = document.getElementById('camera-container');
 
@@ -525,7 +531,7 @@ function setupEvents() {
     });
   }
 
-  // Submit Lançamento de Produto com Trava Inteligente de Duplicidade
+  // Submit: Lançamento de Produto com Validação de Duplicidade
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
     formEntry.addEventListener('submit', async (e) => {
@@ -550,7 +556,6 @@ function setupEvents() {
       try {
         let result = await productService.createEntry(payload);
 
-        // SE DETECTAR DUPLICIDADE, EXIBE ALERTA INFORMATIVO E OPÇÃO DE FORÇAR
         if (result.isDuplicado) {
           const dup = result.registroExistente;
           const dataHora = new Date(dup.created_at).toLocaleString('pt-BR');
@@ -573,7 +578,7 @@ function setupEvents() {
           }
         }
 
-        await closeAllModals();
+        window.closeAllModals();
         formEntry.reset();
         const previewBox = document.getElementById('product-preview-box');
         if (previewBox) previewBox.classList.add('hidden');
@@ -585,69 +590,11 @@ function setupEvents() {
     });
   }
   
-  // Fechar Modais Admin
-  document.getElementById('btn-close-modal-store')?.addEventListener('click', closeAllModals);
-  document.getElementById('btn-close-modal-edit-user')?.addEventListener('click', closeAllModals);
+  // Botões de fechar dos modais administrativos
+  document.getElementById('btn-close-modal-store')?.addEventListener('click', window.closeAllModals);
+  document.getElementById('btn-close-modal-edit-user')?.addEventListener('click', window.closeAllModals);
 
-  // Botão "➕ Criar Nova Loja" (Admin)
-  document.getElementById('btn-add-new-store')?.addEventListener('click', () => {
-    document.getElementById('store-manage-id').value = '';
-    document.getElementById('store-manage-name').value = '';
-    document.getElementById('store-manage-cnpj').value = '';
-    document.getElementById('modal-store-title').textContent = 'CADASTRAR NOVA UNIDADE';
-    document.getElementById('btn-submit-store').textContent = 'Criar Unidade';
-
-    document.getElementById('modal-store-manage')?.classList.add('active');
-  });
-
-  // Botão "✏️ Editar Loja Atual" (Admin)
-  document.getElementById('btn-open-edit-store')?.addEventListener('click', () => {
-    const lojaId = activeLojaId || currentProfile.loja_id;
-    const nomeAtual = currentProfile.lojas?.nome || '';
-    const cnpjAtual = currentProfile.lojas?.cnpj || '';
-
-    document.getElementById('store-manage-id').value = lojaId;
-    document.getElementById('store-manage-name').value = nomeAtual;
-    document.getElementById('store-manage-cnpj').value = cnpjAtual;
-    document.getElementById('modal-store-title').textContent = 'EDITAR UNIDADE ATUAL';
-    document.getElementById('btn-submit-store').textContent = 'Salvar Alterações';
-
-    document.getElementById('modal-store-manage')?.classList.add('active');
-  });
-
-  // Submit Gestão de Loja (Criar ou Editar)
-  const formStoreManage = document.getElementById('form-store-manage');
-  if (formStoreManage) {
-    formStoreManage.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const storeId = document.getElementById('store-manage-id').value;
-      const nome = document.getElementById('store-manage-name').value;
-      const cnpj = document.getElementById('store-manage-cnpj').value;
-
-      try {
-        if (storeId) {
-          // Edição
-          await authService.updateStore(storeId, { nome, cnpj });
-          alert('Loja atualizada com sucesso!');
-        } else {
-          // Criação de nova loja
-          await authService.createStoreForUser({
-            nomeLoja: nome,
-            cnpj,
-            usuarioId: currentProfile.id
-          });
-          alert('Nova loja cadastrada com sucesso!');
-        }
-
-        await closeAllModals();
-        await setupStoreSelector();
-      } catch (err) {
-        alert('Erro ao salvar loja: ' + err.message);
-      }
-    });
-  }
-
-  // Submit Editar Perfil de Usuário
+  // Submit: Editar Perfil de Outro Colaborador (Admin)
   const formEditUser = document.getElementById('form-edit-user');
   if (formEditUser) {
     formEditUser.addEventListener('submit', async (e) => {
@@ -663,7 +610,7 @@ function setupEvents() {
           lojaId: activeLojaId || currentProfile.loja_id
         });
         alert('Perfil atualizado com sucesso!');
-        await closeAllModals();
+        window.closeAllModals();
         loadSectorData();
       } catch (err) {
         alert('Erro ao atualizar usuário: ' + err.message);
@@ -671,34 +618,10 @@ function setupEvents() {
     });
   }
 
-  // Clique na Avatar Badge das Iniciais
-  const btnAvatar = document.getElementById('btn-user-avatar-badge');
-  if (btnAvatar) {
-    btnAvatar.addEventListener('click', async () => {
-      await window.closeAllModals();
+  // Fechar Modal de Perfil
+  document.getElementById('btn-close-modal-profile')?.addEventListener('click', window.closeAllModals);
 
-      if (!currentProfile) return;
-
-      document.getElementById('self-name').value = currentProfile.nome || '';
-      document.getElementById('self-role').value = (currentProfile.funcao || 'Operador').toUpperCase();
-      document.getElementById('profile-store-name').value = currentProfile.lojas?.nome || '';
-      document.getElementById('profile-store-cnpj').value = currentProfile.lojas?.cnpj || '';
-
-      const userRole = (currentProfile.funcao || '').toLowerCase();
-      const isAdmin = ['administrador', 'admin'].includes(userRole);
-
-      const btnGestaoLoja = document.getElementById('tab-btn-gestao-loja');
-      const btnNovaLoja = document.getElementById('tab-btn-nova-loja');
-      if (btnGestaoLoja) btnGestaoLoja.style.display = isAdmin ? 'block' : 'none';
-      if (btnNovaLoja) btnNovaLoja.style.display = isAdmin ? 'block' : 'none';
-
-      document.getElementById('modal-user-profile')?.classList.add('active');
-    });
-  }
-
-  document.getElementById('btn-close-modal-profile')?.addEventListener('click', closeAllModals);
-
-  // Alternar Abas Internas do Modal
+  // Alternar Abas Internas do Modal de Perfil/Gestão
   const fSelf = document.getElementById('form-edit-self-profile');
   const fStore = document.getElementById('form-manage-current-store');
   const fNewStore = document.getElementById('form-create-new-store');
@@ -721,7 +644,7 @@ function setupEvents() {
     fNewStore?.classList.remove('hidden');
   });
 
-  // Submit 1: Atualizar Nome do Próprio Usuário
+  // Submit: Atualizar Nome do Próprio Usuário
   if (fSelf) {
     fSelf.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -734,7 +657,7 @@ function setupEvents() {
         });
         currentProfile.nome = novoNome;
         alert('Seu nome foi atualizado com sucesso!');
-        await closeAllModals();
+        window.closeAllModals();
         await checkSession();
       } catch (err) {
         alert('Erro ao atualizar perfil: ' + err.message);
@@ -742,7 +665,7 @@ function setupEvents() {
     });
   }
 
-  // Submit 2: Editar Dados da Loja Atual
+  // Submit: Editar Dados da Loja Atual
   if (fStore) {
     fStore.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -753,7 +676,7 @@ function setupEvents() {
       try {
         await authService.updateStore(lojaId, { nome, cnpj });
         alert('Dados da loja atualizados com sucesso!');
-        await closeAllModals();
+        window.closeAllModals();
         await setupStoreSelector();
       } catch (err) {
         alert('Erro ao atualizar loja: ' + err.message);
@@ -761,7 +684,7 @@ function setupEvents() {
     });
   }
 
-  // Submit 3: Criar Nova Loja no Modal de Perfil (Admin)
+  // Submit: Criar Nova Loja (Admin)
   if (fNewStore) {
     fNewStore.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -777,24 +700,25 @@ function setupEvents() {
 
         alert(`Nova unidade "${novaLoja.nome}" criada com sucesso!`);
         
-        // Ativa a nova loja criada como a atual
         activeLojaId = novaLoja.id;
         localStorage.setItem('active_loja_id', activeLojaId);
 
         window.closeAllModals();
         fNewStore.reset();
 
-        // Força a atualização do perfil e a exibição do seletor
         await checkSession();
       } catch (err) {
         alert('Erro ao criar nova loja: ' + err.message);
       }
     });
   }
+}
 
-// ============================================================
-// BUSCA E RENDERIZAÇÃO DOS DADOS
-// ============================================================
+/* ============================================================
+   SEÇÃO 6: CONSULTA E CARREGAMENTO DE DADOS DOS SETORES
+   ============================================================ */
+
+// Carrega os dados correspondentes à aba/setor selecionado
 async function loadSectorData() {
   const container = document.getElementById('product-card-container');
   if (!container) return;
@@ -821,27 +745,11 @@ async function loadSectorData() {
   }
 }
 
-// Handler Global para Abrir Edição de Colaborador na Aba Equipe
-window.openEditUserModal = async function(id, nome, funcao) {
-  await window.closeAllModals();
+/* ============================================================
+   SEÇÃO 7: COMPONENTES DE RENDERIZAÇÃO DE CARDS (INTERFACE)
+   ============================================================ */
 
-  const inputId = document.getElementById('edit-user-id');
-  const inputNome = document.getElementById('edit-user-name');
-  const inputFuncao = document.getElementById('edit-user-role');
-  const modal = document.getElementById('modal-edit-user');
-
-  if (inputId) inputId.value = id;
-  if (inputNome) inputNome.value = nome;
-  if (inputFuncao) inputFuncao.value = funcao;
-
-  if (modal) {
-    modal.classList.add('active');
-  } else {
-    alert("Erro: O modal #modal-edit-user não foi encontrado.");
-  }
-};
-
-// Cards da Equipe
+// Renderiza Cards da Equipe / Colaboradores
 function renderEquipeCards(members, container) {
   if (!members || members.length === 0) {
     container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum colaborador nesta loja.</div>';
@@ -874,7 +782,7 @@ function renderEquipeCards(members, container) {
   `).join('');
 }
 
-// Cards da Régua de Validade e Vencidos
+// Renderiza Cards de Produtos da Régua de Validade e Vencidos
 function renderValidadeCards(data, container) {
   if (!data || data.length === 0) {
     container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';
@@ -937,7 +845,7 @@ function renderValidadeCards(data, container) {
   }
 }
 
-// Cards de Perdas (Avarias / Uso Loja)
+// Renderiza Cards de Perdas Operacionais (Avarias / Uso Loja)
 function renderPerdasCards(data, container) {
   if (!data || data.length === 0) {
     container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum registro encontrado neste setor.</div>';
@@ -958,7 +866,11 @@ function renderPerdasCards(data, container) {
   `).join('');
 }
 
-// Retorna a classe CSS correspondente para a badge da régua
+/* ============================================================
+   SEÇÃO 8: MÉTODOS AUXILIARES E UTILITÁRIOS
+   ============================================================ */
+
+// Retorna a classe CSS correspondente para a badge de status da régua
 function getBadgeClass(status) {
   if (!status) return 'badge-60';
   if (status.includes('Crítico')) return 'badge-7';
