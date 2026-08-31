@@ -60,6 +60,7 @@ export const authService = {
 
   // 5. CADASTRAR UMA LOJA PARA O USUÁRIO LOGADO (PÓS-LOGIN)
   async createStoreForUser({ nomeLoja, cnpj, usuarioId }) {
+    // 1. Insere a nova loja
     const { data: loja, error: errorLoja } = await supabase
       .from('lojas')
       .insert({ nome: nomeLoja, cnpj })
@@ -68,16 +69,19 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
 
-    const { error: errorPerfil } = await supabase
+    // 2. Atualiza o perfil caso ele ainda não tenha nenhuma loja associada
+    await supabase
       .from('perfis')
       .update({ loja_id: loja.id })
-      .eq('id', usuarioId);
+      .eq('id', usuarioId)
+      .is('loja_id', null);
 
-    if (errorPerfil) throw new Error("Erro ao vincular loja ao perfil: " + errorPerfil.message);
-
-    await supabase
+    // 3. Garante o vínculo na tabela associativa (Evita duplicados usando upsert)
+    const { error: errorVinculo } = await supabase
       .from('usuario_lojas')
-      .insert({ usuario_id: usuarioId, loja_id: loja.id });
+      .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
+
+    if (errorVinculo) console.warn("Aviso ao vincular loja:", errorVinculo.message);
 
     return loja;
   },

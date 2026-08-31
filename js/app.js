@@ -146,49 +146,57 @@ async function setupStoreSelector() {
   const select = document.getElementById('select-active-store');
   if (!container || !select) return;
 
-  const userRole = (currentProfile.funcao || '').toLowerCase();
-
-  if (userRole === 'operador') {
-    container.classList.add('hidden');
-    activeLojaId = currentProfile.loja_id;
-    localStorage.setItem('active_loja_id', activeLojaId);
-    return;
-  }
-
   try {
-    let query;
-    // Restringe para que administradores vejam apenas as lojas vinculadas a eles na tabela associativa
-    query = supabase.from('usuario_lojas').select('lojas(id, nome)').eq('usuario_id', currentProfile.id);
+    // 1. Busca todas as lojas vinculadas na tabela associativa
+    const { data: vinculos, error } = await supabase
+      .from('usuario_lojas')
+      .select('lojas(id, nome)')
+      .eq('usuario_id', currentProfile.id);
 
-    const { data, error } = await query;
-    if (error || !data || data.length === 0) {
-      activeLojaId = currentProfile.loja_id;
-      return;
+    if (error) throw error;
+
+    userLojas = (vinculos || []).map(d => d.lojas).filter(Boolean);
+
+    // 2. Se a loja principal do perfil não estiver na lista de vínculos, adiciona manualmente
+    if (currentProfile.loja_id && currentProfile.lojas) {
+      const temPrincipal = userLojas.some(l => l.id === currentProfile.loja_id);
+      if (!temPrincipal) {
+        userLojas.unshift({ id: currentProfile.loja_id, nome: currentProfile.lojas.nome });
+      }
     }
 
-    userLojas = userRole === 'administrador' ? data : data.map(d => d.lojas);
+    // 3. REGRA DE EXIBIÇÃO: Se tiver 2 ou mais lojas, exibe o seletor no topo!
+    if (userLojas.length > 1) {
+      select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
 
-    select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
+      // Garante que a loja ativa esteja selecionada no dropdown
+      if (activeLojaId && userLojas.some(l => l.id === activeLojaId)) {
+        select.value = activeLojaId;
+      } else {
+        activeLojaId = userLojas[0].id;
+        select.value = activeLojaId;
+        localStorage.setItem('active_loja_id', activeLojaId);
+      }
 
-    if (activeLojaId && userLojas.some(l => l.id === activeLojaId)) {
-      select.value = activeLojaId;
+      container.classList.remove('hidden');
+
+      select.onchange = async (e) => {
+        activeLojaId = e.target.value;
+        localStorage.setItem('active_loja_id', activeLojaId);
+        console.log(`🏬 Loja alterada para: ${activeLojaId}`);
+
+        currentCycle = await cycleService.getOrCreateActiveCycle(activeLojaId);
+        updateCycleTopbarDisplay();
+        loadSectorData();
+      };
     } else {
-      activeLojaId = userLojas[0].id;
-      select.value = activeLojaId;
-      localStorage.setItem('active_loja_id', activeLojaId);
+      // Se houver apenas 1 loja, oculta o seletor do cabeçalho
+      container.classList.add('hidden');
+      if (userLojas.length === 1) {
+        activeLojaId = userLojas[0].id;
+        localStorage.setItem('active_loja_id', activeLojaId);
+      }
     }
-
-    container.classList.remove('hidden');
-
-    select.onchange = async (e) => {
-      activeLojaId = e.target.value;
-      localStorage.setItem('active_loja_id', activeLojaId);
-      console.log(`🏬 Loja alterada para: ${activeLojaId}`);
-
-      currentCycle = await cycleService.getOrCreateActiveCycle(activeLojaId);
-      updateCycleTopbarDisplay();
-      loadSectorData();
-    };
   } catch (err) {
     console.warn('Aviso ao carregar seletor de lojas:', err);
   }
@@ -753,7 +761,7 @@ function setupEvents() {
     });
   }
 
-  // Submit 3: Criar Nova Loja
+  // Submit 3: Criar Nova Loja no Modal de Perfil (Admin)
   if (fNewStore) {
     fNewStore.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -761,20 +769,28 @@ function setupEvents() {
       const cnpj = document.getElementById('new-store-cnpj').value;
 
       try {
-        await authService.createStoreForUser({
+        const novaLoja = await authService.createStoreForUser({
           nomeLoja: nome,
           cnpj,
           usuarioId: currentProfile.id
         });
-        alert('Nova loja criada com sucesso!');
-        await closeAllModals();
-        await setupStoreSelector();
+
+        alert(`Nova unidade "${novaLoja.nome}" criada com sucesso!`);
+        
+        // Ativa a nova loja criada como a atual
+        activeLojaId = novaLoja.id;
+        localStorage.setItem('active_loja_id', activeLojaId);
+
+        window.closeAllModals();
+        fNewStore.reset();
+
+        // Força a atualização do perfil e a exibição do seletor
+        await checkSession();
       } catch (err) {
-        alert('Erro ao criar loja: ' + err.message);
+        alert('Erro ao criar nova loja: ' + err.message);
       }
     });
   }
-}
 
 // ============================================================
 // BUSCA E RENDERIZAÇÃO DOS DADOS
