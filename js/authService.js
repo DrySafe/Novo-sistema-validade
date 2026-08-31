@@ -94,11 +94,24 @@ export const authService = {
     return data;
   },
 
-  // 7. CADASTRAR NOVO FUNCIONÁRIO/COLABORADOR
-  async addEmployee({ lojaId, nome, funcao, email, avatarUrl }) {
+  // 7. CADASTRAR NOVO FUNCIONÁRIO COM ACESSO DE LOGIN
+  async addEmployee({ lojaId, nome, funcao, email, password, avatarUrl }) {
+    // 1. Cria a conta oficial de autenticação (Gera o usuário no Supabase Auth)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password
+    });
+
+    if (authError) throw new Error("Erro ao criar credenciais: " + authError.message);
+
+    const userId = authData.user?.id;
+    if (!userId) throw new Error("Ocorreu um erro inesperado ao gerar a conta de acesso.");
+
+    // 2. Insere/Atualiza os dados na tabela 'perfis' com o ID real da conta criada
     const { data, error } = await supabase
       .from('perfis')
-      .insert({
+      .upsert({
+        id: userId,
         loja_id: lojaId,
         nome,
         funcao,
@@ -106,7 +119,8 @@ export const authService = {
       })
       .select();
 
-    if (error) throw new Error("Erro ao salvar funcionário: " + error.message);
+    if (error) throw new Error("Erro ao vincular perfil: " + error.message);
+    
     return data;
   },
 

@@ -415,6 +415,7 @@ function setupEvents() {
   document.getElementById('btn-close-modal-emp')?.addEventListener('click', closeAllModals);
 
   // Submit Cadastrar Colaborador
+  // Submit Cadastrar Colaborador
   const formEmployee = document.getElementById('form-employee');
   if (formEmployee) {
     formEmployee.addEventListener('submit', async (e) => {
@@ -425,11 +426,12 @@ function setupEvents() {
           nome: document.getElementById('emp-name').value,
           funcao: document.getElementById('emp-role').value,
           email: document.getElementById('emp-email').value,
+          password: document.getElementById('emp-password').value, // Envia a senha
           avatarUrl: document.getElementById('emp-avatar').value
         });
 
-        alert('Colaborador cadastrado com sucesso!');
-        await closeAllModals();
+        alert('Colaborador cadastrado e conta de login criada com sucesso!');
+        await window.closeAllModals();
         formEmployee.reset();
         loadSectorData();
       } catch (err) {
