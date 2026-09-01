@@ -293,7 +293,6 @@ function setupEvents() {
       try {
         const novaLoja = await authService.createStoreForUser(payloadLoja);
         
-        // Atribui e persiste a nova loja como ativa na aplicação
         activeLojaId = novaLoja.id;
         localStorage.setItem('active_loja_id', activeLojaId);
 
@@ -303,11 +302,12 @@ function setupEvents() {
         window.closeAllModals();
         formOnboarding.reset();
 
-        // Recarrega a sessão com a garantia do ID da loja válido
         await checkSession();
       } catch (err) {
         alert('Erro ao cadastrar loja: ' + err.message);
       }
+    });
+  }
 
   // Deletar Colaborador
   document.getElementById('btn-delete-user')?.addEventListener('click', async () => {
@@ -339,7 +339,7 @@ function setupEvents() {
     reportService.exportToPDF(currentData, currentSector, currentProfile);
   });
   
-  // Tema
+  // Tema Claro / Escuro
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark');
@@ -355,7 +355,7 @@ function setupEvents() {
     });
   }
 
-  // Login e Registro
+  // Alternância Login / Registro
   const btnShowRegister = document.getElementById('btn-show-register');
   const btnShowLogin = document.getElementById('btn-show-login');
   const formLogin = document.getElementById('form-login');
