@@ -356,17 +356,21 @@
       </form>
     </div>
   </div>
-<!-- MODAL DE ONBOARDING: CADASTRO COMPLETO DE PRIMEIRA LOJA -->
+<!-- MODAL COMPLETO: CADASTRAR OU EDITAR UNIDADE / LOJA -->
   <div id="modal-onboarding" class="modal">
     <div class="modal-content" style="max-width: 580px;">
       <div class="modal-header">
-        <h3 class="modal-title">CADASTRO DA UNIDADE / LOJA</h3>
+        <h3 id="modal-store-form-title" class="modal-title">CADASTRO DA UNIDADE / LOJA</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
       </div>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-        Seja bem-vindo! Preencha as informações da sua empresa para configurar o ambiente de gestão.
+      <p id="modal-store-form-sub" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+        Preencha os dados empresariais para configurar o ambiente de gestão.
       </p>
 
       <form id="form-onboarding-store">
+        <!-- Campo Oculto para identificar se é Edição -->
+        <input type="hidden" id="ob-store-id" value="">
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label for="ob-store-name">Nome Fantasia *</label>
@@ -391,12 +395,12 @@
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
           <div class="form-group">
-            <label for="ob-logradouro">Endereço / Logradouro *</label>
-            <input type="text" id="ob-logradouro" required placeholder="Ex: Av. Principal">
+            <label for="ob-logradouro">Endereço / Logradouro</label>
+            <input type="text" id="ob-logradouro" placeholder="Ex: Av. Principal">
           </div>
           <div class="form-group">
-            <label for="ob-numero">Número *</label>
-            <input type="text" id="ob-numero" required placeholder="1000">
+            <label for="ob-numero">Número</label>
+            <input type="text" id="ob-numero" placeholder="1000">
           </div>
         </div>
 
@@ -406,12 +410,12 @@
             <input type="text" id="ob-bairro" placeholder="Centro">
           </div>
           <div class="form-group">
-            <label for="ob-cidade">Cidade *</label>
-            <input type="text" id="ob-cidade" required placeholder="Aracaju">
+            <label for="ob-cidade">Cidade</label>
+            <input type="text" id="ob-cidade" placeholder="Aracaju">
           </div>
           <div class="form-group">
-            <label for="ob-uf">UF *</label>
-            <input type="text" id="ob-uf" maxlength="2" required placeholder="SE" style="text-transform: uppercase;">
+            <label for="ob-uf">UF</label>
+            <input type="text" id="ob-uf" maxlength="2" placeholder="SE" style="text-transform: uppercase;">
           </div>
         </div>
 
@@ -426,13 +430,13 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
-          🚀 Finalizar e Acessar o Sistema
+        <button type="submit" id="btn-submit-store-form" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">
+          Salvar Dados da Unidade
         </button>
       </form>
     </div>
   </div>
-
+  
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

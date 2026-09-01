@@ -142,7 +142,7 @@ async function setupStoreSelector() {
   if (!container || !select) return;
 
   try {
-    // 1. Busca todas as lojas associadas ao usuário na tabela 'usuario_lojas'
+    // 1. Busca todos os vínculos da tabela usuario_lojas juntando os dados da tabela lojas
     const { data: vinculos, error } = await supabase
       .from('usuario_lojas')
       .select('lojas(*)')
@@ -152,7 +152,7 @@ async function setupStoreSelector() {
 
     userLojas = (vinculos || []).map(d => d.lojas).filter(Boolean);
 
-    // 2. Se a loja do perfil não estiver presente na busca, inclui na lista
+    // 2. Se a loja cadastrada no perfil não estiver nos vínculos, adiciona
     if (currentProfile.loja_id && currentProfile.lojas) {
       const temPrincipal = userLojas.some(l => l.id === currentProfile.loja_id);
       if (!temPrincipal) {
@@ -160,12 +160,12 @@ async function setupStoreSelector() {
       }
     }
 
-    // Remove eventuais duplicidades pelo ID da loja
+    // Remove duplicatas por ID
     userLojas = userLojas.filter((loja, index, self) =>
       index === self.findIndex((t) => t.id === loja.id)
     );
 
-    // 3. EXIBIÇÃO: Se o usuário tiver 2 ou mais lojas, o seletor reaparece no topo
+    // 3. Exibe o seletor se existirem 2 ou mais lojas
     if (userLojas.length > 1) {
       select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
 
@@ -182,9 +182,7 @@ async function setupStoreSelector() {
       select.onchange = async (e) => {
         activeLojaId = e.target.value;
         localStorage.setItem('active_loja_id', activeLojaId);
-        console.log(`🏬 Loja ativa alterada para: ${activeLojaId}`);
 
-        // Atualiza a loja de referência no perfil em memória
         const lojaSelecionada = userLojas.find(l => l.id === activeLojaId);
         if (lojaSelecionada) currentProfile.lojas = lojaSelecionada;
 
@@ -193,7 +191,6 @@ async function setupStoreSelector() {
         loadSectorData();
       };
     } else {
-      // Oculta o seletor caso exista apenas 1 loja cadastrada
       container.classList.add('hidden');
       if (userLojas.length === 1) {
         activeLojaId = userLojas[0].id;
@@ -318,6 +315,118 @@ function setupEvents() {
         alert(`Unidade "${novaLoja.nome}" cadastrada com sucesso!`);
       } catch (err) {
         alert('Erro ao cadastrar loja: ' + err.message);
+      }
+    });
+  }
+
+  // Clique na aba "🏬 Editar Loja": Preenche todos os campos com os dados da loja ativa
+  document.getElementById('tab-btn-gestao-loja')?.addEventListener('click', async () => {
+    window.closeAllModals();
+
+    const lojaAtivaId = activeLojaId || currentProfile.loja_id;
+
+    // Busca os dados completos da loja no Supabase
+    const { data: loja } = await supabase
+      .from('lojas')
+      .select('*')
+      .eq('id', lojaAtivaId)
+      .maybeSingle();
+
+    const dados = loja || currentProfile.lojas || {};
+
+    setTimeout(() => {
+      document.getElementById('modal-store-form-title').textContent = 'EDITAR DADOS DA UNIDADE';
+      document.getElementById('modal-store-form-sub').textContent = 'Altere as informações cadastrais da loja selecionada.';
+      document.getElementById('btn-submit-store-form').textContent = 'Salvar Alterações';
+
+      document.getElementById('ob-store-id').value = dados.id || lojaAtivaId;
+      document.getElementById('ob-store-name').value = dados.nome || '';
+      document.getElementById('ob-razao-social').value = dados.razao_social || '';
+      document.getElementById('ob-store-cnpj').value = dados.cnpj || '';
+      document.getElementById('ob-store-ie').value = dados.inscricao_estadual || '';
+      document.getElementById('ob-logradouro').value = dados.logradouro || '';
+      document.getElementById('ob-numero').value = dados.numero || '';
+      document.getElementById('ob-bairro').value = dados.bairro || '';
+      document.getElementById('ob-cidade').value = dados.cidade || '';
+      document.getElementById('ob-uf').value = dados.uf || '';
+      document.getElementById('ob-cep').value = dados.cep || '';
+      document.getElementById('ob-telefone').value = dados.telefone || '';
+
+      document.getElementById('modal-onboarding')?.classList.add('active');
+    }, 50);
+  });
+
+  // Clique na aba "➕ Nova Loja": Limpa os campos para criar uma nova loja
+  document.getElementById('tab-btn-nova-loja')?.addEventListener('click', () => {
+    window.closeAllModals();
+
+    setTimeout(() => {
+      document.getElementById('form-onboarding-store').reset();
+      document.getElementById('ob-store-id').value = '';
+
+      document.getElementById('modal-store-form-title').textContent = 'CADASTRAR NOVA UNIDADE';
+      document.getElementById('modal-store-form-sub').textContent = 'Preencha os dados da nova filial/unidade comercial.';
+      document.getElementById('btn-submit-store-form').textContent = 'Criar Nova Unidade';
+
+      document.getElementById('modal-onboarding')?.classList.add('active');
+    }, 50);
+  });
+
+  // Submit: Formulário Unificado de Loja (Criar ou Editar)
+  const formOnboarding = document.getElementById('form-onboarding-store');
+  if (formOnboarding) {
+    formOnboarding.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const storeId = document.getElementById('ob-store-id').value;
+
+      const payloadLoja = {
+        nomeLoja: document.getElementById('ob-store-name').value,
+        razaoSocial: document.getElementById('ob-razao-social').value,
+        cnpj: document.getElementById('ob-store-cnpj').value,
+        ie: document.getElementById('ob-store-ie').value,
+        logradouro: document.getElementById('ob-logradouro').value,
+        numero: document.getElementById('ob-numero').value,
+        bairro: document.getElementById('ob-bairro').value,
+        cidade: document.getElementById('ob-cidade').value,
+        uf: document.getElementById('ob-uf').value.toUpperCase(),
+        cep: document.getElementById('ob-cep').value,
+        telefone: document.getElementById('ob-telefone').value,
+        usuarioId: currentProfile.id
+      };
+
+      try {
+        if (storeId) {
+          // MODO EDIÇÃO
+          await authService.updateStore(storeId, {
+            nome: payloadLoja.nomeLoja,
+            razao_social: payloadLoja.razaoSocial,
+            cnpj: payloadLoja.cnpj,
+            inscricao_estadual: payloadLoja.ie,
+            logradouro: payloadLoja.logradouro,
+            numero: payloadLoja.numero,
+            bairro: payloadLoja.bairro,
+            cidade: payloadLoja.cidade,
+            uf: payloadLoja.uf,
+            cep: payloadLoja.cep,
+            telefone: payloadLoja.telefone
+          });
+          alert('Dados da loja atualizados com sucesso!');
+        } else {
+          // MODO CRIAÇÃO DE NOVA LOJA
+          const novaLoja = await authService.createStoreForUser(payloadLoja);
+          activeLojaId = novaLoja.id;
+          localStorage.setItem('active_loja_id', activeLojaId);
+          alert(`Unidade "${novaLoja.nome}" criada com sucesso!`);
+        }
+
+        window.closeAllModals();
+        formOnboarding.reset();
+
+        // Recarrega o perfil e o seletor no topo
+        await checkSession();
+      } catch (err) {
+        alert('Erro ao salvar loja: ' + err.message);
       }
     });
   }

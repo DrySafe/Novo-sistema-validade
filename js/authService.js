@@ -102,6 +102,18 @@ export const authService = {
       .eq('id', usuarioId)
       .is('loja_id', null);
 
+      // 2.2 Atualiza Dados Completos de Uma Loja Existente (Admin)
+  async updateStore(lojaId, dados) {
+    const { data, error } = await supabase
+      .from('lojas')
+      .update(dados)
+      .eq('id', lojaId)
+      .select();
+
+    if (error) throw new Error("Erro ao atualizar loja: " + error.message);
+    return data;
+  },
+
     // 3. Garante o vínculo na tabela associativa usuario_lojas
     const { error: errorVinculo } = await supabase
       .from('usuario_lojas')
