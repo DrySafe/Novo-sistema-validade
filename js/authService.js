@@ -66,7 +66,7 @@ export const authService = {
      SEÇÃO 2: GESTÃO E VÍNCULO DE UNIDADES / LOJAS
      ============================================================ */
 
-  // 2.1 Cadastra Nova Loja Completa para o Usuário
+  // 2.1 Cadastra Nova Loja para o Usuário Logado e Registra Tabela Associativa
   async createStoreForUser(dadosLoja) {
     const { 
       nomeLoja, razaoSocial, cnpj, ie, 
@@ -95,14 +95,24 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
 
-    // 2. Vincula no perfil principal se ainda estiver nulo
+    // 2. Vincula a loja no perfil principal se ainda estiver nula
     await supabase
       .from('perfis')
       .update({ loja_id: loja.id })
       .eq('id', usuarioId)
       .is('loja_id', null);
 
-      // 2.2 Atualiza Dados Completos de Uma Loja Existente (Admin)
+    // 3. Garante o vínculo do usuário com a nova loja na tabela associativa
+    const { error: errorVinculo } = await supabase
+      .from('usuario_lojas')
+      .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
+
+    if (errorVinculo) console.warn("Aviso ao vincular loja:", errorVinculo.message);
+
+    return loja;
+  },
+
+  // 2.2 Atualiza Dados Completos de Uma Loja Existente (Admin)
   async updateStore(lojaId, dados) {
     const { data, error } = await supabase
       .from('lojas')
@@ -112,16 +122,6 @@ export const authService = {
 
     if (error) throw new Error("Erro ao atualizar loja: " + error.message);
     return data;
-  },
-
-    // 3. Garante o vínculo na tabela associativa usuario_lojas
-    const { error: errorVinculo } = await supabase
-      .from('usuario_lojas')
-      .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
-
-    if (errorVinculo) console.warn("Aviso ao vincular loja:", errorVinculo.message);
-
-    return loja;
   },
 
   /* ============================================================
