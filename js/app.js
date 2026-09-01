@@ -142,22 +142,30 @@ async function setupStoreSelector() {
   if (!container || !select) return;
 
   try {
+    // 1. Busca todas as lojas associadas ao usuário na tabela 'usuario_lojas'
     const { data: vinculos, error } = await supabase
       .from('usuario_lojas')
-      .select('lojas(id, nome)')
+      .select('lojas(*)')
       .eq('usuario_id', currentProfile.id);
 
     if (error) throw error;
 
     userLojas = (vinculos || []).map(d => d.lojas).filter(Boolean);
 
+    // 2. Se a loja do perfil não estiver presente na busca, inclui na lista
     if (currentProfile.loja_id && currentProfile.lojas) {
       const temPrincipal = userLojas.some(l => l.id === currentProfile.loja_id);
       if (!temPrincipal) {
-        userLojas.unshift({ id: currentProfile.loja_id, nome: currentProfile.lojas.nome });
+        userLojas.unshift(currentProfile.lojas);
       }
     }
 
+    // Remove eventuais duplicidades pelo ID da loja
+    userLojas = userLojas.filter((loja, index, self) =>
+      index === self.findIndex((t) => t.id === loja.id)
+    );
+
+    // 3. EXIBIÇÃO: Se o usuário tiver 2 ou mais lojas, o seletor reaparece no topo
     if (userLojas.length > 1) {
       select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
 
@@ -174,13 +182,18 @@ async function setupStoreSelector() {
       select.onchange = async (e) => {
         activeLojaId = e.target.value;
         localStorage.setItem('active_loja_id', activeLojaId);
-        console.log(`🏬 Loja alterada para: ${activeLojaId}`);
+        console.log(`🏬 Loja ativa alterada para: ${activeLojaId}`);
+
+        // Atualiza a loja de referência no perfil em memória
+        const lojaSelecionada = userLojas.find(l => l.id === activeLojaId);
+        if (lojaSelecionada) currentProfile.lojas = lojaSelecionada;
 
         currentCycle = await cycleService.getOrCreateActiveCycle(activeLojaId);
         updateCycleTopbarDisplay();
         loadSectorData();
       };
     } else {
+      // Oculta o seletor caso exista apenas 1 loja cadastrada
       container.classList.add('hidden');
       if (userLojas.length === 1) {
         activeLojaId = userLojas[0].id;
@@ -269,7 +282,7 @@ window.openUserProfileModal = function() {
 
 function setupEvents() {
 
-  // Submit: Onboarding Primeira Loja
+// Submit: Formulário Completo de Nova Loja / Onboarding
   const formOnboarding = document.getElementById('form-onboarding-store');
   if (formOnboarding) {
     formOnboarding.addEventListener('submit', async (e) => {
@@ -293,16 +306,16 @@ function setupEvents() {
       try {
         const novaLoja = await authService.createStoreForUser(payloadLoja);
         
+        // Define a nova unidade como ativa no navegador
         activeLojaId = novaLoja.id;
         localStorage.setItem('active_loja_id', activeLojaId);
-
-        currentProfile.loja_id = novaLoja.id;
-        currentProfile.lojas = novaLoja;
 
         window.closeAllModals();
         formOnboarding.reset();
 
+        // Recarrega a sessão e remonta o seletor de lojas no topo
         await checkSession();
+        alert(`Unidade "${novaLoja.nome}" cadastrada com sucesso!`);
       } catch (err) {
         alert('Erro ao cadastrar loja: ' + err.message);
       }
@@ -634,10 +647,16 @@ function setupEvents() {
     fNewStore?.classList.add('hidden');
   });
 
+  // Clique na aba "➕ Nova Loja": Abre o modal completo com todos os dados da empresa
   document.getElementById('tab-btn-nova-loja')?.addEventListener('click', () => {
-    fSelf?.classList.add('hidden');
-    fStore?.classList.add('hidden');
-    fNewStore?.classList.remove('hidden');
+    window.closeAllModals();
+
+    setTimeout(() => {
+      const modalOnboarding = document.getElementById('modal-onboarding');
+      if (modalOnboarding) {
+        modalOnboarding.classList.add('active');
+      }
+    }, 50);
   });
 
   if (fSelf) {
