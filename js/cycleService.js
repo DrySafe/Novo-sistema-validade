@@ -1,38 +1,37 @@
 import { supabase } from './supabaseClient.js';
 
-export const cycleService = {
-  // 1. Obtém o lote ativo (EM EDIÇÃO) da loja. Se não existir, gera o primeiro automaticamente.
-  async getOrCreateActiveCycle(lojaId) {
-    if (!lojaId) throw new Error("ID da loja é obrigatório para obter o ciclo.");
+async getOrCreateActiveCycle(lojaId) {
+    if (!lojaId) {
+      console.warn("⚠️ Nenhum lojaId fornecido para buscar/gerar ciclo.");
+      return null;
+    }
 
-    // Busca lote atualmente em edição
-    const { data: loteAtivo, error } = await supabase
+    // 1. Busca lote ativo existente
+    const { data: loteAtivo, error: errBusca } = await supabase
       .from('ciclos_lotes')
       .select('*')
       .eq('loja_id', lojaId)
       .eq('status', 'EM EDIÇÃO')
       .maybeSingle();
 
-    if (error) throw error;
+    if (errBusca) throw errBusca;
     if (loteAtivo) return loteAtivo;
 
-    // Se não existir lote em edição, chama a função do PostgreSQL para gerar um novo ID imutável
-    const { data: novoLote, error: errGerar } = await supabase
+    // 2. Se não existir, gera novo código via RPC/Insert
+    const { data: novoLote, error: errRpc } = await supabase
       .rpc('gerar_codigo_lote', { p_loja_id: lojaId });
 
-    if (errGerar) throw new Error("Erro ao gerar novo código de lote: " + errGerar.message);
+    if (errRpc) throw new Error("Erro ao gerar novo código de lote: " + errRpc.message);
 
-    // Retorna os dados do lote recém-criado de forma segura
-    const { data: loteCriado, error: errBusca } = await supabase
+    const { data: loteCriado, error: errCriado } = await supabase
       .from('ciclos_lotes')
       .select('*')
       .eq('id', novoLote[0].novo_id)
       .maybeSingle();
 
-    if (errBusca) throw errBusca;
-    if (!loteCriado) {
-      throw new Error("Não foi possível carregar o lote criado. Verifique as permissões da loja.");
-    }
+    if (errCriado) throw errCriado;
+    return loteCriado;
+  }
 
     // Registra evento na auditoria
     await this.registrarAuditoria({

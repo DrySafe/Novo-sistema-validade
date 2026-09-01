@@ -292,18 +292,22 @@ function setupEvents() {
 
       try {
         const novaLoja = await authService.createStoreForUser(payloadLoja);
+        
+        // Atribui e persiste a nova loja como ativa na aplicação
+        activeLojaId = novaLoja.id;
+        localStorage.setItem('active_loja_id', activeLojaId);
+
         currentProfile.loja_id = novaLoja.id;
         currentProfile.lojas = novaLoja;
 
         window.closeAllModals();
         formOnboarding.reset();
 
+        // Recarrega a sessão com a garantia do ID da loja válido
         await checkSession();
       } catch (err) {
         alert('Erro ao cadastrar loja: ' + err.message);
       }
-    });
-  }
 
   // Deletar Colaborador
   document.getElementById('btn-delete-user')?.addEventListener('click', async () => {
