@@ -144,7 +144,7 @@ async function setupStoreSelector() {
   try {
     userLojas = [];
 
-    // 1. Busca os vínculos cadastrados na tabela usuario_lojas
+    // 1. Busca da tabela associativa usuario_lojas
     const { data: vinculos } = await supabase
       .from('usuario_lojas')
       .select('loja_id, lojas(*)')
@@ -154,26 +154,24 @@ async function setupStoreSelector() {
       userLojas = vinculos.map(v => v.lojas).filter(Boolean);
     }
 
-    // 2. Se a loja do perfil principal não estiver na lista, adiciona manualmente
-    if (currentProfile.loja_id && currentProfile.lojas) {
-      const temPrincipal = userLojas.some(l => l.id === currentProfile.loja_id);
-      if (!temPrincipal) {
-        userLojas.unshift(currentProfile.lojas);
-      }
+    // 2. BUSCA DE EMERGÊNCIA: Se não encontrou vínculos, busca todas as lojas do banco
+    if (userLojas.length === 0) {
+      const { data: todasLojas } = await supabase.from('lojas').select('*');
+      if (todasLojas) userLojas = todasLojas;
     }
 
-    // 3. Remove duplicatas pelo ID da loja
+    // 3. Remove duplicatas por ID
     userLojas = userLojas.filter((loja, index, self) =>
       index === self.findIndex((t) => t.id === loja.id)
     );
 
-    console.log(`🏬 Lojas encontradas para o usuário (${userLojas.length}):`, userLojas);
+    console.log(`🏬 Lojas carregadas (${userLojas.length}):`, userLojas);
 
-    // 4. EXIBIÇÃO: Se o usuário possuir 2 ou mais lojas, exibe o dropdown no topo
+    // 4. Se houver 2 ou mais lojas, força a exibição do seletor no topo
     if (userLojas.length > 1) {
       select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
 
-      // Define a loja ativa selecionada
+      // Garante a seleção da loja ativa
       if (activeLojaId && userLojas.some(l => l.id === activeLojaId)) {
         select.value = activeLojaId;
       } else {
@@ -182,7 +180,6 @@ async function setupStoreSelector() {
         localStorage.setItem('active_loja_id', activeLojaId);
       }
 
-      // Garante que o elemento seja visível no cabeçalho
       container.classList.remove('hidden');
       container.style.display = 'block';
 
@@ -198,10 +195,8 @@ async function setupStoreSelector() {
         loadSectorData();
       };
     } else {
-      // Oculta o seletor caso só exista 1 loja
       container.classList.add('hidden');
       container.style.display = 'none';
-
       if (userLojas.length === 1) {
         activeLojaId = userLojas[0].id;
         localStorage.setItem('active_loja_id', activeLojaId);

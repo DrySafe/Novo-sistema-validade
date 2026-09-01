@@ -74,7 +74,7 @@ export const authService = {
       usuarioId 
     } = dadosLoja;
 
-    // 1. Insere a nova unidade comercial com dados empresariais completos
+    // 1. Insere a nova unidade comercial
     const { data: loja, error: errorLoja } = await supabase
       .from('lojas')
       .insert({
@@ -95,33 +95,21 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
 
-    // 2. Vincula a loja no perfil principal se ainda estiver nula
-    await supabase
-      .from('perfis')
-      .update({ loja_id: loja.id })
-      .eq('id', usuarioId)
-      .is('loja_id', null);
-
-    // 3. Garante o vínculo do usuário com a nova loja na tabela associativa
+    // 2. GARANTE O VÍNCULO NA TABELA ASSOCIATIVA (Obrigatório para o Seletor)
     const { error: errorVinculo } = await supabase
       .from('usuario_lojas')
       .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
 
     if (errorVinculo) console.warn("Aviso ao vincular loja:", errorVinculo.message);
 
+    // 3. Se for a primeira loja do perfil, atualiza a loja principal
+    await supabase
+      .from('perfis')
+      .update({ loja_id: loja.id })
+      .eq('id', usuarioId)
+      .is('loja_id', null);
+
     return loja;
-  },
-
-  // 2.2 Atualiza Dados Completos de Uma Loja Existente (Admin)
-  async updateStore(lojaId, dados) {
-    const { data, error } = await supabase
-      .from('lojas')
-      .update(dados)
-      .eq('id', lojaId)
-      .select();
-
-    if (error) throw new Error("Erro ao atualizar loja: " + error.message);
-    return data;
   },
 
   /* ============================================================
