@@ -1,12 +1,19 @@
 import { supabase } from './supabaseClient.js';
 
-async getOrCreateActiveCycle(lojaId) {
+export const cycleService = {
+
+  /* ============================================================
+     SEÇÃO 1: CONSULTA E GERAÇÃO DE CICLOS DE LOTE
+     ============================================================ */
+
+  // 1.1 Obtém o lote ativo no estado "EM EDIÇÃO" ou gera um novo código via RPC
+  async getOrCreateActiveCycle(lojaId) {
     if (!lojaId) {
       console.warn("⚠️ Nenhum lojaId fornecido para buscar/gerar ciclo.");
       return null;
     }
 
-    // 1. Busca lote ativo existente
+    // Busca lote ativo existente para a loja
     const { data: loteAtivo, error: errBusca } = await supabase
       .from('ciclos_lotes')
       .select('*')
@@ -17,12 +24,17 @@ async getOrCreateActiveCycle(lojaId) {
     if (errBusca) throw errBusca;
     if (loteAtivo) return loteAtivo;
 
-    // 2. Se não existir, gera novo código via RPC/Insert
+    // Se não existir, invoca a RPC para gerar um novo código de lote
     const { data: novoLote, error: errRpc } = await supabase
       .rpc('gerar_codigo_lote', { p_loja_id: lojaId });
 
     if (errRpc) throw new Error("Erro ao gerar novo código de lote: " + errRpc.message);
 
+    if (!novoLote || novoLote.length === 0) {
+      throw new Error("RPC gerar_codigo_lote não retornou o ID do novo lote.");
+    }
+
+    // Busca o registro do lote recém-criado de forma segura com .maybeSingle()
     const { data: loteCriado, error: errCriado } = await supabase
       .from('ciclos_lotes')
       .select('*')
@@ -31,20 +43,16 @@ async getOrCreateActiveCycle(lojaId) {
 
     if (errCriado) throw errCriado;
     return loteCriado;
-  }
-
-    // Registra evento na auditoria
-    await this.registrarAuditoria({
-      cicloLoteId: loteCriado.id,
-      acao: 'LOTE_CRIADO',
-      detalhes: { codigo_lote: loteCriado.codigo_lote }
-    });
-
-    return loteCriado;
   },
 
-  // 2. Busca histórico de todos os lotes/ciclos da loja para a visão do Dashboard/Esteira
-  async getCyclesByStore(lojaId) {
+  /* ============================================================
+     SEÇÃO 2: HISTÓRICO E ALTERAÇÃO DE STATUS DO CICLO
+     ============================================================ */
+
+  // 2.1 Lista todos os ciclos e lotes cadastrados para a loja
+  async getCycleHistory(lojaId) {
+    if (!lojaId) return [];
+
     const { data, error } = await supabase
       .from('ciclos_lotes')
       .select('*')
@@ -55,51 +63,17 @@ async getOrCreateActiveCycle(lojaId) {
     return data;
   },
 
-  // 3. Atualiza o status do lote (Respeitando a esteira)
-  async updateCycleStatus(cicloLoteId, novoStatus, usuarioId) {
-    const updates = { status: novoStatus };
-
-    if (novoStatus === 'AGUARDANDO CONFERÊNCIA') {
-      updates.data_fechamento = new Date().toISOString();
-      updates.fechado_por = usuarioId;
-    } else if (novoStatus === 'ENVIADO PARA PRECIFICAÇÃO') {
-      updates.data_enviado_precificacao = new Date().toISOString();
-      updates.enviado_precificacao_por = usuarioId;
-    }
-
+  // 2.2 Altera o status do ciclo (ex: de "EM EDIÇÃO" para "FINALIZADO")
+  async updateCycleStatus(cycleId, newStatus) {
     const { data, error } = await supabase
       .from('ciclos_lotes')
-      .update(updates)
-      .eq('id', cicloLoteId)
+      .update({ status: newStatus })
+      .eq('id', cycleId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-
-    await this.registrarAuditoria({
-      cicloLoteId,
-      usuarioId,
-      acao: `STATUS_ALTERADO_${novoStatus.replace(/\s+/g, '_')}`,
-      detalhes: { novo_status: novoStatus }
-    });
-
     return data;
-  },
-
-  // 4. Registra Logs de Auditoria Imutáveis
-  async registrarAuditoria({ cicloLoteId, produtoId, usuarioId, acao, detalhes }) {
-    try {
-      await supabase
-        .from('auditoria_eventos')
-        .insert({
-          ciclo_lote_id: cicloLoteId || null,
-          produto_id: produtoId || null,
-          usuario_id: usuarioId || null,
-          acao,
-          detalhes: detalhes || {}
-        });
-    } catch (err) {
-      console.warn('Falha ao registrar auditoria:', err.message);
-    }
   }
+
 };
