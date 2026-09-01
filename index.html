@@ -34,8 +34,8 @@
       <div class="brand-title">ValidaSuper</div>
       
       <!-- Seletor Dinâmico de Loja -->
-      <div id="store-selector-container" class="hidden">
-        <select id="select-active-store" class="select-store-header"></select>
+      <div id="store-selector-container" class="hidden" style="margin: 0 0.5rem; flex: 1; max-width: 220px;">
+        <select id="select-active-store" class="select-store-header" style="width: 100%; padding: 0.4rem 0.6rem; border-radius: 8px; font-weight: 600; border: 1px solid var(--border); background: var(--surface-panel); color: var(--text-main); cursor: pointer;"></select>
       </div>
 
       <div class="topbar-actions">
@@ -316,7 +316,7 @@
         <button type="button" id="tab-btn-nova-loja" class="btn btn-secondary" style="flex:1; font-size:0.8rem;">➕ Nova Loja</button>
       </div>
 
-      <!-- SEÇÃO 1: Editar Próprio Usuário -->
+      <!-- Editar Próprio Usuário -->
       <form id="form-edit-self-profile">
         <div class="form-group">
           <label for="self-name">Nome Completo</label>
@@ -328,35 +328,10 @@
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Meu Nome</button>
       </form>
-
-      <!-- SEÇÃO 2: Editar Loja Atual -->
-      <form id="form-manage-current-store" class="hidden">
-        <div class="form-group">
-          <label for="profile-store-name">Nome da Unidade / Loja</label>
-          <input type="text" id="profile-store-name" required>
-        </div>
-        <div class="form-group">
-          <label for="profile-store-cnpj">CNPJ</label>
-          <input type="text" id="profile-store-cnpj">
-        </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Atualizar Dados da Loja</button>
-      </form>
-
-      <!-- SEÇÃO 3: Criar Nova Loja -->
-      <form id="form-create-new-store" class="hidden">
-        <div class="form-group">
-          <label for="new-store-name">Nome do Novo Supermercado</label>
-          <input type="text" id="new-store-name" required placeholder="Ex: Filial Bairro Novo">
-        </div>
-        <div class="form-group">
-          <label for="new-store-cnpj">CNPJ (Opcional)</label>
-          <input type="text" id="new-store-cnpj" placeholder="00.000.000/0001-00">
-        </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Criar Nova Unidade</button>
-      </form>
     </div>
   </div>
-<!-- MODAL COMPLETO: CADASTRAR OU EDITAR UNIDADE / LOJA -->
+
+  <!-- MODAL 5: CADASTRAR OU EDITAR UNIDADE / LOJA (COMPLETO) -->
   <div id="modal-onboarding" class="modal">
     <div class="modal-content" style="max-width: 580px;">
       <div class="modal-header">
@@ -436,7 +411,7 @@
       </form>
     </div>
   </div>
-  
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
