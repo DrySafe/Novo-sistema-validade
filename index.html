@@ -51,7 +51,7 @@
       </div>
     </header>
 
-    <!-- Tela de Login e Cadastro de Loja -->
+    <!-- Tela de Login e Cadastro de Usuário -->
     <section id="login-screen" class="container">
       <div style="text-align: center; margin-top: 2rem; margin-bottom: 1.5rem;">
         <h1 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--primary);">VALIDASUPER</h1>
@@ -124,15 +124,24 @@
         </button>
       </div>
 
+      <!-- Contêiner do Painel de Ciclos Quinzenais -->
+      <div id="cycle-section-container" class="hidden" style="margin-bottom: 1.5rem;">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+
       <!-- Card Lista de Produtos -->
       <div id="product-card-container" class="product-card-list">
         <!-- Renderizado dinamicamente via JS -->
       </div>
     </main>
 
-    <!-- Bottom Nav -->
+    <!-- Bottom Nav (Primeiro Item: Ciclos) -->
     <nav id="bottom-nav" class="bottom-nav hidden">
-      <button class="nav-item active" data-sector="validade">
+      <button class="nav-item active" data-sector="ciclos">
+        <span class="nav-icon">🔄</span>
+        <span>Ciclos</span>
+      </button>
+      <button class="nav-item" data-sector="validade">
         <span class="nav-icon">📅</span>
         <span>Validade</span>
       </button>
@@ -409,6 +418,31 @@
           Salvar Dados da Unidade
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL 6: INSPEÇÃO E AUDITORIA DO CICLO QUINZENAL -->
+  <div id="modal-cycle-detail" class="modal">
+    <div class="modal-content" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="cycle-modal-title" class="modal-title">DETALHES DO LOTE</h3>
+          <p id="cycle-modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Carregando...</p>
+        </div>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+      </div>
+
+      <!-- Filtros Rápidos por Régua no Modal -->
+      <div style="display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+        <button type="button" class="btn btn-secondary filter-cycle-btn active" data-filter="todos" style="padding: 4px 10px; font-size: 0.75rem;">Todos</button>
+        <button type="button" class="btn btn-secondary filter-cycle-btn" data-filter="15_7" style="padding: 4px 10px; font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: #f59e0b;">Promoção (15d/7d)</button>
+        <button type="button" class="btn btn-secondary filter-cycle-btn" data-filter="7" style="padding: 4px 10px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.15); color: #ef4444;">Críticos (7d)</button>
+        <button type="button" class="btn btn-secondary filter-cycle-btn" data-filter="vencidos" style="padding: 4px 10px; font-size: 0.75rem; background: #ef4444; color: #fff;">Vencidos</button>
+      </div>
+
+      <div id="cycle-detail-items-list" class="product-card-list" style="max-height: 380px; overflow-y: auto;">
+        <!-- Itens do ciclo renderizados via JS -->
+      </div>
     </div>
   </div>
 
