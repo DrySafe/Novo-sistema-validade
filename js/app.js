@@ -946,7 +946,6 @@ window.renderCycleModalItems = function(filtro) {
   `;
   }).join('');
 
-  // Atribui os eventos de clique de forma limpa via JS (evita quebrar o HTML)
   container.querySelectorAll('.btn-trigger-recontagem').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const b = e.currentTarget;
