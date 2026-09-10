@@ -177,19 +177,39 @@ export const productService = {
 
   // 6. Busca produtos vencidos
   async getProdutosVencidos(lojaId) {
+    if (!lojaId) return [];
+
     const hojeStr = new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabase
-      .from('lotes_validade')
-      .select('*, produtos(*)')
+    // 6.1. Tenta buscar primeiro da view 'vw_regua_vencimentos'
+    const { data: dataView, error: errView } = await supabase
+      .from('vw_regua_vencimentos')
+      .select('*')
       .eq('loja_id', lojaId)
-      .eq('status', 'ativo')
       .lte('data_vencimento', hojeStr)
       .order('data_vencimento', { ascending: true });
 
-    if (error) throw error;
+    if (!errView && dataView && dataView.length > 0) {
+      return dataView.map(item => ({
+        ...item,
+        produto_nome: item.produto_nome || 'Produto sem nome',
+        imagem_url: item.imagem_url,
+        preco_atual: item.preco_atual || 0,
+        status_regua: '🚫 VENCIDO'
+      }));
+    }
 
-    return (data || []).map(item => ({
+    // 6.2 Fallback: Se a view não retornar, busca diretamente em 'lotes_validade' sem travar no status
+    const { data: dataLotes, error: errLotes } = await supabase
+      .from('lotes_validade')
+      .select('*, produtos(*)')
+      .eq('loja_id', lojaId)
+      .lte('data_vencimento', hojeStr)
+      .order('data_vencimento', { ascending: true });
+
+    if (errLotes) throw errLotes;
+
+    return (dataLotes || []).map(item => ({
       ...item,
       produto_nome: item.produtos?.nome || 'Produto sem nome',
       imagem_url: item.produtos?.imagem_url,
