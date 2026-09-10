@@ -177,18 +177,27 @@ export const productService = {
 
   // 6. Busca produtos vencidos
   async getProdutosVencidos(lojaId) {
-    const hoje = new Date().toISOString().split('T')[0];
+    const hojeStr = new Date().toISOString().split('T')[0]; // Data de hoje no formato YYYY-MM-DD
 
     const { data, error } = await supabase
       .from('lotes_validade')
-      .select('*, produtos(ean, nome, imagem_url, preco_atual, preco_custo), perfis(nome), ciclos_lotes(codigo_lote)')
+      .select('*, produtos(*)')
       .eq('loja_id', lojaId)
-      .lte('data_vencimento', hoje)
+      .eq('status', 'ativo')
+      .lte('data_vencimento', hojeStr) // Menor ou igual à data de hoje
       .order('data_vencimento', { ascending: true });
 
     if (error) throw error;
-    return data;
-  },
+
+    // Mapeia os dados para exibição uniforme com badge de Vencido
+    return (data || []).map(item => ({
+      ...item,
+      produto_nome: item.produtos?.nome || 'Produto sem nome',
+      imagem_url: item.produtos?.imagem_url,
+      preco_atual: item.produtos?.preco_atual || 0,
+      status_regua: '🚫 VENCIDO'
+    }));
+  }
 
   // 7. Busca registros de perdas
   async getRegistrosPerdas(lojaId, tipo) {
