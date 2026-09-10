@@ -63,20 +63,23 @@ export const cycleService = {
     if (errCiclos) throw errCiclos;
     if (!ciclos || ciclos.length === 0) return [];
 
-    // 2. Busca todos os lançamentos de validade vinculados à loja
+    // 2. Consulta a tabela correta 'lotes_validade'
     const { data: registros, error: errReg } = await supabase
-      .from('registros_validade')
-      .select('id, quantidade, data_vencimento, lote, status, produtos(nome, imagem_url, ean, preco_atual), perfis(nome), created_at')
+      .from('lotes_validade')
+      .select('id, quantidade, data_vencimento, lote, status, ciclo_lote_id, produtos(nome, imagem_url, ean, preco_atual), perfis(nome), created_at')
       .eq('loja_id', lojaId);
 
-    if (errReg) console.warn("Aviso ao buscar registros de validade:", errReg);
+    if (errReg) console.warn("Aviso ao buscar registros de lotes_validade:", errReg);
 
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    // 3. Agrupa e calcula as contagens de régua por lote
+    // 3. Agrupa os lançamentos da tabela lotes_validade aos ciclos quinzenais
     return ciclos.map(ciclo => {
-      const itensLote = (registros || []).filter(r => r.lote === ciclo.codigo_lote);
+      // Associa pelo ciclo_lote_id ou pelo código do lote
+      const itensLote = (registros || []).filter(r => 
+        r.ciclo_lote_id === ciclo.id || r.lote === ciclo.codigo_lote
+      );
 
       const metricas = {
         total: 0,
@@ -103,7 +106,7 @@ export const cycleService = {
           else if (diffDias <= 30) metricas.d30 += qtd;
           else if (diffDias <= 45) metricas.d45 += qtd;
           else metricas.d60 += qtd;
-        } else if (item.status === 'VENCIDO') {
+        } else if (item.status === 'esgotado' || item.status === 'baixado') {
           metricas.vencidos += qtd;
         }
       });
