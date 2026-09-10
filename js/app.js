@@ -910,12 +910,10 @@ window.renderCycleModalItems = function(filtro) {
     return;
   }
 
-container.innerHTML = itensFiltrados.map(i => {
+  container.innerHTML = itensFiltrados.map(i => {
     const isZerado = i.quantidade === 0 || i.status === 'esgotado' || i.status === 'baixado';
-    
-    // Tratamento seguro para evitar quebrar a string no HTML
-    const nomeSeguro = (i.produtos?.nome || 'Sem Nome').replace(/['"\\]/g, '');
-    const loteSeguro = (i.lote || '').replace(/['"\\]/g, '');
+    const nomeProd = (i.produtos?.nome || 'Sem Nome').replace(/"/g, '&quot;');
+    const loteProd = (i.lote || '').replace(/"/g, '&quot;');
     const imgUrl = i.produtos?.imagem_url || DEFAULT_AVATAR;
 
     return `
@@ -932,22 +930,38 @@ container.innerHTML = itensFiltrados.map(i => {
         </div>
       </div>
       <div>
-        <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.7rem;"
-          onclick="window.openRecontagemModal(
-            '${i.id}', 
-            '${i.produtos?.id || ''}',
-            '${i.ciclo_lote_id || ''}',
-            '${nomeSeguro}',
-            '${loteSeguro}',
-            ${i.quantidade},
-            '${imgUrl}'
-          )">
+        <button type="button" class="btn btn-secondary btn-trigger-recontagem" 
+          style="padding: 4px 8px; font-size: 0.7rem;"
+          data-id="${i.id}"
+          data-produto-id="${i.produtos?.id || ''}"
+          data-ciclo-id="${i.ciclo_lote_id || ''}"
+          data-nome="${nomeProd}"
+          data-lote="${loteProd}"
+          data-qtd="${i.quantidade}"
+          data-img="${imgUrl}">
           ✏️ Ajustar Qtd
         </button>
       </div>
     </div>
   `;
   }).join('');
+
+  // Atribui os eventos de clique de forma limpa via JS (evita quebrar o HTML)
+  container.querySelectorAll('.btn-trigger-recontagem').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const b = e.currentTarget;
+      window.openRecontagemModal(
+        b.dataset.id,
+        b.dataset.produtoId,
+        b.dataset.cicloId,
+        b.dataset.nome,
+        b.dataset.lote,
+        parseInt(b.dataset.qtd),
+        b.dataset.img
+      );
+    });
+  });
+};
 
 window.finalizarCicloAtual = async function(cycleId) {
   if (confirm("⚠️ Tem certeza que deseja encerrar este ciclo quinzenal?\nUm novo lote será iniciado automaticamente para os novos lançamentos.")) {
