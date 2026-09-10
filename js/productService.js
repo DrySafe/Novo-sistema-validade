@@ -196,7 +196,7 @@ export const productService = {
       preco_atual: item.produtos?.preco_atual || 0,
       status_regua: '🚫 VENCIDO'
     }));
-  }
+  },
 
   // 7. Busca registros de perdas
   async getRegistrosPerdas(lojaId, tipo) {
