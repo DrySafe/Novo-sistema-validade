@@ -8,22 +8,18 @@ import { supabase } from './supabaseClient.js';
    SEÇÃO 1: CONFIGURAÇÕES, CONSTANTES E ESTADOS GLOBAIS
    ============================================================ */
 
-// Avatar SVG de reserva quando o produto/usuário não tem foto
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='%239ca3af'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
 
-// Variáveis de Estado Globais da Aplicação
 let currentProfile = null;
-let currentSector = 'ciclos'; // Define a aba Ciclos como padrão ao abrir o app
+let currentSector = 'ciclos';
 let currentData = [];
 let currentCycle = null;
 let userLojas = [];
 let activeLojaId = localStorage.getItem('active_loja_id') || null;
 
-// Elementos Globais das Telas
 let loginScreen = null;
 let appScreen = null;
 
-// Evento Principal de Inicialização do DOM
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📌 DOM carregado. Inicializando ValidaSuper...');
   
@@ -48,9 +44,7 @@ async function checkSession() {
     if (currentProfile) {
       if (!currentProfile.loja_id && !currentProfile.lojas) {
         const modalOnboarding = document.getElementById('modal-onboarding');
-        if (modalOnboarding) {
-          modalOnboarding.classList.add('active');
-        }
+        if (modalOnboarding) modalOnboarding.classList.add('active');
         return;
       }
 
@@ -70,14 +64,22 @@ async function checkSession() {
         initialsElem.textContent = iniciais;
       }
 
-      await setupStoreSelector();
+      try {
+        await setupStoreSelector();
+      } catch (errStore) {
+        console.warn("Aviso ao carregar seletor:", errStore);
+      }
 
       const lojaAlvo = activeLojaId || currentProfile.loja_id;
-      currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
-      updateCycleTopbarDisplay();
+
+      try {
+        currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
+        updateCycleTopbarDisplay();
+      } catch (errCycle) {
+        console.warn("Aviso ao buscar ciclo ativo:", errCycle);
+      }
 
       const userRole = (currentProfile.funcao || '').toLowerCase();
-      const isAdmin = ['administrador', 'admin'].includes(userRole);
 
       const btnEquipe = document.getElementById('nav-item-equipe');
       if (btnEquipe) {
@@ -468,47 +470,12 @@ function setupEvents() {
     });
   }
 
-  const formRecontagem = document.getElementById('form-recontagem');
-  if (formRecontagem) {
-    formRecontagem.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        await productService.ajustarQuantidadeLote({
-          lojaId: activeLojaId || currentProfile.loja_id,
-          usuarioId: currentProfile.id,
-          itemId: document.getElementById('recontagem-item-id').value,
-          produtoId: document.getElementById('recontagem-produto-id').value,
-          cicloLoteId: document.getElementById('recontagem-ciclo-id').value,
-          qtdAnterior: parseInt(document.getElementById('recontagem-qtd-anterior').value),
-          qtdNova: parseInt(document.getElementById('recontagem-qtd-nova').value),
-          motivo: document.getElementById('recontagem-motivo').value,
-          observacao: document.getElementById('recontagem-obs').value
-        });
-        
-        alert('✅ Quantidade atualizada e registrada na auditoria com sucesso!');
-        window.closeAllModals();
-        
-        // Recarrega o modal do ciclo para ver a mudança
-        const idCicloAtual = document.getElementById('recontagem-ciclo-id').value;
-        if (idCicloAtual) {
-          window.openCycleDetails(idCicloAtual);
-        } else {
-          loadSectorData();
-        }
-
-      } catch (err) {
-        alert('Erro ao ajustar quantidade: ' + err.message);
-      }
-    });
-  }
-
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
     await authService.logout();
     localStorage.removeItem('active_loja_id');
     location.reload();
   });
 
-  // Alternância das abas da Bottom Nav
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
@@ -732,7 +699,39 @@ function setupEvents() {
     });
   }
 
-  // Eventos de filtro dentro do modal de inspeção do ciclo
+  const formRecontagem = document.getElementById('form-recontagem');
+  if (formRecontagem) {
+    formRecontagem.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await productService.ajustarQuantidadeLote({
+          lojaId: activeLojaId || currentProfile.loja_id,
+          usuarioId: currentProfile.id,
+          itemId: document.getElementById('recontagem-item-id').value,
+          produtoId: document.getElementById('recontagem-produto-id').value,
+          cicloLoteId: document.getElementById('recontagem-ciclo-id').value,
+          qtdAnterior: parseInt(document.getElementById('recontagem-qtd-anterior').value),
+          qtdNova: parseInt(document.getElementById('recontagem-qtd-nova').value),
+          motivo: document.getElementById('recontagem-motivo').value,
+          observacao: document.getElementById('recontagem-obs').value
+        });
+
+        alert('✅ Quantidade atualizada e registrada na auditoria com sucesso!');
+        window.closeAllModals();
+
+        const idCicloAtual = document.getElementById('recontagem-ciclo-id').value;
+        if (idCicloAtual) {
+          window.openCycleDetails(idCicloAtual);
+        } else {
+          loadSectorData();
+        }
+
+      } catch (err) {
+        alert('Erro ao ajustar quantidade: ' + err.message);
+      }
+    });
+  }
+
   document.querySelectorAll('.filter-cycle-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('.filter-cycle-btn').forEach(b => b.classList.remove('active'));
@@ -900,7 +899,7 @@ window.renderCycleModalItems = function(filtro) {
     });
   } else if (filtro === 'vencidos') {
     itensFiltrados = itens.filter(i => {
-      if (!i.data_vencimento) return i.status === 'VENCIDO';
+      if (!i.data_vencimento) return i.status === 'VENCIDO' || i.status === 'baixado';
       const dt = new Date(i.data_vencimento + 'T00:00:00');
       return dt < hoje;
     });
@@ -942,7 +941,9 @@ window.renderCycleModalItems = function(filtro) {
         </button>
       </div>
     </div>
-  `}).join('');
+  `;
+  }).join('');
+};
 
 window.finalizarCicloAtual = async function(cycleId) {
   if (confirm("⚠️ Tem certeza que deseja encerrar este ciclo quinzenal?\nUm novo lote será iniciado automaticamente para os novos lançamentos.")) {
