@@ -910,12 +910,17 @@ window.renderCycleModalItems = function(filtro) {
     return;
   }
 
-  container.innerHTML = itensFiltrados.map(i => {
+container.innerHTML = itensFiltrados.map(i => {
     const isZerado = i.quantidade === 0 || i.status === 'esgotado' || i.status === 'baixado';
     
+    // Tratamento seguro para evitar quebrar a string no HTML
+    const nomeSeguro = (i.produtos?.nome || 'Sem Nome').replace(/['"\\]/g, '');
+    const loteSeguro = (i.lote || '').replace(/['"\\]/g, '');
+    const imgUrl = i.produtos?.imagem_url || DEFAULT_AVATAR;
+
     return `
     <div class="product-card" style="padding: 0.6rem; opacity: ${isZerado ? '0.6' : '1'};">
-      <img src="${i.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto" style="width: 42px; height: 42px; ${isZerado ? 'filter: grayscale(1);' : ''}">
+      <img src="${imgUrl}" alt="Foto" style="width: 42px; height: 42px; ${isZerado ? 'filter: grayscale(1);' : ''}">
       <div class="product-info" style="flex: 1;">
         <div class="product-title" style="font-size: 0.85rem; ${isZerado ? 'text-decoration: line-through;' : ''}">${i.produtos?.nome || 'Sem Nome'}</div>
         <div class="product-sub" style="font-size: 0.75rem;">
@@ -932,10 +937,10 @@ window.renderCycleModalItems = function(filtro) {
             '${i.id}', 
             '${i.produtos?.id || ''}',
             '${i.ciclo_lote_id || ''}',
-            '${(i.produtos?.nome || 'Sem Nome').replace(/'/g, "\\'")}',
-            '${(i.lote || '').replace(/'/g, "\\'")}',
+            '${nomeSeguro}',
+            '${loteSeguro}',
             ${i.quantidade},
-            '${i.produtos?.imagem_url || DEFAULT_AVATAR}'
+            '${imgUrl}'
           )">
           ✏️ Ajustar Qtd
         </button>
@@ -943,7 +948,6 @@ window.renderCycleModalItems = function(filtro) {
     </div>
   `;
   }).join('');
-};
 
 window.finalizarCicloAtual = async function(cycleId) {
   if (confirm("⚠️ Tem certeza que deseja encerrar este ciclo quinzenal?\nUm novo lote será iniciado automaticamente para os novos lançamentos.")) {
