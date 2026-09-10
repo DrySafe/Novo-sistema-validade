@@ -239,6 +239,33 @@ window.openUserProfileModal = function() {
   }, 30);
 };
 
+window.openRecontagemModal = function(itemId, produtoId, cicloId, nome, lote, qtdAnterior, imgUrl) {
+  const userRole = (currentProfile.funcao || '').toLowerCase();
+  
+  if (!['administrador', 'admin', 'gerente', 'gestor', 'adm'].includes(userRole)) {
+    alert("⛔ Apenas perfis de Gestão/Auditoria podem ajustar quantidades.");
+    return;
+  }
+
+  window.closeAllModals();
+
+  setTimeout(() => {
+    document.getElementById('recontagem-item-id').value = itemId;
+    document.getElementById('recontagem-produto-id').value = produtoId;
+    document.getElementById('recontagem-ciclo-id').value = cicloId || '';
+    document.getElementById('recontagem-qtd-anterior').value = qtdAnterior;
+    
+    document.getElementById('recontagem-qtd-display').value = qtdAnterior;
+    document.getElementById('recontagem-qtd-nova').value = qtdAnterior;
+
+    document.getElementById('recontagem-nome').textContent = nome;
+    document.getElementById('recontagem-lote-info').textContent = "Lote/Validade: " + lote;
+    document.getElementById('recontagem-img').src = imgUrl || DEFAULT_AVATAR;
+
+    document.getElementById('modal-recontagem')?.classList.add('active');
+  }, 50);
+};
+
 /* ============================================================
    SEÇÃO 5: REGISTRO DE EVENTOS E FORMULÁRIOS
    ============================================================ */
@@ -252,6 +279,7 @@ function setupEvents() {
 
       const storeId = document.getElementById('ob-store-id').value;
       const payloadLoja = {
+        numeroLoja: document.getElementById('ob-store-num')?.value || '01',
         nomeLoja: document.getElementById('ob-store-name').value,
         razaoSocial: document.getElementById('ob-razao-social').value,
         cnpj: document.getElementById('ob-store-cnpj').value,
@@ -269,6 +297,7 @@ function setupEvents() {
       try {
         if (storeId) {
           await authService.updateStore(storeId, {
+            numero_loja: payloadLoja.numeroLoja,
             nome: payloadLoja.nomeLoja,
             razao_social: payloadLoja.razaoSocial,
             cnpj: payloadLoja.cnpj,
@@ -316,6 +345,7 @@ function setupEvents() {
       document.getElementById('btn-submit-store-form').textContent = 'Salvar Alterações';
 
       document.getElementById('ob-store-id').value = dados.id || lojaAtivaId;
+      if (document.getElementById('ob-store-num')) document.getElementById('ob-store-num').value = dados.numero_loja || '01';
       document.getElementById('ob-store-name').value = dados.nome || '';
       document.getElementById('ob-razao-social').value = dados.razao_social || '';
       document.getElementById('ob-store-cnpj').value = dados.cnpj || '';
@@ -434,6 +464,40 @@ function setupEvents() {
         await checkSession();
       } catch (err) {
         alert('Erro ao realizar login: ' + (err.message || err));
+      }
+    });
+  }
+
+  const formRecontagem = document.getElementById('form-recontagem');
+  if (formRecontagem) {
+    formRecontagem.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await productService.ajustarQuantidadeLote({
+          lojaId: activeLojaId || currentProfile.loja_id,
+          usuarioId: currentProfile.id,
+          itemId: document.getElementById('recontagem-item-id').value,
+          produtoId: document.getElementById('recontagem-produto-id').value,
+          cicloLoteId: document.getElementById('recontagem-ciclo-id').value,
+          qtdAnterior: parseInt(document.getElementById('recontagem-qtd-anterior').value),
+          qtdNova: parseInt(document.getElementById('recontagem-qtd-nova').value),
+          motivo: document.getElementById('recontagem-motivo').value,
+          observacao: document.getElementById('recontagem-obs').value
+        });
+        
+        alert('✅ Quantidade atualizada e registrada na auditoria com sucesso!');
+        window.closeAllModals();
+        
+        // Recarrega o modal do ciclo para ver a mudança
+        const idCicloAtual = document.getElementById('recontagem-ciclo-id').value;
+        if (idCicloAtual) {
+          window.openCycleDetails(idCicloAtual);
+        } else {
+          loadSectorData();
+        }
+
+      } catch (err) {
+        alert('Erro ao ajustar quantidade: ' + err.message);
       }
     });
   }
@@ -847,22 +911,38 @@ window.renderCycleModalItems = function(filtro) {
     return;
   }
 
-  container.innerHTML = itensFiltrados.map(i => `
-    <div class="product-card" style="padding: 0.6rem;">
-      <img src="${i.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto" style="width: 42px; height: 42px;">
-      <div class="product-info">
-        <div class="product-title" style="font-size: 0.85rem;">${i.produtos?.nome || 'Sem Nome'}</div>
+  container.innerHTML = itensFiltrados.map(i => {
+    const isZerado = i.quantidade === 0 || i.status === 'esgotado' || i.status === 'baixado';
+    
+    return `
+    <div class="product-card" style="padding: 0.6rem; opacity: ${isZerado ? '0.6' : '1'};">
+      <img src="${i.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto" style="width: 42px; height: 42px; ${isZerado ? 'filter: grayscale(1);' : ''}">
+      <div class="product-info" style="flex: 1;">
+        <div class="product-title" style="font-size: 0.85rem; ${isZerado ? 'text-decoration: line-through;' : ''}">${i.produtos?.nome || 'Sem Nome'}</div>
         <div class="product-sub" style="font-size: 0.75rem;">
-          <span>Qtd: <strong>${i.quantidade} un</strong></span>
+          <span>Qtd: <strong style="${isZerado ? 'color: var(--st-7);' : 'color: var(--primary);'} font-size: 0.9rem;">${i.quantidade} un</strong></span>
           <span>Venc: <strong>${i.data_vencimento ? new Date(i.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/I'}</strong></span>
         </div>
         <div class="product-sub" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
           <span>Bipado por: ${i.perfis?.nome || 'Operador'}</span>
         </div>
       </div>
+      <div>
+        <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.7rem;"
+          onclick="window.openRecontagemModal(
+            '${i.id}', 
+            '${i.produtos?.id || ''}',
+            '${i.ciclo_lote_id || ''}',
+            '${(i.produtos?.nome || 'Sem Nome').replace(/'/g, "\\'")}',
+            '${(i.lote || '').replace(/'/g, "\\'")}',
+            ${i.quantidade},
+            '${i.produtos?.imagem_url || DEFAULT_AVATAR}'
+          )">
+          ✏️ Ajustar Qtd
+        </button>
+      </div>
     </div>
-  `).join('');
-};
+  `}).join('');
 
 window.finalizarCicloAtual = async function(cycleId) {
   if (confirm("⚠️ Tem certeza que deseja encerrar este ciclo quinzenal?\nUm novo lote será iniciado automaticamente para os novos lançamentos.")) {

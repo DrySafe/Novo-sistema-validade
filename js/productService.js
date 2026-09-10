@@ -244,5 +244,53 @@ export const productService = {
 
     if (error) throw error;
     return data;
+  },
+
+  /* ============================================================
+     SEÇÃO: AUDITORIA E RECONTAGEM DE QUANTIDADE
+     ============================================================ */
+
+  // Atualiza a quantidade do item no lote e gera log de auditoria
+  async ajustarQuantidadeLote(payload) {
+    const { 
+      itemId, cicloLoteId, lojaId, produtoId, usuarioId, 
+      qtdAnterior, qtdNova, motivo, observacao 
+    } = payload;
+
+    // 1. Inicia a transação atualizando a quantidade (e mudando status se zerou)
+    let novoStatus = 'ativo';
+    if (qtdNova === 0) {
+      novoStatus = (motivo === 'Perda/Avaria') ? 'baixado' : 'esgotado';
+    }
+
+    const { error: errUpdate } = await supabase
+      .from('lotes_validade')
+      .update({ 
+        quantidade: qtdNova,
+        status: novoStatus
+      })
+      .eq('id', itemId);
+
+    if (errUpdate) throw new Error("Erro ao atualizar quantidade no lote: " + errUpdate.message);
+
+    // 2. Grava o evento na tabela de auditoria
+    const { error: errAudit } = await supabase
+      .from('auditoria_eventos')
+      .insert({
+        loja_id: lojaId,
+        ciclo_lote_id: cicloLoteId || null,
+        lote_validade_id: itemId,
+        produto_id: produtoId || null,
+        usuario_id: usuarioId,
+        acao: qtdNova === 0 ? 'ZERAMENTO_ESTOQUE' : 'AJUSTE_QUANTIDADE',
+        qtd_anterior: qtdAnterior,
+        qtd_nova: qtdNova,
+        motivo: motivo,
+        observacao: observacao || null
+      });
+
+    if (errAudit) console.warn("Aviso: Falha ao gravar log de auditoria:", errAudit.message);
+
+    return true;
   }
 };

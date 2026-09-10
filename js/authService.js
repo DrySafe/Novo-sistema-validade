@@ -26,7 +26,7 @@ export const authService = {
 
     const { data, error } = await supabase
       .from('perfis')
-      .select('*, lojas(nome, cnpj)')
+      .select('*, lojas(id, nome, numero_loja, cnpj, razao_social, inscricao_estadual, logradouro, numero, bairro, cidade, uf, cep, telefone)')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -69,15 +69,16 @@ export const authService = {
   // 2.1 Cadastra Nova Loja para o Usuário Logado e Registra Tabela Associativa
   async createStoreForUser(dadosLoja) {
     const { 
-      nomeLoja, razaoSocial, cnpj, ie, 
+      numeroLoja, nomeLoja, razaoSocial, cnpj, ie, 
       logradouro, numero, bairro, cidade, uf, cep, telefone, 
       usuarioId 
     } = dadosLoja;
 
-    // 1. Insere a nova unidade comercial
+    // 1. Insere a nova unidade comercial com o número/código da loja
     const { data: loja, error: errorLoja } = await supabase
       .from('lojas')
       .insert({
+        numero_loja: numeroLoja || '01',
         nome: nomeLoja,
         razao_social: razaoSocial || null,
         cnpj: cnpj || null,
@@ -95,14 +96,14 @@ export const authService = {
 
     if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
 
-    // 2. GARANTE O VÍNCULO NA TABELA ASSOCIATIVA (Obrigatório para o Seletor)
+    // 2. Garante o vínculo do usuário com a nova loja na tabela associativa
     const { error: errorVinculo } = await supabase
       .from('usuario_lojas')
       .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
 
     if (errorVinculo) console.warn("Aviso ao vincular loja:", errorVinculo.message);
 
-    // 3. Se for a primeira loja do perfil, atualiza a loja principal
+    // 3. Atualiza o perfil se for a primeira loja do usuário
     await supabase
       .from('perfis')
       .update({ loja_id: loja.id })
@@ -110,6 +111,18 @@ export const authService = {
       .is('loja_id', null);
 
     return loja;
+  },
+
+  // 2.2 Atualiza Dados Completos de Uma Loja Existente
+  async updateStore(lojaId, dados) {
+    const { data, error } = await supabase
+      .from('lojas')
+      .update(dados)
+      .eq('id', lojaId)
+      .select();
+
+    if (error) throw new Error("Erro ao atualizar loja: " + error.message);
+    return data;
   },
 
   /* ============================================================
@@ -130,7 +143,6 @@ export const authService = {
 
   // 3.2 Cadastra Novo Colaborador Gerando Credenciais no Auth
   async addEmployee({ lojaId, nome, funcao, email, password, avatarUrl }) {
-    // Registra a conta no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password
@@ -141,7 +153,6 @@ export const authService = {
     const userId = authData.user?.id;
     if (!userId) throw new Error("Ocorreu um erro inesperado ao gerar a conta de acesso.");
 
-    // Vincula a ficha técnica na tabela perfis
     const { data, error } = await supabase
       .from('perfis')
       .upsert({

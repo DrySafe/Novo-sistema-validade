@@ -355,15 +355,21 @@
         <!-- Campo Oculto para identificar se é Edição -->
         <input type="hidden" id="ob-store-id" value="">
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <!-- CAMPO NÚMERO DA UNIDADE + NOME FANTASIA + RAZÃO SOCIAL -->
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label for="ob-store-num">Número da Loja *</label>
+            <input type="text" id="ob-store-num" required placeholder="Ex: 01, 03" maxlength="10">
+          </div>
           <div class="form-group">
             <label for="ob-store-name">Nome Fantasia *</label>
             <input type="text" id="ob-store-name" required placeholder="Ex: Supermercado Centro">
           </div>
-          <div class="form-group">
-            <label for="ob-razao-social">Razão Social</label>
-            <input type="text" id="ob-razao-social" placeholder="Ex: Mercado Centro Ltda">
-          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ob-razao-social">Razão Social</label>
+          <input type="text" id="ob-razao-social" placeholder="Ex: Mercado Centro Ltda">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
@@ -443,6 +449,64 @@
       <div id="cycle-detail-items-list" class="product-card-list" style="max-height: 380px; overflow-y: auto;">
         <!-- Itens do ciclo renderizados via JS -->
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: RECONTAGEM / ZERAMENTO DE ESTOQUE (AUDITORIA) -->
+  <div id="modal-recontagem" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3 class="modal-title">AJUSTE DE QUANTIDADE</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+      </div>
+
+      <div style="background: var(--surface-panel); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
+        <img id="recontagem-img" src="" alt="Produto" style="width: 48px; height: 48px; object-fit: contain; border-radius: 6px; background: #fff;">
+        <div>
+          <strong id="recontagem-nome" style="display: block; font-size: 0.95rem; color: var(--text-main);">-</strong>
+          <small id="recontagem-lote-info" style="color: var(--text-muted); font-size: 0.75rem;">-</small>
+        </div>
+      </div>
+
+      <form id="form-recontagem">
+        <input type="hidden" id="recontagem-item-id">
+        <input type="hidden" id="recontagem-ciclo-id">
+        <input type="hidden" id="recontagem-produto-id">
+        <input type="hidden" id="recontagem-qtd-anterior">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group" style="margin: 0;">
+            <label style="color: var(--text-muted); font-size: 0.8rem;">Qtd Anterior</label>
+            <input type="text" id="recontagem-qtd-display" disabled style="background: rgba(0,0,0,0.1); border: 1px solid var(--border); color: var(--text-muted); font-size: 1.2rem; font-family: var(--font-mono); text-align: center;">
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label for="recontagem-qtd-nova" style="color: var(--text-main); font-weight: bold; font-size: 0.8rem;">Nova Qtd *</label>
+            <input type="number" id="recontagem-qtd-nova" min="0" required style="border: 2px solid var(--primary); font-size: 1.2rem; font-family: var(--font-mono); text-align: center; color: var(--primary);">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="recontagem-motivo">Motivo do Ajuste *</label>
+          <select id="recontagem-motivo" required>
+            <option value="" disabled selected>Selecione uma justificativa...</option>
+            <option value="Venda">Venda / Saída de PDV</option>
+            <option value="Uso Loja">Uso Interno / Consumo Loja</option>
+            <option value="Perda/Avaria">Perda / Avaria / Vencimento</option>
+            <option value="Erro Contagem">Correção de Erro de Contagem</option>
+            <option value="Outro">Outro (Especificar na Obs)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="recontagem-obs">Observação / Detalhes (Opcional)</label>
+          <textarea id="recontagem-obs" rows="2" placeholder="Descreva detalhes adicionais se necessário..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="window.closeAllModals()" style="flex: 1;">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="flex: 2;">Confirmar Ajuste</button>
+        </div>
+      </form>
     </div>
   </div>
 
