@@ -475,6 +475,12 @@ function setupEvents() {
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const alertBox = document.getElementById('login-alert');
+      if (alertBox) {
+        alertBox.className = 'hidden';
+        alertBox.textContent = '';
+      }
+
       try {
         await authService.login(
           document.getElementById('login-email').value,
@@ -482,7 +488,10 @@ function setupEvents() {
         );
         await checkSession();
       } catch (err) {
-        alert('Erro ao realizar login: ' + (err.message || err));
+        if (alertBox) {
+          alertBox.textContent = '⚠️ E-mail ou senha incorretos. Tente novamente.';
+          alertBox.classList.remove('hidden');
+        }
       }
     });
   }
