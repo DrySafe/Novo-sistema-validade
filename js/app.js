@@ -803,49 +803,54 @@ function renderCiclosCards(ciclos, container) {
   const userRole = (currentProfile.funcao || '').toLowerCase();
   const isAdmin = ['administrador', 'admin', 'gerente', 'gestor'].includes(userRole);
 
+  // Aplica Grid no Desktop e Stack no Mobile
+  container.style.display = 'grid';
+  container.style.gridTemplateColumns = window.innerWidth >= 1024 ? 'repeat(2, 1fr)' : '1fr';
+  container.style.gap = '0.75rem';
+
   container.innerHTML = ciclos.map(c => {
     const isAtivo = c.status === 'EM EDIÇÃO';
     const m = c.metricas;
     const dtInicio = new Date(c.created_at).toLocaleDateString('pt-BR');
 
     return `
-      <div class="product-card" style="flex-direction: column; align-items: stretch; gap: 0.75rem; border-left: 4px solid ${isAtivo ? '#10b981' : '#64748b'};">
+      <div class="product-card" style="flex-direction: column; align-items: stretch; gap: 0.6rem; border-left: 4px solid ${isAtivo ? '#059669' : '#64748b'}; padding: 0.75rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">CÓDIGO: ${c.codigo_lote}</span>
-            <h4 style="margin: 0; font-family: var(--font-display); font-size: 1.2rem; color: var(--text-main);">
+            <span style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">CÓDIGO: ${c.codigo_lote}</span>
+            <h4 style="margin: 0; font-family: var(--font-display); font-size: 1.1rem; color: var(--text-main);">
               ${isAtivo ? '🟢 LOTE ATUAL EM EDIÇÃO' : '📋 LOTE FINALIZADO'}
             </h4>
-            <small style="color: var(--text-muted);">Iniciado em: ${dtInicio}</small>
+            <small style="color: var(--text-muted); font-size: 0.68rem;">Abertura: ${dtInicio}</small>
           </div>
-          <span class="badge-regua ${isAtivo ? 'badge-60' : 'badge-vencido'}" style="font-size: 0.8rem;">
+          <span class="badge-regua ${isAtivo ? 'badge-60' : 'badge-vencido'}" style="font-size: 0.7rem;">
             ${c.status}
           </span>
         </div>
 
-        <div style="background: var(--surface-panel); padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border);">
-          <div style="font-size: 0.8rem; font-weight: bold; margin-bottom: 0.4rem; color: var(--text-main);">
-            VARREDURA DA QUINZENA (${m.total} UNIDADES BIPADAS):
+        <div style="background: var(--surface-panel); padding: 0.5rem; border: 1px solid var(--border);">
+          <div style="font-size: 0.72rem; font-weight: bold; margin-bottom: 0.3rem; color: var(--text-main);">
+            VARREDURA DA QUINZENA (${m.total} UNIDADES):
           </div>
           
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; text-align: center;">
-            <div style="background: rgba(16, 185, 129, 0.1); padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #10b981;">60d: ${m.d60} un</div>
-            <div style="background: rgba(59, 130, 246, 0.1); padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #3b82f6;">45d: ${m.d45} un</div>
-            <div style="background: rgba(234, 179, 8, 0.1); padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #eab308;">30d: ${m.d30} un</div>
-            <div style="background: rgba(245, 158, 11, 0.15); padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #f59e0b;">15d: ${m.d15} un</div>
-            <div style="background: rgba(239, 68, 68, 0.15); padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; color: #ef4444;">7d: ${m.d7} un</div>
-            <div style="background: #ef4444; color: #fff; padding: 4px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">Venc: ${m.vencidos} un</div>
+          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.25rem; text-align: center;">
+            <div style="background: rgba(5, 150, 105, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #047857;">60d<br>${m.d60}</div>
+            <div style="background: rgba(29, 78, 216, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #1d4ed8;">45d<br>${m.d45}</div>
+            <div style="background: rgba(180, 83, 9, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #b45309;">30d<br>${m.d30}</div>
+            <div style="background: rgba(194, 65, 12, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #c2410c;">15d<br>${m.d15}</div>
+            <div style="background: rgba(185, 28, 28, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #b91c1c;">7d<br>${m.d7}</div>
+            <div style="background: #b91c1c; color: #fff; padding: 2px; font-size: 0.65rem; font-weight: bold;">Venc<br>${m.vencidos}</div>
           </div>
         </div>
 
         <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-            🔍 Inspecionar & Detalhar
+          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+            🔍 Inspecionar
           </button>
           
           ${(isAtivo && isAdmin) ? `
-            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem; background: #3b82f6;">
-              🔒 Encerrar Quinzena
+            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: #1d4ed8;">
+              🔒 Encerrar
             </button>
           ` : ''}
         </div>
