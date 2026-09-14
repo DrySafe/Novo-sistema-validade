@@ -69,9 +69,13 @@
           <input type="password" id="login-password" required placeholder="••••••••">
         </div>
         <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
-        <button type="button" id="btn-show-register" class="btn btn-secondary" style="margin-top: 0.75rem;">
-          👤 Criar Minha Conta
-        </button>
+          
+          <!-- CAIXA DE AVISO DE ERRO NO LOGIN -->
+          <div id="login-alert" class="hidden" style="margin-top: 0.75rem; padding: 0.6rem; border-radius: var(--radius); font-size: 0.75rem; font-weight: 600; text-align: center;"></div>
+        <button type="submit" class="btn btn-primary">Criar minha conta</button>
+          
+          <!-- CAIXA DE AVISO DE ERRO / SUCESSO NO CADASTRO -->
+          <div id="register-alert" class="hidden" style="margin-top: 0.75rem; padding: 0.6rem; border-radius: var(--radius); font-size: 0.75rem; font-weight: 600; text-align: center;"></div>
       </form>
 
       <!-- Form Cadastro de Usuário (Inicia Oculto) -->
