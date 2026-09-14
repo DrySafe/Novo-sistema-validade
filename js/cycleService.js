@@ -3,38 +3,53 @@ import { supabase } from './supabaseClient.js';
 export const cycleService = {
 
   /* ============================================================
-     SEÇÃO 1: CONSULTA E GERAÇÃO DE CICLOS DE LOTE
+     SEÇÃO 1: GERENCIAMENTO E CRIAÇÃO DE LOTES (VAL, AV, USO, VENC)
      ============================================================ */
 
-  // 1.1 Obtém o lote ativo no estado "EM EDIÇÃO" ou gera um novo código via RPC
-  async getOrCreateActiveCycle(lojaId) {
+  // Obtém ou cria um lote ativo por tipo ('VAL', 'AV', 'USO', 'VENC')
+  async getOrCreateActiveCycle(lojaId, tipo = 'VAL') {
     if (!lojaId) {
       console.warn("⚠️ Nenhum lojaId fornecido para buscar/gerar ciclo.");
       return null;
     }
 
-    // Busca lote ativo existente para a loja
-    const { data: loteAtivo, error: errBusca } = await supabase
+    const tipoUpper = (tipo || 'VAL').toUpperCase();
+
+    // 1. Busca lote ativo existente do tipo específico para a loja
+    // Para diários (AV, USO, VENC), busca um lote criado hoje
+    const hojeStr = new Date().toISOString().split('T')[0];
+
+    let query = supabase
       .from('ciclos_lotes')
       .select('*')
       .eq('loja_id', lojaId)
       .eq('status', 'EM EDIÇÃO')
-      .maybeSingle();
+      .ilike('codigo_lote', `%${tipoUpper}%`);
 
+    const { data: lotesAtivos, error: errBusca } = await query;
     if (errBusca) throw errBusca;
-    if (loteAtivo) return loteAtivo;
 
-    // Se não existir, invoca a RPC para gerar um novo código de lote
+    if (lotesAtivos && lotesAtivos.length > 0) {
+      // Se for diário, filtra o do dia atual se houver
+      if (['AV', 'USO', 'VENC'].includes(tipoUpper)) {
+        const loteHoje = lotesAtivos.find(l => l.created_at && l.created_at.startsWith(hojeStr));
+        if (loteHoje) return loteHoje;
+      } else {
+        return lotesAtivos[0]; // Retorna o VAL em edição
+      }
+    }
+
+    // 2. Se não existir, invoca a RPC para gerar um novo código de lote via banco
     const { data: novoLote, error: errRpc } = await supabase
-      .rpc('gerar_codigo_lote', { p_loja_id: lojaId });
+      .rpc('gerar_codigo_lote', { p_loja_id: lojaId, p_tipo: tipoUpper });
 
-    if (errRpc) throw new Error("Erro ao gerar novo código de lote: " + errRpc.message);
+    if (errRpc) throw new Error("Erro ao gerar novo código de lote (" + tipoUpper + "): " + errRpc.message);
 
     if (!novoLote || novoLote.length === 0) {
       throw new Error("RPC gerar_codigo_lote não retornou o ID do novo lote.");
     }
 
-    // Busca o registro do lote recém-criado de forma segura
+    // 3. Busca o registro recém-criado
     const { data: loteCriado, error: errCriado } = await supabase
       .from('ciclos_lotes')
       .select('*')
@@ -46,14 +61,12 @@ export const cycleService = {
   },
 
   /* ============================================================
-     SEÇÃO 2: MÉTRICAS QUINZENAIS E AUDITORIA DA RÉGUA
+     SEÇÃO 2: MÉTRICAS E CONSULTAS DOS CICLOS
      ============================================================ */
 
-  // 2.1 Obtém o histórico de ciclos com contagem consolidada por régua
   async getCycleMetrics(lojaId) {
     if (!lojaId) return [];
 
-    // 1. Busca os ciclos registrados para a loja
     const { data: ciclos, error: errCiclos } = await supabase
       .from('ciclos_lotes')
       .select('*')
@@ -63,10 +76,9 @@ export const cycleService = {
     if (errCiclos) throw errCiclos;
     if (!ciclos || ciclos.length === 0) return [];
 
-    // 2. Consulta a tabela correta 'lotes_validade'
     const { data: registros, error: errReg } = await supabase
       .from('lotes_validade')
-      .select('id, quantidade, data_vencimento, lote, status, ciclo_lote_id, produtos(nome, imagem_url, ean, preco_atual), perfis(nome), created_at')
+      .select('id, quantidade, data_vencimento, lote, status, ciclo_lote_id, tipo_baixa, baixado_em, origem_cadastro, lote_origem_codigo, produtos(nome, imagem_url, ean, preco_atual), perfis(nome), created_at')
       .eq('loja_id', lojaId);
 
     if (errReg) console.warn("Aviso ao buscar registros de lotes_validade:", errReg);
@@ -74,9 +86,7 @@ export const cycleService = {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    // 3. Agrupa os lançamentos da tabela lotes_validade aos ciclos quinzenais
     return ciclos.map(ciclo => {
-      // Associa pelo ciclo_lote_id ou pelo código do lote
       const itensLote = (registros || []).filter(r => 
         r.ciclo_lote_id === ciclo.id || r.lote === ciclo.codigo_lote
       );
@@ -118,11 +128,6 @@ export const cycleService = {
     });
   },
 
-  /* ============================================================
-     SEÇÃO 3: HISTÓRICO E ALTERAÇÃO DE STATUS
-     ============================================================ */
-
-  // 3.1 Lista todos os ciclos cadastrados para a loja
   async getCycleHistory(lojaId) {
     if (!lojaId) return [];
 
@@ -136,7 +141,6 @@ export const cycleService = {
     return data;
   },
 
-  // 3.2 Altera o status do ciclo (ex: de "EM EDIÇÃO" para "FINALIZADO")
   async updateCycleStatus(cycleId, newStatus) {
     const { data, error } = await supabase
       .from('ciclos_lotes')

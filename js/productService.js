@@ -3,261 +3,272 @@ import { cycleService } from './cycleService.js';
 
 export const productService = {
 
-  // 1. Consulta API externa Open Food Facts
+  /* ============================================================
+     SEÇÃO 1: CONSULTA DE API EXTERNA (EAN / OPEN FOOD FACTS)
+     ============================================================ */
+
   async fetchEanExternalApi(ean) {
+    if (!ean || ean.length < 8) return null;
     try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`, {
-        headers: {
-          'User-Agent': 'ValidaSuperApp - Web - Version 1.0 - www.validadeeco.vercel.app'
-        }
-      });
-
-      if (!response.ok) return null;
-
+      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`);
       const data = await response.json();
       if (data.status === 1 && data.product) {
-        const prod = data.product;
-        
-        let imageUrl = prod.image_front_url || prod.image_url || '';
-        if (imageUrl.startsWith('http://')) {
-          imageUrl = imageUrl.replace('http://', 'https://');
-        }
-
         return {
-          nome: prod.product_name_pt || prod.product_name || '',
-          categoria: prod.categories ? prod.categories.split(',')[0] : 'Geral',
-          imagem_url: imageUrl
+          ean: ean,
+          nome: data.product.product_name || data.product.product_name_pt || 'Produto sem nome',
+          imagem_url: data.product.image_front_url || data.product.image_url || null,
+          categoria: data.product.categories_tags?.[0]?.replace('en:', '') || 'Geral'
         };
       }
-    } catch (error) {
-      console.warn('Open Food Facts indisponível ou produto não cadastrado:', error);
+    } catch (err) {
+      console.warn("Aviso ao buscar API externa:", err);
     }
     return null;
   },
 
-  // 2. Busca ou cria o produto na tabela global 'produtos'
-  async getOrCreateProduto(ean, nomeInformado, imagemUrlInformada, precoAtualInformado) {
-    const { data: existing } = await supabase
+  /* ============================================================
+     SEÇÃO 2: CRIAÇÃO E LANÇAMENTO DE REGISTROS (COM REQUISIÇÃO DE TIPO)
+     ============================================================ */
+
+  async createEntry(payload) {
+    const { 
+      lojaId, usuarioId, setor, ean, produtoNome, 
+      precoAtual, imagemUrl, lote, quantidade, 
+      dataVencimento, localizacao, motivo, forcarInsercao 
+    } = payload;
+
+    if (!lojaId || !ean || !quantidade || !dataVencimento) {
+      throw new Error("Preencha todos os campos obrigatórios (EAN, Quantidade, Data de Vencimento).");
+    }
+
+    // 1. Determina o tipo de lote com base no setor e na data de vencimento
+    const hojeStr = new Date().toISOString().split('T')[0];
+    let tipoLote = 'VAL';
+    let origemCadastro = 'PADRAO';
+
+    if (setor === 'vencidos' || dataVencimento < hojeStr) {
+      tipoLote = 'VENC';
+      origemCadastro = 'ADICIONADO_VENCIDO';
+    } else if (setor === 'avarias') {
+      tipoLote = 'AV';
+    } else if (setor === 'uso') {
+      tipoLote = 'USO';
+    }
+
+    // 2. Busca ou cria o ciclo/lote ativo para este tipo na loja
+    const cicloAtivo = await cycleService.getOrCreateActiveCycle(lojaId, tipoLote);
+    if (!cicloAtivo) {
+      throw new Error("Não foi possível gerar ou recuperar o lote ativo para o tipo: " + tipoLote);
+    }
+
+    // 3. Garante que o produto existe na tabela base 'produtos'
+    let produtoId = null;
+    const { data: prodExistente } = await supabase
       .from('produtos')
-      .select('id, nome, imagem_url, preco_atual')
+      .select('id')
       .eq('ean', ean)
       .maybeSingle();
 
-    if (existing) {
-      const updates = {};
-      if (!existing.imagem_url && imagemUrlInformada) updates.imagem_url = imagemUrlInformada;
-      // Garante a atualização do preço de venda caso um novo valor seja informado
-      if (precoAtualInformado && parseFloat(precoAtualInformado) > 0) {
-        updates.preco_atual = parseFloat(precoAtualInformado);
-      }
+    if (prodExistente) {
+      produtoId = prodExistente.id;
+      // Atualiza imagem ou nome se necessário
+      await supabase
+        .from('produtos')
+        .update({ nome: produtoNome, imagem_url: imagemUrl || null, preco_atual: precoAtual || 0 })
+        .eq('id', produtoId);
+    } else {
+      const { data: novoProd, error: errNovoProd } = await supabase
+        .from('produtos')
+        .insert({
+          ean,
+          nome: produtoNome || 'Produto Sem Nome',
+          imagem_url: imagemUrl || null,
+          preco_atual: precoAtual || 0
+        })
+        .select('id')
+        .single();
 
-      if (Object.keys(updates).length > 0) {
-        await supabase.from('produtos').update(updates).eq('id', existing.id);
-      }
-      return existing.id;
+      if (errNovoProd) throw new Error("Erro ao cadastrar produto: " + errNovoProd.message);
+      produtoId = novoProd.id;
     }
 
-    const { data: newProd, error } = await supabase
-      .from('produtos')
+    // 4. Verifica duplicidade no mesmo lote (se não for forçado)
+    if (!forcarInsercao) {
+      const { data: dupCheck } = await supabase
+        .from('lotes_validade')
+        .select('*, perfis(nome)')
+        .eq('loja_id', lojaId)
+        .eq('ciclo_lote_id', cicloAtivo.id)
+        .eq('produto_id', produtoId)
+        .eq('status', 'ativo')
+        .maybeSingle();
+
+      if (dupCheck) {
+        return { isDuplicado: true, registroExistente: dupCheck };
+      }
+    }
+
+    // 5. Insere o registro na tabela 'lotes_validade'
+    const { data: loteVal, error: errLoteVal } = await supabase
+      .from('lotes_validade')
       .insert({
-        ean,
-        nome: nomeInformado || 'Produto Sem Descrição',
-        imagem_url: imagemUrlInformada || null,
-        preco_atual: precoAtualInformado || 0.00
+        loja_id: lojaId,
+        produto_id: produtoId,
+        lote: lote || cicloAtivo.codigo_lote,
+        data_vencimento: dataVencimento,
+        quantidade: quantidade,
+        localizacao: localizacao || 'Gôndola',
+        usuario_id: usuarioId,
+        status: 'ativo',
+        ciclo_lote_id: cicloAtivo.id,
+        origem_cadastro: origemCadastro
       })
-      .select('id')
+      .select()
       .single();
 
-    if (error) throw error;
-    return newProd.id;
+    if (errLoteVal) throw new Error("Erro ao registrar lote de validade: " + errLoteVal.message);
+
+    return { isDuplicado: false, registro: loteVal };
   },
 
-  // 3. Checagem Inteligente de Duplicidade dentro do ciclo atual
-  async verificarDuplicidade(cicloLoteId, produtoId, lote, dataVencimento) {
+  /* ============================================================
+     SEÇÃO 3: CONSULTAS DE VALIDADE E VENCIDOS
+     ============================================================ */
+
+  async getReguaVencimentos(lojaId) {
     const { data, error } = await supabase
       .from('lotes_validade')
-      .select('*, perfis(nome)')
-      .eq('ciclo_lote_id', cicloLoteId)
-      .eq('produto_id', produtoId)
-      .eq('lote', lote)
-      .eq('data_vencimento', dataVencimento)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data; // Retorna o registro existente com nome de quem cadastrou e local se for duplicado
-  },
-
-  // 4. Salva novo lançamento vinculado ao CICLO ATIVO
-  async createEntry(payload) {
-    // A) Obtém ou cria o ciclo em edição para a loja
-    const cicloAtivo = await cycleService.getOrCreateActiveCycle(payload.lojaId);
-
-    // B) Obtém ou cria o produto
-    const produtoId = await this.getOrCreateProduto(
-      payload.ean, 
-      payload.produtoNome, 
-      payload.imagemUrl, 
-      payload.precoAtual
-    );
-
-    // C) Se for do setor validade e NÃO for confirmação de duplicidade, verifica duplicidade
-    if (payload.setor === 'validade' && !payload.forcarInsercao) {
-      const duplicado = await this.verificarDuplicidade(
-        cicloAtivo.id,
-        produtoId,
-        payload.lote,
-        payload.dataVencimento
-      );
-
-      if (duplicado) {
-        return {
-          isDuplicado: true,
-          registroExistente: duplicado
-        };
-      }
-    }
-
-    // D) Inserção no banco
-    if (payload.setor === 'validade') {
-      const { error } = await supabase
-        .from('lotes_validade')
-        .insert({
-          loja_id: payload.lojaId,
-          ciclo_lote_id: cicloAtivo.id,
-          produto_id: produtoId,
-          lote: payload.lote,
-          quantidade: payload.quantidade,
-          data_vencimento: payload.dataVencimento,
-          localizacao: payload.localizacao,
-          usuario_id: payload.usuarioId
-        });
-
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('registros_perdas')
-        .insert({
-          loja_id: payload.lojaId,
-          produto_id: produtoId,
-          tipo: payload.setor,
-          quantidade: payload.quantidade,
-          motivo: payload.motivo,
-          usuario_id: payload.usuarioId
-        });
-
-      if (error) throw error;
-    }
-
-    // E) Registra evento de auditoria
-    await cycleService.registrarAuditoria({
-      cicloLoteId: cicloAtivo.id,
-      produtoId,
-      usuarioId: payload.usuarioId,
-      acao: 'PRODUTO_ADICIONADO',
-      detalhes: { quantidade: payload.quantidade, setor: payload.setor }
-    });
-
-    return { isDuplicado: false, success: true };
-  },
-
-  // 5. Busca Régua de Vencimentos filtrada por Loja/Ciclo
-  async getReguaVencimentos(lojaId) {
-    const hoje = new Date().toISOString().split('T')[0];
-
-    const { data, error } = await supabase
-      .from('vw_regua_vencimentos')
-      .select('*')
+      .select('*, produtos(*), ciclos_lotes(codigo_lote)')
       .eq('loja_id', lojaId)
-      .gt('data_vencimento', hoje)
+      .eq('status', 'ativo')
       .order('data_vencimento', { ascending: true });
 
     if (error) throw error;
-    return data;
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    return (data || []).map(item => {
+      let statusRegua = '🟢 60d+';
+      if (item.data_vencimento) {
+        const dtVenc = new Date(item.data_vencimento + 'T00:00:00');
+        const diffDias = Math.ceil((dtVenc - hoje) / (1000 * 60 * 60 * 24));
+
+        if (diffDias < 0) statusRegua = '🚫 VENCIDO';
+        else if (diffDias <= 7) statusRegua = '🔴 7d (Crítico)';
+        else if (diffDias <= 15) statusRegua = '🟠 15d (Oferta)';
+        else if (diffDias <= 30) statusRegua = '🟡 30d';
+        else if (diffDias <= 45) statusRegua = '🔵 45d';
+      }
+
+      return {
+        ...item,
+        produto_nome: item.produtos?.nome || 'Produto sem nome',
+        imagem_url: item.produtos?.imagem_url,
+        preco_atual: item.produtos?.preco_atual || 0,
+        codigo_lote: item.ciclos_lotes?.codigo_lote || item.lote,
+        status_regua: statusRegua
+      };
+    });
   },
 
-  // 6. Busca produtos vencidos
   async getProdutosVencidos(lojaId) {
     if (!lojaId) return [];
 
     const hojeStr = new Date().toISOString().split('T')[0];
 
-    // 6.1. Tenta buscar primeiro da view 'vw_regua_vencimentos'
-    const { data: dataView, error: errView } = await supabase
-      .from('vw_regua_vencimentos')
-      .select('*')
-      .eq('loja_id', lojaId)
-      .lte('data_vencimento', hojeStr)
-      .order('data_vencimento', { ascending: true });
-
-    if (!errView && dataView && dataView.length > 0) {
-      return dataView.map(item => ({
-        ...item,
-        produto_nome: item.produto_nome || 'Produto sem nome',
-        imagem_url: item.imagem_url,
-        preco_atual: item.preco_atual || 0,
-        status_regua: '🚫 VENCIDO'
-      }));
-    }
-
-    // 6.2 Fallback: Se a view não retornar, busca diretamente em 'lotes_validade' sem travar no status
-    const { data: dataLotes, error: errLotes } = await supabase
+    const { data, error } = await supabase
       .from('lotes_validade')
-      .select('*, produtos(*)')
+      .select('*, produtos(*), ciclos_lotes(codigo_lote)')
       .eq('loja_id', lojaId)
+      .eq('status', 'ativo')
       .lte('data_vencimento', hojeStr)
       .order('data_vencimento', { ascending: true });
 
-    if (errLotes) throw errLotes;
+    if (error) throw error;
 
-    return (dataLotes || []).map(item => ({
+    return (data || []).map(item => ({
       ...item,
       produto_nome: item.produtos?.nome || 'Produto sem nome',
       imagem_url: item.produtos?.imagem_url,
       preco_atual: item.produtos?.preco_atual || 0,
+      codigo_lote: item.ciclos_lotes?.codigo_lote || item.lote,
       status_regua: '🚫 VENCIDO'
     }));
   },
 
-  // 7. Busca registros de perdas
-  async getRegistrosPerdas(lojaId, tipo) {
+  async getRegistrosPerdas(lojaId, setor) {
+    const tipoFiltro = setor === 'avarias' ? 'avaria' : 'uso';
     const { data, error } = await supabase
       .from('registros_perdas')
-      .select('*, produtos(ean, nome, categoria, imagem_url, preco_atual), perfis(nome)')
+      .select('*, produtos(*)')
       .eq('loja_id', lojaId)
-      .eq('tipo', tipo)
+      .eq('tipo', tipoFiltro)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
-  },
-
-  // 8. Atualizar Preço de Custo Inline
-  async updatePrecoCusto(produtoId, novoPrecoCusto) {
-    const valor = parseFloat(novoPrecoCusto);
-    if (isNaN(valor) || valor < 0) throw new Error("Preço de custo inválido.");
-
-    const { data, error } = await supabase
-      .from('produtos')
-      .update({ preco_custo: valor })
-      .eq('id', produtoId)
-      .select();
-
-    if (error) throw error;
-    return data;
+    return data || [];
   },
 
   /* ============================================================
-     SEÇÃO: AUDITORIA E RECONTAGEM DE QUANTIDADE
+     SEÇÃO 4: BAIXA INTELIGENTE (DESCARTE, TROCA, VENDA, BONIFICAÇÃO)
      ============================================================ */
 
-  // Atualiza a quantidade do item no lote e gera log de auditoria
+  async realizarBaixaProduto({ itemId, tipoBaixa, usuarioId, lojaId, produtoId, qtd, motivo }) {
+    if (!['Descarte', 'Troca', 'Venda', 'Bonificação'].includes(tipoBaixa)) {
+      throw new Error("Tipo de baixa inválido.");
+    }
+
+    // 1. Atualiza o lote como baixado
+    const { error: errUpdate } = await supabase
+      .from('lotes_validade')
+      .update({
+        status: 'baixado',
+        tipo_baixa: tipoBaixa,
+        baixado_em: new Date().toISOString(),
+        quantidade: 0
+      })
+      .eq('id', itemId);
+
+    if (errUpdate) throw new Error("Erro ao realizar baixa: " + errUpdate.message);
+
+    // 2. Registra o evento na tabela de auditoria para fins de TOTVS
+    await supabase.from('auditoria_eventos').insert({
+      loja_id: lojaId,
+      lote_validade_id: itemId,
+      produto_id: produtoId,
+      usuario_id: usuarioId,
+      acao: 'BAIXA_COMERCIAL_' + tipoBaixa.toUpperCase(),
+      qtd_anterior: qtd,
+      qtd_nova: 0,
+      motivo: motivo || 'Baixa comercial para TOTVS',
+      observacao: `Destino: ${tipoBaixa}`
+    });
+
+    return true;
+  },
+
+  /* ============================================================
+     SEÇÃO 5: AJUSTES E CUSTOS
+     ============================================================ */
+
+  async updatePrecoCusto(produtoId, novoCusto) {
+    const { data, error } = await supabase
+      .from('produtos')
+      .update({ preco_custo: parseFloat(novoCusto) || 0 })
+      .eq('id', produtoId)
+      .select();
+
+    if (error) throw new Error("Erro ao atualizar custo: " + error.message);
+    return data;
+  },
+
   async ajustarQuantidadeLote(payload) {
     const { 
       itemId, cicloLoteId, lojaId, produtoId, usuarioId, 
       qtdAnterior, qtdNova, motivo, observacao 
     } = payload;
 
-    // 1. Inicia a transação atualizando a quantidade (e mudando status se zerou)
     let novoStatus = 'ativo';
     if (qtdNova === 0) {
       novoStatus = (motivo === 'Perda/Avaria') ? 'baixado' : 'esgotado';
@@ -271,26 +282,22 @@ export const productService = {
       })
       .eq('id', itemId);
 
-    if (errUpdate) throw new Error("Erro ao atualizar quantidade no lote: " + errUpdate.message);
+    if (errUpdate) throw new Error("Erro ao atualizar quantidade: " + errUpdate.message);
 
-    // 2. Grava o evento na tabela de auditoria
-    const { error: errAudit } = await supabase
-      .from('auditoria_eventos')
-      .insert({
-        loja_id: lojaId,
-        ciclo_lote_id: cicloLoteId || null,
-        lote_validade_id: itemId,
-        produto_id: produtoId || null,
-        usuario_id: usuarioId,
-        acao: qtdNova === 0 ? 'ZERAMENTO_ESTOQUE' : 'AJUSTE_QUANTIDADE',
-        qtd_anterior: qtdAnterior,
-        qtd_nova: qtdNova,
-        motivo: motivo,
-        observacao: observacao || null
-      });
-
-    if (errAudit) console.warn("Aviso: Falha ao gravar log de auditoria:", errAudit.message);
+    await supabase.from('auditoria_eventos').insert({
+      loja_id: lojaId,
+      ciclo_lote_id: cicloLoteId || null,
+      lote_validade_id: itemId,
+      produto_id: produtoId || null,
+      usuario_id: usuarioId,
+      acao: qtdNova === 0 ? 'ZERAMENTO_ESTOQUE' : 'AJUSTE_QUANTIDADE',
+      qtd_anterior: qtdAnterior,
+      qtd_nova: qtdNova,
+      motivo: motivo,
+      observacao: observacao || null
+    });
 
     return true;
   }
+
 };

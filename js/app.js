@@ -268,6 +268,23 @@ window.openRecontagemModal = function(itemId, produtoId, cicloId, nome, lote, qt
   }, 50);
 };
 
+// Abre o Modal de Baixa Inteligente
+window.openBaixaModal = function(itemId, produtoId, nome, loteOrigem, qtd, imgUrl) {
+  window.closeAllModals();
+
+  setTimeout(() => {
+    document.getElementById('baixa-item-id').value = itemId;
+    document.getElementById('baixa-produto-id').value = produtoId;
+    document.getElementById('baixa-qtd-atual').value = qtd;
+
+    document.getElementById('baixa-nome').textContent = nome;
+    document.getElementById('baixa-lote-info').textContent = `Lote Origem: ${loteOrigem || 'N/A'} | Qtd: ${qtd} un`;
+    document.getElementById('baixa-img').src = imgUrl || DEFAULT_AVATAR;
+
+    document.getElementById('modal-baixa')?.classList.add('active');
+  }, 50);
+};
+
 /* ============================================================
    SEÇÃO 5: REGISTRO DE EVENTOS E FORMULÁRIOS
    ============================================================ */
@@ -597,6 +614,30 @@ function setupEvents() {
       } catch (err) {
         alert("Erro ao acessar a câmera: " + err.message);
         cameraContainer.classList.add('hidden');
+      }
+    });
+  }
+
+  const formBaixa = document.getElementById('form-baixa');
+  if (formBaixa) {
+    formBaixa.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await productService.realizarBaixaProduto({
+          itemId: document.getElementById('baixa-item-id').value,
+          produtoId: document.getElementById('baixa-produto-id').value,
+          tipoBaixa: document.getElementById('baixa-destino').value,
+          motivo: document.getElementById('baixa-motivo').value,
+          usuarioId: currentProfile.id,
+          lojaId: activeLojaId || currentProfile.loja_id,
+          qtd: parseInt(document.getElementById('baixa-qtd-atual').value)
+        });
+
+        alert('✅ Baixa comercial registrada com sucesso para o TOTVS!');
+        window.closeAllModals();
+        loadSectorData();
+      } catch (err) {
+        alert('Erro ao realizar baixa: ' + err.message);
       }
     });
   }
@@ -1015,38 +1056,48 @@ function renderValidadeCards(data, container) {
   }
 
   const userRole = (currentProfile.funcao || '').toLowerCase();
-  const podeEditarCusto = ['adm', 'administrador'].includes(userRole);
+  const podeEditarCusto = ['adm', 'administrador', 'gerente'].includes(userRole);
+  const isVencidosTab = currentSector === 'vencidos';
 
-  container.innerHTML = data.map(item => `
-    <div class="product-card">
-      <img src="${item.imagem_url || item.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto">
-      <div class="product-info">
-        <div class="product-title">${item.produto_nome || item.produtos?.nome || 'Produto Sem Nome'}</div>
-        <div class="product-sub">
-          <span>Lote: <strong>${item.lote || 'N/A'}</strong></span>
-          <span>Qtd: <strong>${item.quantidade} un</strong></span>
-        </div>
-        <div class="product-sub" style="margin-top: 0.25rem;">
-          <span>Preço Venda: <strong>R$ ${parseFloat(item.preco_atual || item.produtos?.preco_atual || 0).toFixed(2)}</strong></span>
-        </div>
+  container.innerHTML = data.map(item => {
+    const dataCriacao = item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : 'N/I';
+    const loteExibicao = item.codigo_lote || item.lote || 'N/A';
 
-        ${podeEditarCusto ? `
-          <div class="product-sub" style="margin-top:0.35rem;">
-            <span style="color:var(--primary); font-weight:bold;">Custo (ADM): R$ </span>
-            <input type="number" 
-                   step="0.01" 
-                   class="input-inline-cost" 
-                   data-prod-id="${item.produto_id || item.produtos?.id || item.id}" 
-                   value="${item.preco_custo || item.produtos?.preco_custo || '0.00'}" 
-                   style="width: 80px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;" />
+    return `
+    <div class="product-card" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <img src="${item.imagem_url || item.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto" style="width: 40px; height: 40px;">
+        <div class="product-info" style="flex: 1; min-width: 0;">
+          <div class="product-title">${item.produto_nome || item.produtos?.nome || 'Produto Sem Nome'}</div>
+          <div class="product-sub" style="font-size: 0.68rem; color: var(--text-muted);">
+            <span>Lote: <strong style="font-family: var(--font-mono);">${loteExibicao}</strong></span>
+            <span>Adicionado em: <strong>${dataCriacao}</strong></span>
           </div>
-        ` : ''}
+        </div>
+        <div>
+          <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua || 'OK'}</span>
+        </div>
       </div>
-      <div>
-        <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua || 'OK'}</span>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.4rem; font-size: 0.75rem;">
+        <div>
+          <span>Qtd: <strong>${item.quantidade} un</strong></span> | 
+          <span>Venc: <strong style="color: var(--danger);">${item.data_vencimento ? new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/I'}</strong></span>
+        </div>
+
+        <div style="display: flex; gap: 0.4rem;">
+          ${isVencidosTab ? `
+            <button type="button" class="btn btn-primary" style="padding: 2px 6px; font-size: 0.68rem; background: var(--danger);"
+              onclick="window.openBaixaModal('${item.id}', '${item.produto_id || item.produtos?.id}', '${(item.produto_nome || '').replace(/'/g, '')}', '${loteExibicao}', ${item.quantidade}, '${item.imagem_url || ''}')">
+              ⚡ Dar Baixa (TOTVS)
+            </button>
+          ` : ''}
+        </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
+
 
   if (podeEditarCusto) {
     container.querySelectorAll('.input-inline-cost').forEach(input => {

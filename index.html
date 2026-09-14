@@ -510,6 +510,51 @@
     </div>
   </div>
 
+  <!-- MODAL 8: BAIXA INTELIGENTE DE PRODUTO (TOTVS) -->
+  <div id="modal-baixa" class="modal">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">REGISTRAR BAIXA DE PRODUTO</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+      </div>
+
+      <div style="background: var(--surface-panel); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
+        <img id="baixa-img" src="" alt="Produto" style="width: 42px; height: 42px; object-fit: contain; border-radius: 2px; background: #fff; border: 1px solid var(--border);">
+        <div>
+          <strong id="baixa-nome" style="display: block; font-size: 0.85rem; color: var(--text-main);">-</strong>
+          <small id="baixa-lote-info" style="color: var(--text-muted); font-size: 0.7rem;">-</small>
+        </div>
+      </div>
+
+      <form id="form-baixa">
+        <input type="hidden" id="baixa-item-id">
+        <input type="hidden" id="baixa-produto-id">
+        <input type="hidden" id="baixa-qtd-atual">
+
+        <div class="form-group">
+          <label for="baixa-destino">Destino Comercial (Baixa TOTVS) *</label>
+          <select id="baixa-destino" required>
+            <option value="" disabled selected>Selecione o destino da baixa...</option>
+            <option value="Descarte">🗑️ Descarte (Quebra física / Destruição)</option>
+            <option value="Troca">🔄 Troca (Devolução para Fornecedor / CD)</option>
+            <option value="Venda">💰 Venda (Saída / Liquidação)</option>
+            <option value="Bonificação">🎁 Bonificação (Doação / Uso Interno)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="baixa-motivo">Motivo / Observação *</label>
+          <input type="text" id="baixa-motivo" required placeholder="Ex: Vencido na gôndola, avaria de transporte...">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
+          <button type="button" class="btn btn-secondary" onclick="window.closeAllModals()" style="flex: 1;">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="flex: 2; background: var(--danger);">Confirmar Baixa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
