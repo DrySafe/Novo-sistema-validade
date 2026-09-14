@@ -1,84 +1,263 @@
 /* ============================================================
-   COMPONENTES MOBILE & ANIMAÇÕES FLUIDAS
+   COMPONENTES MODERIZADOS & UI COMPACTA
    ============================================================ */
 
-/* Botões Gigantes para Chão de Loja */
-.btn {
-  width: 100%;
-  min-height: 52px;
-  padding: 0.85rem 1.25rem;
-  border-radius: 14px;
-  border: none;
-  font-size: 1rem;
-  font-weight: 700;
+/* Topbar Minimalista */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   font-family: var(--font-display);
+}
+
+.brand-title {
+  font-size: 1.25rem;
+  font-weight: 800;
   letter-spacing: 0.5px;
-  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.avatar-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  font-weight: 700;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   cursor: pointer;
-  transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s;
+}
+.avatar-badge:hover {
+  transform: scale(1.05);
 }
 
-.btn:active {
-  transform: scale(0.97);
+.btn-icon {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--text-main);
+}
+.btn-icon:hover {
+  background: var(--surface-panel);
 }
 
-.btn-primary { background: var(--primary); color: #ffffff; }
-.btn-primary:active { background: var(--primary-hover); }
-.btn-secondary { background: var(--surface-panel); color: var(--text-main); border: 1px solid var(--border); }
-.btn-excel { background: #10b981; color: #ffffff; }
-
-/* Formulários Otimizados */
-.form-group {
-  margin-bottom: 1.2rem;
+/* Containers de Tela */
+.container {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+}
+
+/* Formulários Modernos */
+.form-group {
+  margin-bottom: 0.85rem;
 }
 
 .form-group label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
 }
 
-.form-group input, .form-group select {
+.form-group input, 
+.form-group select, 
+.form-group textarea {
   width: 100%;
-  min-height: 52px;
-  padding: 0.85rem 1rem;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  font-size: 1.1rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
   color: var(--text-main);
   outline: none;
   transition: border-color 0.2s;
 }
-
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus, 
+.form-group select:focus, 
+.form-group textarea:focus {
   border-color: var(--primary);
 }
 
-/* Modal Bottom-Sheet (Sobe de baixo estilo iOS/Android Nativo) */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: flex-end; /* Alinha no rodape no mobile */
+/* Botões Estilizados */
+.btn {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  z-index: 100;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn:active {
+  transform: scale(0.98);
 }
 
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--surface-panel);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+/* Bottom Navigation Flutuante */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 0.4rem 0.5rem;
+  gap: 2px;
+}
+
+.nav-item {
+  flex: 1;
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.nav-item .nav-icon {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+}
+
+.nav-item.active {
+  color: var(--primary);
+  background: var(--primary-light);
+  font-weight: 700;
+}
+
+/* Cards Compactos e Modernos */
+.product-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.product-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s;
+}
+.product-card:hover {
+  border-color: var(--text-muted);
+}
+
+.product-card img {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: var(--surface-panel);
+  padding: 2px;
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.product-sub {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Badges da Régua */
+.badge-regua {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.badge-60 { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-45 { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.badge-30 { background: rgba(234, 179, 8, 0.15); color: #ca8a04; }
+.badge-15 { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+.badge-7  { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.badge-vencido { background: #ef4444; color: #ffffff; }
+
+/* Modais Glassmorphism */
+.modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 100;
+}
 .modal.active {
   opacity: 1;
   pointer-events: auto;
@@ -86,65 +265,40 @@
 
 .modal-content {
   background: var(--surface);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
+  border: 1px solid var(--border);
   width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 1.5rem;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modal.active .modal-content {
-  transform: translateY(0);
-}
-
-/* Puxador Superior do Modal Mobile */
-.modal-drag-handle {
-  width: 40px;
-  height: 5px;
-  background: var(--border);
-  border-radius: 99px;
-  margin: 0 auto 1.25rem auto;
-}
-
-/* Barra de Navegação Inferior Fixa (Bottom Nav) */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-around;
-  padding: 0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom)) 0;
-  z-index: 50;
-}
-
-.nav-item {
-  flex: 1;
+  max-width: 440px;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-md);
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 700;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+}
+
+.modal-title {
   font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.4rem 0;
+  color: var(--text-muted);
 }
-
-.nav-item .nav-icon {
-  font-size: 1.4rem;
-  line-height: 1;
-}
-
-.nav-item.active {
-  color: var(--primary);
+.btn-close:hover {
+  color: var(--text-main);
 }

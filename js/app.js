@@ -917,21 +917,18 @@ window.renderCycleModalItems = function(filtro) {
     const imgUrl = i.produtos?.imagem_url || DEFAULT_AVATAR;
 
     return `
-    <div class="product-card" style="padding: 0.6rem; opacity: ${isZerado ? '0.6' : '1'};">
-      <img src="${imgUrl}" alt="Foto" style="width: 42px; height: 42px; ${isZerado ? 'filter: grayscale(1);' : ''}">
-      <div class="product-info" style="flex: 1;">
-        <div class="product-title" style="font-size: 0.85rem; ${isZerado ? 'text-decoration: line-through;' : ''}">${i.produtos?.nome || 'Sem Nome'}</div>
-        <div class="product-sub" style="font-size: 0.75rem;">
-          <span>Qtd: <strong style="${isZerado ? 'color: var(--st-7);' : 'color: var(--primary);'} font-size: 0.9rem;">${i.quantidade} un</strong></span>
+    <div class="product-card" style="padding: 0.5rem 0.75rem; opacity: ${isZerado ? '0.65' : '1'};">
+      <img src="${imgUrl}" alt="Foto" style="width: 38px; height: 38px; ${isZerado ? 'filter: grayscale(1);' : ''}">
+      <div class="product-info" style="flex: 1; min-width: 0;">
+        <div class="product-title" style="font-size: 0.82rem; ${isZerado ? 'text-decoration: line-through;' : ''}">${i.produtos?.nome || 'Sem Nome'}</div>
+        <div class="product-sub" style="font-size: 0.7rem; gap: 0.5rem; align-items: center;">
+          <span>Qtd Atual: <strong style="${isZerado ? 'color: var(--danger);' : 'color: var(--primary);'} font-size: 0.85rem;">${i.quantidade} un</strong></span>
           <span>Venc: <strong>${i.data_vencimento ? new Date(i.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/I'}</strong></span>
-        </div>
-        <div class="product-sub" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">
-          <span>Bipado por: ${i.perfis?.nome || 'Operador'}</span>
         </div>
       </div>
       <div>
         <button type="button" class="btn btn-secondary btn-trigger-recontagem" 
-          style="padding: 4px 8px; font-size: 0.7rem;"
+          style="padding: 3px 8px; font-size: 0.68rem;"
           data-id="${i.id}"
           data-produto-id="${i.produtos?.id || ''}"
           data-ciclo-id="${i.ciclo_lote_id || ''}"
@@ -939,7 +936,7 @@ window.renderCycleModalItems = function(filtro) {
           data-lote="${loteProd}"
           data-qtd="${i.quantidade}"
           data-img="${imgUrl}">
-          ✏️ Ajustar Qtd
+          ✏️ Ajustar
         </button>
       </div>
     </div>
