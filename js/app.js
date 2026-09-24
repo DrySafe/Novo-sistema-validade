@@ -1198,3 +1198,26 @@ function getBadgeClass(status) {
   if (status.includes('60')) return 'badge-60';
   return 'badge-vencido';
 }
+
+// ============================================================
+// FUNÇÃO GLOBAL DE SIMULAÇÃO DE VIRADA (TESTE)
+// ============================================================
+window.simularViradaCicloTeste = async function() {
+  const lojaAlvo = activeLojaId || currentProfile.loja_id;
+  if (!lojaAlvo) {
+    alert("Nenhuma loja ativa selecionada.");
+    return;
+  }
+
+  if (confirm("🧪 Deseja simular a virada de quinzena agora?\nIsso vai encerrar o lote VAL atual, migrar os vencidos para o lote VENC mantendo o lote de origem, e abrir um novo ciclo.")) {
+    try {
+      const { data, error } = await supabase.rpc('forcar_virada_ciclo_teste', { p_loja_id: lojaAlvo });
+      if (error) throw error;
+      
+      alert("✅ " + data);
+      await checkSession();
+    } catch (err) {
+      alert("Erro ao simular virada: " + err.message);
+    }
+  }
+};
