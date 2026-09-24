@@ -913,35 +913,21 @@ function renderCiclosCards(ciclos, container) {
           </div>
         </div>
 
-        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+   <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="window.simularViradaCicloTeste()" style="background: #b45309; color: #fff; font-size: 0.7rem; width: auto; padding: 0.25rem 0.5rem;">
+            🧪 Simular Virada
+          </button>
+
+          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.7rem;">
             🔍 Inspecionar
           </button>
           
           ${(isAtivo && isAdmin) ? `
-            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: #1d4ed8;">
-              🔒 Encerrar
-            </button>
-
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
-          <!-- BOTÃO DE TESTE DE SIMULAÇÃO -->
-          <button type="button" class="btn btn-secondary" onclick="window.simularViradaCicloTeste()" style="background: #f59e0b; color: #fff; font-size: 0.75rem; width: auto; padding: 0.3rem 0.6rem;">
-            🧪 [TESTE] Simular Virada
-          </button>
-
-          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem;">
-            🔍 Inspecionar
-          </button>
-          
-          ${(isAtivo && isAdmin) ? `
-            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: #1d4ed8;">
+            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.7rem; background: var(--primary);">
               🔒 Encerrar
             </button>
           ` : ''}
         </div>
-          ` : ''}
-        </div>
-      </div>
     `;
   }).join('');
 }
