@@ -249,6 +249,26 @@ window.openRecontagemModal = function(itemId, produtoId, cicloId, nome, lote, qt
     return;
   }
 
+  window.simularViradaCicloTeste = async function() {
+  const lojaAlvo = activeLojaId || currentProfile.loja_id;
+  if (!lojaAlvo) {
+    alert("Nenhuma loja ativa selecionada.");
+    return;
+  }
+
+  if (confirm("🧪 Deseja simular a virada de quinzena agora?\nIsso vai encerrar o lote VAL atual, migrar os vencidos para o lote VENC mantendo o lote de origem, e abrir um novo ciclo.")) {
+    try {
+      const { data, error } = await supabase.rpc('forcar_virada_ciclo_teste', { p_loja_id: lojaAlvo });
+      if (error) throw error;
+      
+      alert("✅ " + data);
+      await checkSession();
+    } catch (err) {
+      alert("Erro ao simular virada: " + err.message);
+    }
+  }
+};
+
   window.closeAllModals();
 
   setTimeout(() => {
@@ -902,6 +922,23 @@ function renderCiclosCards(ciclos, container) {
             <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: #1d4ed8;">
               🔒 Encerrar
             </button>
+
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+          <!-- BOTÃO DE TESTE DE SIMULAÇÃO -->
+          <button type="button" class="btn btn-secondary" onclick="window.simularViradaCicloTeste()" style="background: #f59e0b; color: #fff; font-size: 0.75rem; width: auto; padding: 0.3rem 0.6rem;">
+            🧪 [TESTE] Simular Virada
+          </button>
+
+          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+            🔍 Inspecionar
+          </button>
+          
+          ${(isAtivo && isAdmin) ? `
+            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: #1d4ed8;">
+              🔒 Encerrar
+            </button>
+          ` : ''}
+        </div>
           ` : ''}
         </div>
       </div>
