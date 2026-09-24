@@ -111,8 +111,8 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  // Pega o nome da loja do perfil, da variável global ou assume um padrão
-  const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || currentLoja?.nome || 'Loja Principal';
+  // Pega o nome da loja de forma segura do perfil atual
+  const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || 'Loja Principal';
 
   if (elLojaNome) {
     elLojaNome.textContent = nomeLoja;
