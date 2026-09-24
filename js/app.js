@@ -109,14 +109,18 @@ function showLoginScreen() {
 }
 
 function updateCycleTopbarDisplay() {
-  const elemStore = document.getElementById('display-store-name');
-  if (elemStore && currentCycle) {
-    elemStore.innerHTML = `
-      ${currentProfile.lojas?.nome || 'Loja'} 
-      <span style="font-size:0.8rem; background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:6px; margin-left:6px; font-family:var(--font-mono);">
-        LOTE: ${currentCycle.codigo_lote} (${currentCycle.status})
-      </span>
-    `;
+  const elLojaNome = document.getElementById('display-loja-nome');
+  const elLoteBadge = document.getElementById('display-lote-badge');
+
+  if (elLojaNome) {
+    elLojaNome.textContent = currentProfile?.lojas?.nome || 'Loja Principal';
+  }
+
+  if (elLoteBadge && currentCycle) {
+    elLoteBadge.textContent = `LOTE: ${currentCycle.codigo_lote} (${currentCycle.status})`;
+    elLoteBadge.style.display = 'inline-block';
+  } else if (elLoteBadge) {
+    elLoteBadge.style.display = 'none';
   }
 }
 
