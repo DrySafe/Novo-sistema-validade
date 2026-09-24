@@ -49,10 +49,7 @@ async function checkSession() {
       }
 
       const elemUser = document.getElementById('display-user-name');
-      const elemStore = document.getElementById('display-store-name');
-
       if (elemUser) elemUser.textContent = currentProfile.nome;
-      if (elemStore) elemStore.textContent = currentProfile.lojas?.nome || 'Loja';
 
       const initialsElem = document.getElementById('user-initials');
       if (initialsElem && currentProfile.nome) {
@@ -74,10 +71,12 @@ async function checkSession() {
 
       try {
         currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
-        updateCycleTopbarDisplay();
       } catch (errCycle) {
         console.warn("Aviso ao buscar ciclo ativo:", errCycle);
       }
+
+      // Atualiza o topo com o nome da loja e o lote ativo de forma correta
+      updateCycleTopbarDisplay();
 
       const userRole = (currentProfile.funcao || '').toLowerCase();
 
@@ -112,8 +111,8 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  // Tenta buscar o nome da loja de várias fontes possíveis para garantir que não venha vazio
-  const nomeLoja = currentProfile?.lojas?.nome || currentLoja?.nome || 'Loja Principal';
+  // Pega o nome da loja do perfil, da variável global ou assume um padrão
+  const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || currentLoja?.nome || 'Loja Principal';
 
   if (elLojaNome) {
     elLojaNome.textContent = nomeLoja;
