@@ -112,8 +112,11 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
+  // Tenta buscar o nome da loja de várias fontes possíveis para garantir que não venha vazio
+  const nomeLoja = currentProfile?.lojas?.nome || currentLoja?.nome || 'Loja Principal';
+
   if (elLojaNome) {
-    elLojaNome.textContent = currentProfile?.lojas?.nome || 'Loja Principal';
+    elLojaNome.textContent = nomeLoja;
   }
 
   if (elLoteBadge && currentCycle) {
