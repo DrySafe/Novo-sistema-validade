@@ -107,33 +107,30 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || 'Loja Principal';
+  // Garante que pega o nome da loja de forma correta (testando vários caminhos possíveis)
+  let nomeLoja = 'Loja Principal';
+  if (currentProfile) {
+    if (currentProfile.lojas && currentProfile.lojas.nome) {
+      nomeLoja = currentProfile.lojas.nome;
+    } else if (currentProfile.loja_nome) {
+      nomeLoja = currentProfile.loja_nome;
+    } else if (currentProfile.nome_loja) {
+      nomeLoja = currentProfile.nome_loja;
+    }
+  }
 
   if (elLojaNome) {
     elLojaNome.textContent = nomeLoja;
   }
 
   if (elLoteBadge && currentCycle) {
+    // Usando crases corretamente para interpolar as variáveis
     elLoteBadge.textContent = `LOTE: \({currentCycle.codigo_lote} (\){currentCycle.status})`;
     elLoteBadge.style.display = 'inline-block';
   } else if (elLoteBadge) {
     elLoteBadge.style.display = 'none';
   }
 }
-
-  // Pega o nome da loja de forma segura do perfil atual
-  const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || 'Loja Principal';
-
-  if (elLojaNome) {
-    elLojaNome.textContent = nomeLoja;
-  }
-
-  if (elLoteBadge && currentCycle) {
-    elLoteBadge.textContent = `LOTE: ${currentCycle.codigo_lote} (${currentCycle.status})`;
-    elLoteBadge.style.display = 'inline-block';
-  } else if (elLoteBadge) {
-    elLoteBadge.style.display = 'none';
-  }
 
 /* ============================================================
    SEÇÃO 3: SELETOR DE LOJAS MULTI-UNIDADE
