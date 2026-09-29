@@ -142,7 +142,7 @@ function updateCycleTopbarDisplay() {
     nomeLoja = currentLoja.nome;
   } else {
     const storeSelector = document.getElementById('store-selector');
-    if (storeSelector && storeSelector.options[storeSelector.selectedIndex]) {
+    if (storeSelector && storeSelector.options && storeSelector.options[storeSelector.selectedIndex]) {
       nomeLoja = storeSelector.options[storeSelector.selectedIndex].text;
     }
   }
