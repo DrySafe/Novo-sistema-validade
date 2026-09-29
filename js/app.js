@@ -75,7 +75,6 @@ async function checkSession() {
         console.warn("Aviso ao buscar ciclo ativo:", errCycle);
       }
 
-      // Atualiza o topo com o nome da loja e o lote ativo de forma correta
       updateCycleTopbarDisplay();
 
       const userRole = (currentProfile.funcao || '').toLowerCase();
@@ -100,6 +99,36 @@ async function checkSession() {
   }
 }
 
+function showLoginScreen() {
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  if (appScreen) appScreen.classList.add('hidden');
+  document.getElementById('store-selector-container')?.classList.add('hidden');
+}
+      // Atualiza o topo com o nome da loja e o lote ativo de forma correta
+      updateCycleTopbarDisplay();
+
+      const userRole = (currentProfile.funcao || '').toLowerCase();
+
+      const btnEquipe = document.getElementById('nav-item-equipe');
+      if (btnEquipe) {
+        btnEquipe.classList.toggle('hidden', !['administrador', 'admin', 'gestor', 'gerente'].includes(userRole));
+      }
+
+      if (loginScreen) loginScreen.classList.add('hidden');
+      if (appScreen) appScreen.classList.remove('hidden');
+      document.getElementById('bottom-nav')?.classList.remove('hidden');
+
+      console.log('✅ Login e Ciclo carregados com sucesso!');
+      loadSectorData();
+     else {
+      showLoginScreen();
+    }
+   catch (err) {
+    console.error('❌ Erro na verificação de sessão:', err);
+    showLoginScreen();
+  }
+
+
 // Função updateCycleTopbarDisplay limpa e com o console.log no lugar certo
 function updateCycleTopbarDisplay() {
   console.log("ESTRUTURA DO PERFIL:", currentProfile);
@@ -107,7 +136,6 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  // Define o nome correto da sua loja como padrão e tenta buscar do seletor se disponível
   let nomeLoja = 'Hiper Economize';
   
   if (typeof currentLoja !== 'undefined' && currentLoja && currentLoja.nome) {
@@ -875,311 +903,238 @@ async function loadSectorData() {
    SEÇÃO 7: COMPONENTES DE RENDERIZAÇÃO DE CARDS (INTERFACE)
    ============================================================ */
 
+/* ==========================================================================
+   RENDERIZAÇÃO DE CICLOS E CARDS (DOM NATIVO - À PROVA DE ERROS)
+   ========================================================================== */
+
 function renderCiclosCards(ciclos, container) {
   if (!ciclos || ciclos.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum ciclo quinzenal cadastrado para esta loja.</div>';
+    container.innerHTML = "";
+    const msg = document.createElement("div");
+    msg.style.textAlign = "center";
+    msg.style.padding = "2rem";
+    msg.style.color = "var(--text-muted)";
+    msg.textContent = "Nenhum ciclo quinzenal cadastrado para esta loja.";
+    container.appendChild(msg);
     return;
   }
 
-  const userRole = (currentProfile.funcao || '').toLowerCase();
-  const isAdmin = ['administrador', 'admin', 'gerente', 'gestor'].includes(userRole);
+  const userRole = (currentProfile.funcao || "").toLowerCase();
+  const isAdmin = ["administrador", "admin", "gerente", "gestor"].includes(userRole);
 
-  // Aplica Grid no Desktop e Stack no Mobile
-  container.style.display = 'grid';
-  container.style.gridTemplateColumns = window.innerWidth >= 1024 ? 'repeat(2, 1fr)' : '1fr';
-  container.style.gap = '0.75rem';
+  const ciclosAtivos = ciclos.filter(function(c) { return c.status === "EM EDIÇÃO"; });
+  const ciclosArquivados = ciclos.filter(function(c) { return c.status !== "EM EDIÇÃO"; });
 
-  container.innerHTML = ciclos.map(c => {
-    const isAtivo = c.status === 'EM EDIÇÃO';
-    const m = c.metricas;
-    const dtInicio = new Date(c.created_at).toLocaleDateString('pt-BR');
+  container.innerHTML = "";
+  container.style.display = "block";
 
-    return `
-      <div class="product-card" style="flex-direction: column; align-items: stretch; gap: 0.6rem; border-left: 4px solid ${isAtivo ? '#059669' : '#64748b'}; padding: 0.75rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <span style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">CÓDIGO: ${c.codigo_lote}</span>
-            <h4 style="margin: 0; font-family: var(--font-display); font-size: 1.1rem; color: var(--text-main);">
-              ${isAtivo ? '🟢 LOTE ATUAL EM EDIÇÃO' : '📋 LOTE FINALIZADO'}
-            </h4>
-            <small style="color: var(--text-muted); font-size: 0.68rem;">Abertura: ${dtInicio}</small>
-          </div>
-          <span class="badge-regua ${isAtivo ? 'badge-60' : 'badge-vencido'}" style="font-size: 0.7rem;">
-            ${c.status}
-          </span>
-        </div>
+  const cols = window.innerWidth >= 1024 ? "repeat(2, 1fr)" : "1fr";
 
-        <div style="background: var(--surface-panel); padding: 0.5rem; border: 1px solid var(--border);">
-          <div style="font-size: 0.72rem; font-weight: bold; margin-bottom: 0.3rem; color: var(--text-main);">
-            VARREDURA DA QUINZENA (${m.total} UNIDADES):
-          </div>
-          
-          <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.25rem; text-align: center;">
-            <div style="background: rgba(5, 150, 105, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #047857;">60d<br>${m.d60}</div>
-            <div style="background: rgba(29, 78, 216, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #1d4ed8;">45d<br>${m.d45}</div>
-            <div style="background: rgba(180, 83, 9, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #b45309;">30d<br>${m.d30}</div>
-            <div style="background: rgba(194, 65, 12, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #c2410c;">15d<br>${m.d15}</div>
-            <div style="background: rgba(185, 28, 28, 0.1); padding: 2px; font-size: 0.65rem; font-weight: bold; color: #b91c1c;">7d<br>${m.d7}</div>
-            <div style="background: #b91c1c; color: #fff; padding: 2px; font-size: 0.65rem; font-weight: bold;">Venc<br>${m.vencidos}</div>
-          </div>
-        </div>
+  // 1. Seção de Lotes Ativos
+  if (ciclosAtivos.length > 0) {
+    const secAtivos = document.createElement("div");
+    secAtivos.style.marginBottom = "1.5rem";
 
-   <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem;">
-          <button type="button" class="btn btn-secondary" onclick="window.simularViradaCicloTeste()" style="background: #b45309; color: #fff; font-size: 0.7rem; width: auto; padding: 0.25rem 0.5rem;">
-            🧪 Simular Virada
-          </button>
+    const titAtivos = document.createElement("h3");
+    titAtivos.style.fontSize = "0.9rem";
+    titAtivos.style.textTransform = "uppercase";
+    titAtivos.style.color = "var(--text-muted)";
+    titAtivos.style.marginBottom = "0.75rem";
+    titAtivos.style.fontWeight = "700";
+    titAtivos.textContent = "🟢 Lotes Ativos em Edição";
 
-          <button type="button" class="btn btn-secondary" onclick="window.openCycleDetails('${c.id}')" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.7rem;">
-            🔍 Inspecionar
-          </button>
-          
-          ${(isAtivo && isAdmin) ? `
-            <button type="button" class="btn btn-primary" onclick="window.finalizarCicloAtual('${c.id}')" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.7rem; background: var(--primary);">
-              🔒 Encerrar
-            </button>
-          ` : ''}
-        </div>
-    `;
-  }).join('');
+    const gridAtivos = document.createElement("div");
+    gridAtivos.style.display = "grid";
+    gridAtivos.style.gridTemplateColumns = cols;
+    gridAtivos.style.gap = "0.75rem";
+
+    ciclosAtivos.forEach(function(c) {
+      gridAtivos.appendChild(renderCardCicloNode(c, true, isAdmin));
+    });
+
+    secAtivos.appendChild(titAtivos);
+    secAtivos.appendChild(gridAtivos);
+    container.appendChild(secAtivos);
+  }
+
+  // 2. Seção de Lotes Arquivados
+  if (ciclosArquivados.length > 0) {
+    const secArq = document.createElement("div");
+
+    const titArq = document.createElement("h3");
+    titArq.style.fontSize = "0.9rem";
+    titArq.style.textTransform = "uppercase";
+    titArq.style.color = "var(--text-muted)";
+    titArq.style.marginBottom = "0.75rem";
+    titArq.style.fontWeight = "700";
+    titArq.style.borderTop = "1px solid var(--border)";
+    titArq.style.paddingTop = "1.25rem";
+    titArq.textContent = "📁 Lotes Finalizados e Arquivados";
+
+    const gridArq = document.createElement("div");
+    gridArq.style.display = "grid";
+    gridArq.style.gridTemplateColumns = cols;
+    gridArq.style.gap = "0.75rem";
+
+    ciclosArquivados.forEach(function(c) {
+      gridArq.appendChild(renderCardCicloNode(c, false, isAdmin));
+    });
+
+    secArq.appendChild(titArq);
+    secArq.appendChild(gridArq);
+    container.appendChild(secArq);
+  }
 }
 
-window.openCycleDetails = async function(cycleId) {
-  const modal = document.getElementById('modal-cycle-detail');
-  const containerItens = document.getElementById('cycle-detail-items-list');
-  if (!modal || !containerItens) return;
+function renderCardCicloNode(c, isAtivo, isAdmin) {
+  const m = c.metricas || { total: 0, d60: 0, d45: 0, d30: 0, d15: 0, d7: 0, vencidos: 0 };
+  const dtInicio = new Date(c.created_at).toLocaleDateString("pt-BR");
 
-  containerItens.innerHTML = '<div style="text-align:center; padding: 1.5rem; color: var(--text-muted);">Buscando itens do lote...</div>';
-  modal.classList.add('active');
+  const card = document.createElement("div");
+  card.style.background = "var(--surface-panel)";
+  card.style.border = "1px solid var(--border)";
+  card.style.borderLeft = isAtivo ? "4px solid #059669" : "4px solid #64748b";
+  card.style.borderRadius = "6px";
+  card.style.padding = "1rem";
+  card.style.display = "flex";
+  card.style.flexDirection = "column";
+  card.style.gap = "0.75rem";
 
-  const lojaAlvo = activeLojaId || currentProfile.loja_id;
-  const ciclos = await cycleService.getCycleMetrics(lojaAlvo);
-  const cicloSel = ciclos.find(c => c.id === cycleId);
+  // Cabeçalho do Card
+  const top = document.createElement("div");
+  top.style.display = "flex";
+  top.style.justifyContent = "space-between";
+  top.style.alignItems = "flex-start";
 
-  if (!cicloSel) return;
+  const info = document.createElement("div");
+  const cod = document.createElement("span");
+  cod.style.fontSize = "0.7rem";
+  cod.style.color = "var(--text-muted)";
+  cod.style.fontFamily = "var(--font-mono)";
+  cod.textContent = "CÓDIGO: " + c.codigo_lote;
 
-  document.getElementById('cycle-modal-title').textContent = `INSPEÇÃO DO LOTE #${cicloSel.codigo_lote}`;
-  document.getElementById('cycle-modal-subtitle').textContent = `Status: ${cicloSel.status} | Total: ${cicloSel.metricas.total} unidades bipadas`;
+  const tit = document.createElement("h4");
+  tit.style.margin = "0.1rem 0";
+  tit.style.fontSize = "1rem";
+  tit.style.color = "var(--text-main)";
+  tit.textContent = isAtivo ? "🟢 LOTE ATUAL EM EDIÇÃO" : "📋 LOTE FINALIZADO";
 
-  window.currentSelectedCycleItens = cicloSel.metricas.itens || [];
-  window.renderCycleModalItems('todos');
-};
+  const dt = document.createElement("small");
+  dt.style.color = "var(--text-muted)";
+  dt.style.fontSize = "0.68rem";
+  dt.textContent = "Abertura: " + dtInicio;
 
-window.renderCycleModalItems = function(filtro) {
-  const container = document.getElementById('cycle-detail-items-list');
-  const itens = window.currentSelectedCycleItens || [];
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+  info.appendChild(cod);
+  info.appendChild(tit);
+  info.appendChild(dt);
 
-  let itensFiltrados = itens;
+  const badge = document.createElement("span");
+  badge.style.fontSize = "0.65rem";
+  badge.style.padding = "2px 8px";
+  badge.style.borderRadius = "4px";
+  badge.style.fontWeight = "700";
+  badge.style.background = isAtivo ? "rgba(5, 150, 105, 0.2)" : "rgba(100, 116, 139, 0.2)";
+  badge.style.color = isAtivo ? "#34d399" : "#94a3b8";
+  badge.style.border = isAtivo ? "1px solid #059669" : "1px solid #475569";
+  badge.textContent = c.status;
 
-  if (filtro === '15_7') {
-    itensFiltrados = itens.filter(i => {
-      if (!i.data_vencimento) return false;
-      const dt = new Date(i.data_vencimento + 'T00:00:00');
-      const diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
-      return diff >= 0 && diff <= 15;
-    });
-  } else if (filtro === '7') {
-    itensFiltrados = itens.filter(i => {
-      if (!i.data_vencimento) return false;
-      const dt = new Date(i.data_vencimento + 'T00:00:00');
-      const diff = Math.ceil((dt - hoje) / (1000 * 60 * 60 * 24));
-      return diff >= 0 && diff <= 7;
-    });
-  } else if (filtro === 'vencidos') {
-    itensFiltrados = itens.filter(i => {
-      if (!i.data_vencimento) return i.status === 'VENCIDO' || i.status === 'baixado';
-      const dt = new Date(i.data_vencimento + 'T00:00:00');
-      return dt < hoje;
-    });
-  }
+  top.appendChild(info);
+  top.appendChild(badge);
 
-  if (itensFiltrados.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 1.5rem; color: var(--text-muted);">Nenhum produto encontrado neste filtro.</div>';
-    return;
-  }
+  // Painel de Métricas
+  const panel = document.createElement("div");
+  panel.style.background = "var(--surface)";
+  panel.style.padding = "0.6rem";
+  panel.style.border = "1px solid var(--border)";
+  panel.style.borderRadius = "4px";
 
-  container.innerHTML = itensFiltrados.map(i => {
-    const isZerado = i.quantidade === 0 || i.status === 'esgotado' || i.status === 'baixado';
-    const nomeProd = (i.produtos?.nome || 'Sem Nome').replace(/"/g, '&quot;');
-    const loteProd = (i.lote || '').replace(/"/g, '&quot;');
-    const imgUrl = i.produtos?.imagem_url || DEFAULT_AVATAR;
+  const lblMet = document.createElement("div");
+  lblMet.style.fontSize = "0.72rem";
+  lblMet.style.fontWeight = "bold";
+  lblMet.style.marginBottom = "0.4rem";
+  lblMet.style.color = "var(--text-main)";
+  lblMet.textContent = "VARREDURA DA QUINZENA (" + m.total + " UNIDADES):";
 
-    return `
-    <div class="product-card" style="padding: 0.5rem 0.75rem; opacity: ${isZerado ? '0.65' : '1'};">
-      <img src="${imgUrl}" alt="Foto" style="width: 38px; height: 38px; ${isZerado ? 'filter: grayscale(1);' : ''}">
-      <div class="product-info" style="flex: 1; min-width: 0;">
-        <div class="product-title" style="font-size: 0.82rem; ${isZerado ? 'text-decoration: line-through;' : ''}">${i.produtos?.nome || 'Sem Nome'}</div>
-        <div class="product-sub" style="font-size: 0.7rem; gap: 0.5rem; align-items: center;">
-          <span>Qtd Atual: <strong style="${isZerado ? 'color: var(--danger);' : 'color: var(--primary);'} font-size: 0.85rem;">${i.quantidade} un</strong></span>
-          <span>Venc: <strong>${i.data_vencimento ? new Date(i.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/I'}</strong></span>
-        </div>
-      </div>
-      <div>
-        <button type="button" class="btn btn-secondary btn-trigger-recontagem" 
-          style="padding: 3px 8px; font-size: 0.68rem;"
-          data-id="${i.id}"
-          data-produto-id="${i.produtos?.id || ''}"
-          data-ciclo-id="${i.ciclo_lote_id || ''}"
-          data-nome="${nomeProd}"
-          data-lote="${loteProd}"
-          data-qtd="${i.quantidade}"
-          data-img="${imgUrl}">
-          ✏️ Ajustar
-        </button>
-      </div>
-    </div>
-  `;
-  }).join('');
+  const gridMet = document.createElement("div");
+  gridMet.style.display = "grid";
+  gridMet.style.gridTemplateColumns = "repeat(6, 1fr)";
+  gridMet.style.gap = "0.25rem";
+  gridMet.style.textAlign = "center";
 
-  container.querySelectorAll('.btn-trigger-recontagem').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const b = e.currentTarget;
-      window.openRecontagemModal(
-        b.dataset.id,
-        b.dataset.produtoId,
-        b.dataset.cicloId,
-        b.dataset.nome,
-        b.dataset.lote,
-        parseInt(b.dataset.qtd),
-        b.dataset.img
-      );
-    });
+  const arrMet = [
+    { txt: "60d\n" + m.d60, bg: "rgba(5, 150, 105, 0.1)", clr: "#047857" },
+    { txt: "45d\n" + m.d45, bg: "rgba(29, 78, 216, 0.1)", clr: "#1d4ed8" },
+    { txt: "30d\n" + m.d30, bg: "rgba(180, 83, 9, 0.1)", clr: "#b45309" },
+    { txt: "15d\n" + m.d15, bg: "rgba(194, 65, 12, 0.1)", clr: "#c2410c" },
+    { txt: "7d\n" + m.d7, bg: "rgba(185, 28, 28, 0.1)", clr: "#b91c1c" },
+    { txt: "Venc\n" + m.vencidos, bg: "#b91c1c", clr: "#ffffff" }
+  ];
+
+  arrMet.forEach(function(item) {
+    const box = document.createElement("div");
+    box.style.background = item.bg;
+    box.style.color = item.clr;
+    box.style.padding = "3px 2px";
+    box.style.fontSize = "0.65rem";
+    box.style.fontWeight = "bold";
+    box.style.borderRadius = "3px";
+    box.style.whiteSpace = "pre-line";
+    box.textContent = item.txt;
+    gridMet.appendChild(box);
   });
-};
 
-window.finalizarCicloAtual = async function(cycleId) {
-  if (confirm("⚠️ Tem certeza que deseja encerrar este ciclo quinzenal?\nUm novo lote será iniciado automaticamente para os novos lançamentos.")) {
-    try {
-      await cycleService.updateCycleStatus(cycleId, 'FINALIZADO');
-      alert("Ciclo encerrado com sucesso!");
-      await checkSession();
-    } catch (err) {
-      alert("Erro ao encerrar ciclo: " + err.message);
-    }
-  }
-};
+  panel.appendChild(lblMet);
+  panel.appendChild(gridMet);
 
-function renderEquipeCards(members, container) {
-  if (!members || members.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum colaborador nesta loja.</div>';
-    return;
-  }
+  // Rodapé e Botões
+  const footer = document.createElement("div");
+  footer.style.display = "flex";
+  footer.style.gap = "0.5rem";
+  footer.style.justifyContent = "flex-end";
+  footer.style.alignItems = "center";
+  footer.style.borderTop = "1px solid var(--border)";
+  footer.style.paddingTop = "0.6rem";
 
-  const userRole = (currentProfile.funcao || '').toLowerCase();
-  const podeEditar = ['administrador', 'admin', 'gerente'].includes(userRole);
-
-  container.innerHTML = members.map(user => `
-    <div class="product-card">
-      <img src="${user.foto_url || DEFAULT_AVATAR}" alt="Avatar" style="border-radius: 50%; object-fit: cover; width: 56px; height: 56px;">
-      <div class="product-info">
-        <div class="product-title">${user.nome}</div>
-        <div class="product-sub">
-          <span>Função: <strong style="text-transform: capitalize;">${user.funcao}</strong></span>
-        </div>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
-        <span class="badge-regua badge-60" style="font-size: 0.75rem;">Ativo</span>
-        ${podeEditar ? `
-          <button type="button" class="btn btn-secondary" 
-                  onclick="window.openEditUserModal('${user.id}', '${user.nome}', '${user.funcao}')"
-                  style="padding: 2px 8px; font-size: 0.75rem;">
-            ✏️ Editar
-          </button>
-        ` : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderValidadeCards(data, container) {
-  if (!data || data.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum lote registrado neste setor.</div>';
-    return;
+  if (isAtivo) {
+    const btnVirada = document.createElement("button");
+    btnVirada.type = "button";
+    btnVirada.className = "btn btn-secondary";
+    btnVirada.style.background = "#78350f";
+    btnVirada.style.color = "#fde68a";
+    btnVirada.style.borderColor = "#92400e";
+    btnVirada.style.fontSize = "0.7rem";
+    btnVirada.style.padding = "0.3rem 0.6rem";
+    btnVirada.textContent = "🧪 Simular Virada";
+    btnVirada.onclick = function() { window.simularViradaCicloTeste(); };
+    footer.appendChild(btnVirada);
   }
 
-  const userRole = (currentProfile.funcao || '').toLowerCase();
-  const podeEditarCusto = ['adm', 'administrador', 'gerente'].includes(userRole);
-  const isVencidosTab = currentSector === 'vencidos';
+  const btnInsp = document.createElement("button");
+  btnInsp.type = "button";
+  btnInsp.className = "btn btn-secondary";
+  btnInsp.style.fontSize = "0.7rem";
+  btnInsp.style.padding = "0.3rem 0.6rem";
+  btnInsp.textContent = "🔍 Inspecionar";
+  btnInsp.onclick = function() { window.openCycleDetails(c.id); };
+  footer.appendChild(btnInsp);
 
-  container.innerHTML = data.map(item => {
-    const dataCriacao = item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : 'N/I';
-    const loteExibicao = item.codigo_lote || item.lote || 'N/A';
-
-    return `
-    <div class="product-card" style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding: 0.75rem;">
-      <div style="display: flex; gap: 0.75rem; align-items: center;">
-        <img src="${item.imagem_url || item.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto" style="width: 40px; height: 40px;">
-        <div class="product-info" style="flex: 1; min-width: 0;">
-          <div class="product-title">${item.produto_nome || item.produtos?.nome || 'Produto Sem Nome'}</div>
-          <div class="product-sub" style="font-size: 0.68rem; color: var(--text-muted);">
-            <span>Lote: <strong style="font-family: var(--font-mono);">${loteExibicao}</strong></span>
-            <span>Adicionado em: <strong>${dataCriacao}</strong></span>
-          </div>
-        </div>
-        <div>
-          <span class="badge-regua ${getBadgeClass(item.status_regua)}">${item.status_regua || 'OK'}</span>
-        </div>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.4rem; font-size: 0.75rem;">
-        <div>
-          <span>Qtd: <strong>${item.quantidade} un</strong></span> | 
-          <span>Venc: <strong style="color: var(--danger);">${item.data_vencimento ? new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : 'N/I'}</strong></span>
-        </div>
-
-        <div style="display: flex; gap: 0.4rem;">
-          ${isVencidosTab ? `
-            <button type="button" class="btn btn-primary" style="padding: 2px 6px; font-size: 0.68rem; background: var(--danger);"
-              onclick="window.openBaixaModal('${item.id}', '${item.produto_id || item.produtos?.id}', '${(item.produto_nome || '').replace(/'/g, '')}', '${loteExibicao}', ${item.quantidade}, '${item.imagem_url || ''}')">
-              ⚡ Dar Baixa (TOTVS)
-            </button>
-          ` : ''}
-        </div>
-      </div>
-    </div>
-  `;
-  }).join('');
-
-
-  if (podeEditarCusto) {
-    container.querySelectorAll('.input-inline-cost').forEach(input => {
-      const salvarCusto = async () => {
-        try {
-          await productService.updatePrecoCusto(input.dataset.prodId, input.value);
-          input.style.borderColor = '#4ade80';
-          setTimeout(() => input.style.borderColor = '', 1500);
-        } catch (err) {
-          alert('Erro ao atualizar preço de custo: ' + err.message);
-        }
-      };
-
-      input.addEventListener('blur', salvarCusto);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') input.blur();
-      });
-    });
-  }
-}
-
-function renderPerdasCards(data, container) {
-  if (!data || data.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum registro encontrado neste setor.</div>';
-    return;
+  if (isAtivo && isAdmin) {
+    const btnEnc = document.createElement("button");
+    btnEnc.type = "button";
+    btnEnc.className = "btn btn-primary";
+    btnEnc.style.background = "#059669";
+    btnEnc.style.fontSize = "0.7rem";
+    btnEnc.style.padding = "0.3rem 0.6rem";
+    btnEnc.textContent = "🔒 Encerrar";
+    btnEnc.onclick = function() { window.finalizarCicloAtual(c.id); };
+    footer.appendChild(btnEnc);
   }
 
-  container.innerHTML = data.map(item => `
-    <div class="product-card">
-      <img src="${item.produtos?.imagem_url || DEFAULT_AVATAR}" alt="Foto">
-      <div class="product-info">
-        <div class="product-title">${item.produtos?.nome || 'N/I'}</div>
-        <div class="product-sub">
-          <span>Qtd: <strong>${item.quantidade} un</strong></span>
-          <span>Motivo: <strong>${item.motivo || 'N/A'}</strong></span>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  card.appendChild(top);
+  card.appendChild(panel);
+  card.appendChild(footer);
+
+  return card;
 }
 
 /* ============================================================
