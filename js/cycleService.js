@@ -61,16 +61,18 @@ export const cycleService = {
   },
 
   /* ============================================================
-     SEÇÃO 2: MÉTRICAS E CONSULTAS DOS CICLOS
+     SEÇÃO 2: MÉTRICAS E CONSULTAS DOS CICLOS (FILTRADO POR 'VAL')
      ============================================================ */
 
   async getCycleMetrics(lojaId) {
     if (!lojaId) return [];
 
+    // Busca EXCLUSIVAMENTE os lotes de varredura quinzenal ('VAL')
     const { data: ciclos, error: errCiclos } = await supabase
       .from('ciclos_lotes')
       .select('*')
       .eq('loja_id', lojaId)
+      .ilike('codigo_lote', '%VAL%')
       .order('created_at', { ascending: false });
 
     if (errCiclos) throw errCiclos;
@@ -131,26 +133,14 @@ export const cycleService = {
   async getCycleHistory(lojaId) {
     if (!lojaId) return [];
 
+    // Busca EXCLUSIVAMENTE o histórico de lotes quinzenais ('VAL')
     const { data, error } = await supabase
       .from('ciclos_lotes')
       .select('*')
       .eq('loja_id', lojaId)
+      .ilike('codigo_lote', '%VAL%')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data;
-  },
-
-  async updateCycleStatus(cycleId, newStatus) {
-    const { data, error } = await supabase
-      .from('ciclos_lotes')
-      .update({ status: newStatus })
-      .eq('id', cycleId)
-      .select()
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
-  }
-
-};
+  }};
