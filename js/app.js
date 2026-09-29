@@ -99,35 +99,6 @@ async function checkSession() {
   }
 }
 
-function showLoginScreen() {
-  if (loginScreen) loginScreen.classList.remove('hidden');
-  if (appScreen) appScreen.classList.add('hidden');
-  document.getElementById('store-selector-container')?.classList.add('hidden');
-}
-      // Atualiza o topo com o nome da loja e o lote ativo de forma correta
-      updateCycleTopbarDisplay();
-
-      const userRole = (currentProfile.funcao || '').toLowerCase();
-
-      const btnEquipe = document.getElementById('nav-item-equipe');
-      if (btnEquipe) {
-        btnEquipe.classList.toggle('hidden', !['administrador', 'admin', 'gestor', 'gerente'].includes(userRole));
-      }
-
-      if (loginScreen) loginScreen.classList.add('hidden');
-      if (appScreen) appScreen.classList.remove('hidden');
-      document.getElementById('bottom-nav')?.classList.remove('hidden');
-
-      console.log('✅ Login e Ciclo carregados com sucesso!');
-      loadSectorData();
-     else {
-      showLoginScreen();
-    }
-   catch (err) {
-    console.error('❌ Erro na verificação de sessão:', err);
-    showLoginScreen();
-  }
-
 
 // Função updateCycleTopbarDisplay limpa e com o console.log no lugar certo
 function updateCycleTopbarDisplay() {
