@@ -1058,6 +1058,7 @@ function renderValidadeCards(registros, container) {
 
 // Disponibiliza a função globalmente para as chamadas dinâmicas das abas
 window.renderValidadeCards = renderValidadeCards;
+window.renderPerdasCards = renderPerdasCards
 
 function renderCardCicloNode(c, isAtivo, isAdmin) {
   const m = c.metricas || { total: 0, d60: 0, d45: 0, d30: 0, d15: 0, d7: 0, vencidos: 0 };
