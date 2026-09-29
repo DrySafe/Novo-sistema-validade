@@ -133,7 +133,7 @@ export const cycleService = {
   async getCycleHistory(lojaId) {
     if (!lojaId) return [];
 
-    // Busca EXCLUSIVAMENTE o histórico de lotes quinzenais ('VAL')
+    // Busca EXCLUSIVAMENTE o histórico de lotes quinzenais ('VAL')s
     const { data, error } = await supabase
       .from('ciclos_lotes')
       .select('*')
