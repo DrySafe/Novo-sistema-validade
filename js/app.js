@@ -1245,4 +1245,106 @@ window.simularViradaCicloTeste = async function() {
       alert("Erro ao simular virada: " + err.message);
     }
   }
+
+  /* ==========================================================================
+   MÓDULO: RENDERIZAÇÃO DAS ABAS DE USO LOJA E AVARIAS (renderPerdasCards)
+   (DOM NATIVO - À PROVA DE ERROS DE SINTAXE)
+   ========================================================================== */
+
+function renderPerdasCards(registros, container) {
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (!registros || registros.length === 0) {
+    const msg = document.createElement("div");
+    msg.style.textAlign = "center";
+    msg.style.padding = "2rem";
+    msg.style.color = "var(--text-muted)";
+    msg.textContent = "Nenhum registro encontrado nesta seção.";
+    container.appendChild(msg);
+    return;
+  }
+
+  container.style.display = "grid";
+  container.style.gridTemplateColumns = window.innerWidth >= 1024 ? "repeat(2, 1fr)" : "1fr";
+  container.style.gap = "0.75rem";
+
+  registros.forEach(function(item) {
+    const card = document.createElement("div");
+    card.style.background = "var(--surface-panel)";
+    card.style.border = "1px solid var(--border)";
+    card.style.borderRadius = "6px";
+    card.style.padding = "1rem";
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.gap = "0.5rem";
+
+    // Linha Superior (Nome do Produto + Badge de Quantidade)
+    const topRow = document.createElement("div");
+    topRow.style.display = "flex";
+    topRow.style.justifyContent = "space-between";
+    topRow.style.alignItems = "flex-start";
+
+    const prodInfo = document.createElement("div");
+    const tit = document.createElement("h4");
+    tit.style.margin = "0";
+    tit.style.fontSize = "0.95rem";
+    tit.style.color = "var(--text-main)";
+    tit.style.fontWeight = "700";
+    tit.textContent = item.produtos && item.produtos.nome ? item.produtos.nome : (item.produto_nome || "Produto não identificado");
+
+    const ean = document.createElement("span");
+    ean.style.fontSize = "0.7rem";
+    ean.style.color = "var(--text-muted)";
+    ean.style.fontFamily = "var(--font-mono)";
+    ean.textContent = "EAN: " + (item.produtos && item.produtos.ean ? item.produtos.ean : (item.ean || "S/EAN"));
+
+    prodInfo.appendChild(tit);
+    prodInfo.appendChild(ean);
+
+    const qtdBadge = document.createElement("span");
+    qtdBadge.style.background = "rgba(225, 29, 72, 0.15)";
+    qtdBadge.style.color = "#f43f5e";
+    qtdBadge.style.padding = "0.2rem 0.5rem";
+    qtdBadge.style.borderRadius = "4px";
+    qtdBadge.style.fontSize = "0.75rem";
+    qtdBadge.style.fontWeight = "bold";
+    qtdBadge.style.border = "1px solid rgba(225, 29, 72, 0.3)";
+    qtdBadge.textContent = "Qtd: " + (item.quantidade || 0);
+
+    topRow.appendChild(prodInfo);
+    topRow.appendChild(qtdBadge);
+
+    // Linha Inferior (Data do Registro + Motivo/Observação/Lote)
+    const bottomRow = document.createElement("div");
+    bottomRow.style.display = "flex";
+    bottomRow.style.justifyContent = "space-between";
+    bottomRow.style.alignItems = "center";
+    bottomRow.style.marginTop = "0.25rem";
+    bottomRow.style.fontSize = "0.75rem";
+    bottomRow.style.color = "var(--text-muted)";
+
+    const dtReg = item.created_at 
+      ? new Date(item.created_at).toLocaleDateString("pt-BR") 
+      : "N/A";
+
+    const spanData = document.createElement("span");
+    spanData.textContent = "Data: " + dtReg;
+
+    const spanLote = document.createElement("span");
+    spanLote.textContent = "Lote: " + (item.lote || item.codigo_lote || "N/A");
+
+    bottomRow.appendChild(spanData);
+    bottomRow.appendChild(spanLote);
+
+    card.appendChild(topRow);
+    card.appendChild(bottomRow);
+
+    container.appendChild(card);
+  });
+}
+
+// Garante disponibilidade global para chamadas das abas Uso Loja e Avarias
+window.renderPerdasCards = renderPerdasCards;
 };
