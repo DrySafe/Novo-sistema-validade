@@ -129,6 +129,7 @@ function updateCycleTopbarDisplay() {
   } else if (elLoteBadge) {
     elLoteBadge.style.display = 'none';
   }
+}
 
 /* ============================================================
    SEÇÃO 3: SELETOR DE LOJAS MULTI-UNIDADE
