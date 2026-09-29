@@ -137,7 +137,7 @@ function updateCycleTopbarDisplay() {
   const elLoteBadge = document.getElementById('display-lote-badge');
 
   let nomeLoja = 'Hiper Economize';
-  
+
   if (typeof currentLoja !== 'undefined' && currentLoja && currentLoja.nome) {
     nomeLoja = currentLoja.nome;
   } else {
