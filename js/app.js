@@ -124,13 +124,11 @@ function updateCycleTopbarDisplay() {
   }
 
   if (elLoteBadge && currentCycle) {
-    // Usando crases corretamente para interpolar as variáveis
-    elLoteBadge.textContent = `LOTE: \({currentCycle.codigo_lote} (\){currentCycle.status})`;
+    elLoteBadge.textContent = "LOTE: " + currentCycle.codigo_lote + " (" + currentCycle.status + ")";
     elLoteBadge.style.display = 'inline-block';
   } else if (elLoteBadge) {
     elLoteBadge.style.display = 'none';
   }
-}
 
 /* ============================================================
    SEÇÃO 3: SELETOR DE LOJAS MULTI-UNIDADE
