@@ -107,15 +107,18 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  // Garante que pega o nome da loja de forma correta (testando vários caminhos possíveis)
-  let nomeLoja = 'Loja Principal';
-  if (currentProfile) {
-    if (currentProfile.lojas && currentProfile.lojas.nome) {
-      nomeLoja = currentProfile.lojas.nome;
-    } else if (currentProfile.loja_nome) {
-      nomeLoja = currentProfile.loja_nome;
-    } else if (currentProfile.nome_loja) {
-      nomeLoja = currentProfile.nome_loja;
+  // Define um nome padrão caso esteja buscando, mas tenta buscar de variáveis globais de loja se houver
+  let nomeLoja = 'Supermercado Central'; // ou o nome padrão da sua loja
+  
+  if (typeof currentLoja !== 'undefined' && currentLoja && currentLoja.nome) {
+    nomeLoja = currentLoja.nome;
+  } else if (typeof activeLojaName !== 'undefined' && activeLojaName) {
+    nomeLoja = activeLojaName;
+  } else {
+    // Se houver um elemento select de lojas na tela, podemos pegar o texto dele
+    const storeSelector = document.getElementById('store-selector');
+    if (storeSelector && storeSelector.options[storeSelector.selectedIndex]) {
+      nomeLoja = storeSelector.options[storeSelector.selectedIndex].text;
     }
   }
 
