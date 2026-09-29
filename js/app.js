@@ -100,16 +100,26 @@ async function checkSession() {
   }
 }
 
-function showLoginScreen() {
-  if (loginScreen) loginScreen.classList.remove('hidden');
-  if (appScreen) appScreen.classList.add('hidden');
-  document.getElementById('bottom-nav')?.classList.add('hidden');
-  document.getElementById('store-selector-container')?.classList.add('hidden');
-}
-
+// Função updateCycleTopbarDisplay limpa e com o console.log no lugar certo
 function updateCycleTopbarDisplay() {
+  console.log("ESTRUTURA DO PERFIL:", currentProfile);
+
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
+
+  const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || 'Loja Principal';
+
+  if (elLojaNome) {
+    elLojaNome.textContent = nomeLoja;
+  }
+
+  if (elLoteBadge && currentCycle) {
+    elLoteBadge.textContent = `LOTE: \({currentCycle.codigo_lote} (\){currentCycle.status})`;
+    elLoteBadge.style.display = 'inline-block';
+  } else if (elLoteBadge) {
+    elLoteBadge.style.display = 'none';
+  }
+}
 
   // Pega o nome da loja de forma segura do perfil atual
   const nomeLoja = currentProfile?.lojas?.nome || currentProfile?.loja_nome || 'Loja Principal';
