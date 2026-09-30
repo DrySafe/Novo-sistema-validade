@@ -107,12 +107,12 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  let nomeLoja = 'Hiper Economize';
+  let nomeLoja = currentProfile?.lojas?.nome || userLojas.find(l => l.id === activeLojaId)?.nome || 'Loja';
 
   if (typeof currentLoja !== 'undefined' && currentLoja && currentLoja.nome) {
     nomeLoja = currentLoja.nome;
   } else {
-    const storeSelector = document.getElementById('store-selector');
+    const storeSelector = document.getElementById('select-active-store');
     if (storeSelector && storeSelector.options && storeSelector.options[storeSelector.selectedIndex]) {
       nomeLoja = storeSelector.options[storeSelector.selectedIndex].text;
     }
@@ -152,9 +152,11 @@ async function setupStoreSelector() {
     }
 
     if (userLojas.length === 0) {
-      const { data: todasLojas } = await supabase.from('lojas').select('*');
-      if (todasLojas) userLojas = todasLojas;
+      if (currentProfile.lojas) userLojas = [currentProfile.lojas];
     }
+
+    if (!userLojas.some(l => l.id === activeLojaId)) activeLojaId = userLojas[0]?.id || null;
+    if (activeLojaId) currentProfile.lojas = userLojas.find(l => l.id === activeLojaId);
 
     userLojas = userLojas.filter((loja, index, self) =>
       index === self.findIndex((t) => t.id === loja.id)
@@ -1247,6 +1249,8 @@ window.simularViradaCicloTeste = async function() {
     }
   }
 
+};
+
   /* ==========================================================================
    MÓDULO: RENDERIZAÇÃO DAS ABAS DE USO LOJA E AVARIAS (renderPerdasCards)
    (DOM NATIVO - À PROVA DE ERROS DE SINTAXE)
@@ -1348,4 +1352,11 @@ function renderPerdasCards(registros, container) {
 
 // Garante disponibilidade global para chamadas das abas Uso Loja e Avarias
 window.renderPerdasCards = renderPerdasCards;
-};
+
+function showLoginScreen() {
+  loginScreen?.classList.remove('hidden');
+  appScreen?.classList.add('hidden');
+  document.getElementById('bottom-nav')?.classList.add('hidden');
+  document.getElementById('store-selector-container')?.classList.add('hidden');
+  window.closeAllModals();
+}
