@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { initializeLayout } from '../js/layout.js';
 import { JSDOM } from 'jsdom';
 
 test('painel mantém lotes antigos, esconde vencidos e abre revisão ou baixa parcial', async () => {
@@ -27,5 +29,22 @@ test('painel mantém lotes antigos, esconde vencidos e abre revisão ou baixa pa
   assert.ok(options.includes('Descarte')); assert.ok(options.includes('Troca')); assert.ok(options.includes('Bonificação'));
   assert.ok(!options.includes('Venda'));
   assert.equal(dialog.querySelector('input[type=number]').readOnly,false);
+  dom.window.close();
+});
+
+test('menu compacto abre, seleciona módulo e fecha por Escape ou clique externo', () => {
+  const dom = new JSDOM(fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8'));
+  const doc = dom.window.document;
+  initializeLayout(doc);
+  const toggle = doc.getElementById('nav-more-toggle');
+  toggle.click(); assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  doc.querySelector('[data-sector=avarias]').click();
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(doc.getElementById('workspace-title').textContent, 'Avarias');
+  assert.equal(doc.querySelector('[data-sector=avarias]').getAttribute('aria-current'), 'page');
+  toggle.click(); doc.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape' }));
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  toggle.click(); doc.body.click(); assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.ok(doc.getElementById('nav-item-equipe').classList.contains('hidden'));
   dom.window.close();
 });

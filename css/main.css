@@ -1,100 +1,60 @@
-/* ============================================================
-   VALIDASUPER - DESIGN SYSTEM MODERNO & MINIMALISTA
-   ============================================================ */
-
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Barlow Condensed', sans-serif;
+  color-scheme: light;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: var(--font-sans);
   --font-mono: 'IBM Plex Mono', monospace;
-
-  /* Cores de Tema (Light Mode) */
-  --bg-app: #f8fafc;
-  --surface: #ffffff;
-  --surface-panel: #f1f5f9;
-  --border: #e2e8f0;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  
-  --primary: #059669;        /* Verde Esmeralda Institucional */
-  --primary-hover: #047857;
-  --primary-light: #ecfdf5;
-  
-  --accent: #3b82f6;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --radius: 10px;
+  --bg-app: #f5f7f9;
+  --surface: #fff;
+  --surface-panel: #f8fafb;
+  --border: #e2e8ec;
+  --text-main: #233441;
+  --text-muted: #60717d;
+  --primary: #137968;
+  --primary-hover: #0d6153;
+  --primary-light: #e8f4ef;
+  --accent: #3565a3;
+  --warning: #976017;
+  --danger: #b73d48;
+  --radius: 14px;
+  --shadow-sm: 0 2px 6px rgb(27 49 61 / 3%);
+  --shadow-md: 0 16px 48px rgb(27 49 61 / 10%);
 }
-
 body.dark {
-  --bg-app: #090d16;
-  --surface: #111827;
-  --surface-panel: #1f2937;
-  --border: #374151;
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  
-  --primary: #10b981;
-  --primary-hover: #059669;
-  --primary-light: rgba(16, 185, 129, 0.15);
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+  --bg-app: #111b24;
+  --surface: #192631;
+  --surface-panel: #20303d;
+  --border: #344653;
+  --text-main: #e8f0f3;
+  --text-muted: #aec0ca;
+  --primary: #69cead;
+  --primary-hover: #8ce0c3;
+  --primary-light: #243f3c;
+  --warning: #efbd78;
+  --danger: #f3969e;
 }
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); color: var(--text-main); background: var(--bg-app); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .55; cursor: wait; }
+h1, h2, h3, h4, p { margin: 0; }
+:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.hidden { display: none !important; }
+.app-viewport { width: 100%; height: 100vh; height: 100dvh; display: grid; grid-template: 64px minmax(0,1fr) auto / minmax(0,1fr); }
+.container { min-width: 0; min-height: 0; overflow-y: auto; padding: clamp(16px, 3vw, 40px); scrollbar-gutter: stable; }
+#login-screen { grid-row: 2; width: min(100%,460px); justify-self: center; align-self: center; max-height: 100%; }
+#app-screen { grid-row: 2; }
+.topbar { grid-row: 1; }
+.bottom-nav { grid-row: 3; }
+body:has(.modal.active), body:has(dialog[open]) { overflow: hidden; }
+@media(min-width: 1000px) {
+  .app-viewport { grid-template: 72px minmax(0,1fr) / 180px minmax(0,1fr); }
+  .topbar { grid-column: 1 / -1; }
+  .bottom-nav { grid-row: 2; grid-column: 1; }
+  #app-screen { grid-column: 2; }
+  #login-screen { grid-column: 1 / -1; }
 }
-
-body {
-  font-family: var(--font-sans);
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.app-viewport {
-  width: 100%;
-  max-width: 480px; /* Layout focado em experiência mobile/operacional otimizada */
-  height: 100vh;
-  max-height: 920px;
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  border: 1px solid var(--border);
-}
-
-@media (min-width: 768px) {
-  .app-viewport {
-    max-width: 540px;
-  }
-}
-
-/* Scrollbar minimalista */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-.hidden {
-  display: none !important;
+@media(prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

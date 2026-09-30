@@ -1,4 +1,5 @@
 import { lifecycleService } from './lifecycleService.js';
+import { initializeLayout } from './layout.js';
 import { renderPainel, renderItens } from './lifecycleUI.js';
 import * as lifecycleReports from './lifecycleReports.js';
 import { authService } from './authService.js';
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   appScreen = document.getElementById('app-screen');
 
   setupEvents();
+  initializeLayout();
   checkSession();
 });
 
@@ -435,14 +437,14 @@ function setupEvents() {
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark');
-    if (btnToggleTheme) btnToggleTheme.textContent = '☀️';
+    if (btnToggleTheme) btnToggleTheme.textContent = '◐';
   }
 
   if (btnToggleTheme) {
     btnToggleTheme.addEventListener('click', () => {
       document.body.classList.toggle('dark');
       const isDark = document.body.classList.contains('dark');
-      btnToggleTheme.textContent = isDark ? '☀️' : '🌙';
+      btnToggleTheme.textContent = '◐';
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
   }

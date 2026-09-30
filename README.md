@@ -4,6 +4,12 @@ Controle de validades e prevenção de perdas por loja. Frontend estático HTML/
 
 ## Fluxo implementado
 
+## Interface responsiva
+
+O layout ocupa a janela completa, com cartões em colunas adaptáveis. Desktop usa navegação lateral de 180px; no mobile há três atalhos principais e o menu Mais para Uso da loja, Avarias e Equipe. Relatórios ficam em um menu compacto. A interface tem temas claro/escuro, alvos de toque de 44px, zoom liberado, foco visível e transições que respeitam a preferência por movimento reduzido. Prévia visual verificada em Edge a 320, 390, 768 e 1440px com dados demonstrativos, sem acesso ao Supabase.
+
+## Operação
+
 - Uma rodada de conferência começa a cada 15 dias, ancorada na primeira rodada da loja. A rodada abre um lote VAL para novos lançamentos.
 - Itens de todos os lotes VAL anteriores com saldo retornam à fila. A mudança de faixa e a mudança de rodada exigem nova revisão; uma revisão atualizada pode atender às duas pendências simultaneamente.
 - Faixas: 60+, 60, 45, 30, 15 e 7 dias. No próprio dia de validade o item é tratado como vencido e deixa a visualização operacional de validade.

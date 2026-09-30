@@ -82,28 +82,44 @@ export function renderItens(items, container, profile, refresh) {
   if (!items.length) { container.append(node('p', 'Nenhum item nesta seção.')); return; }
   for (const item of items) {
     const card = node('article', undefined, 'vs-card');
-    card.append(node('h4', item.produto_nome));
-    card.append(node('p', `EAN: ${item.produtos?.ean || '—'} | Origem: ${item.origem_codigo}`));
-    card.append(node('p', `Saldo: ${item.quantidade} | Validade: ${date(item.data_vencimento)} | ${item.vencido_em ? 'VENCIDO' : 'Faixa: ' + item.faixa + ' dias'} | Preço: ${money(item.preco_atual)}`));
+    const head = node('div', undefined, 'vs-card-head');
+    head.append(node('h4', item.produto_nome));
+    const band = item.vencido_em ? 'VENC' : item.faixa;
+    head.append(node('span', band === 'VENC' ? 'Vencido' : band + ' dias', 'vs-badge vs-band-' + band));
+    card.append(head, node('p', `EAN ${item.produtos?.ean || '—'} · Lote ${item.origem_codigo}`, 'vs-meta'));
+    const facts = node('dl', undefined, 'vs-facts');
+    for (const [label, value] of [['Saldo', `${item.quantidade} un.`], ['Preço praticado', money(item.preco_atual)], ['Validade', date(item.data_vencimento)]]) {
+      const fact = node('div'); fact.append(node('dt', label), node('dd', value)); facts.append(fact);
+    }
+    card.append(facts);
     if (item.vencido_em) card.append(node('p', `Lote diário: ${item.lote_vencidos}`));
     if (item.pendencias.length) card.append(node('strong', 'Pendente: ' + item.pendencias.join(' + '), 'vs-pendente'));
     const actions = node('div', undefined, 'vs-actions');
     if (item.status === 'ativo' && item.quantidade > 0) {
-      if (item.tipo === 'VAL' && !item.vencido_em && item.faixa !== 'VENC') actions.append(button('Revisar saldo e preço', () => editar(item, true, refresh)));
-      actions.append(button('Registrar saída / correção', () => editar(item, false, refresh)));
+      if (item.tipo === 'VAL' && !item.vencido_em && item.faixa !== 'VENC') {
+        const review = button('Revisar saldo e preço', () => editar(item, true, refresh)); review.className = 'btn btn-primary'; actions.append(review);
+      }
+      actions.append(button('Movimentar', () => editar(item, false, refresh)));
     }
-    actions.append(button('Histórico e relatório', () => historico(item, profile))); card.append(actions); container.append(card);
+    const history = button('Histórico', () => historico(item, profile)); history.classList.add('btn-quiet');
+    actions.append(history); card.append(actions); container.append(card);
   }
 }
 
 export function renderPainel(snapshot, container, profile, refresh) {
   container.replaceChildren();
   const active = snapshot.itens.filter(i => i.tipo === 'VAL' && !i.vencido_em && i.status === 'ativo' && i.quantidade > 0);
-  container.append(node('h3', `Conferência: ${date(snapshot.rodada.inicio)} a ${date(snapshot.rodada.fim)}`));
-  container.append(node('p', `${active.length} itens em acompanhamento · ${active.filter(i => i.pendencias.length).length} revisões pendentes. Lotes anteriores permanecem na fila enquanto houver saldo.`));
+  const overview = node('div', undefined, 'vs-overview');
+  for (const [label, value] of [['Itens acompanhados', active.length], ['Revisões pendentes', active.filter(i => i.pendencias.length).length], ['Unidades com saldo', active.reduce((sum, i) => sum + i.quantidade, 0)]]) {
+    const metric = node('div', undefined, 'vs-metric'); metric.append(node('span', label), node('strong', String(value))); overview.append(metric);
+  }
+  container.append(overview);
+  const toolbar = node('div', undefined, 'vs-toolbar');
+  const intro = node('div'); intro.append(node('h2', 'Revisões da quinzena'), node('p', `${date(snapshot.rodada.inicio)} a ${date(snapshot.rodada.fim)} · Todos os lotes com saldo`)); toolbar.append(intro);
   const filter = node('select'); filter.setAttribute('aria-label', 'Filtrar acompanhamento');
   for (const [value, label] of [['pendentes', 'Revisões pendentes'], ['todos', 'Todos os itens com saldo']]) { const opt = node('option', label); opt.value = value; filter.append(opt); }
-  const list = node('div'); container.append(filter, list);
+  toolbar.append(filter);
+  const list = node('div'); container.append(toolbar, list);
   const render = () => {
     list.replaceChildren();
     const selected = filter.value === 'pendentes' ? active.filter(i => i.pendencias.length) : active;
@@ -111,7 +127,7 @@ export function renderPainel(snapshot, container, profile, refresh) {
     for (const i of selected) { if (!groups.has(i.origem_codigo)) groups.set(i.origem_codigo, []); groups.get(i.origem_codigo).push(i); }
     if (!groups.size) list.append(node('p', 'Nenhuma revisão pendente nesta seleção.'));
     for (const [codigo, itens] of groups) {
-      const section = node('section'); section.append(node('h3', 'Lote ' + codigo));
+      const section = node('section', undefined, 'vs-lot-section'); section.append(node('h3', 'Lote ' + codigo));
       const cards = node('div'); section.append(cards); renderItens(itens, cards, profile, refresh); list.append(section);
     }
   };
