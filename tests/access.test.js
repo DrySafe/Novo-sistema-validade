@@ -25,6 +25,7 @@ test('cadastro não atribui cargo, vínculos são protegidos e remoção preserv
   await db.exec(fs.readFileSync(new URL('../supabase/migrations/202609300001_acompanhamento.sql',import.meta.url),'utf8'));
   await db.exec(fs.readFileSync(new URL('../supabase/migrations/20260930174445_acesso_validasuper.sql',import.meta.url),'utf8'));
   await db.exec(fs.readFileSync(new URL('../supabase/migrations/20260930175223_privilegios_e_rotina.sql',import.meta.url),'utf8'));
+  await db.exec(fs.readFileSync(new URL('../supabase/migrations/20260930184825_corrigir_colisao_codigo_lote.sql',import.meta.url),'utf8'));
   await db.exec(`create trigger onboarding after insert on auth.users for each row execute function handle_new_user_onboarding();
    create trigger profile after insert on auth.users for each row execute function handle_new_user_profile();
    create trigger legacy after insert on auth.users for each row execute function handle_new_user();
@@ -38,6 +39,18 @@ test('cadastro não atribui cargo, vínculos são protegidos e remoção preserv
   assert.equal((await query("select has_function_privilege('anon','vs_criar(jsonb)','execute') permitido"))[0].permitido,false);
   assert.equal((await query("select has_function_privilege('authenticated','vs_lote(uuid,text)','execute') permitido"))[0].permitido,false);
   const loja=(await query(`select vs_salvar_loja('{"nome":"Loja teste","numero_loja":"03"}') loja`))[0].loja;
+  const loja2=(await query(`select vs_salvar_loja('{"nome":"Outra loja","numero_loja":"3"}') loja`))[0].loja;
+  await query('select vs_painel($1)',[loja.id]);
+  await query('select vs_painel($1)',[loja2.id]);
+  await query('select vs_painel($1)',[loja2.id]);
+  const codigos=await query('select codigo_lote,sequencia_num from ciclos_lotes order by sequencia_num');
+  assert.equal(codigos.length,2);
+  assert.equal(new Set(codigos.map(c=>c.codigo_lote)).size,2);
+  assert.deepEqual(codigos.map(c=>c.sequencia_num),[1,2]);
+  const diario1=(await query("select codigo_lote from vs_lote($1,'VENC')",[loja.id]))[0].codigo_lote;
+  const diario2=(await query("select codigo_lote from vs_lote($1,'VENC')",[loja2.id]))[0].codigo_lote;
+  assert.notEqual(diario1,diario2);
+  assert.equal((await query("select codigo_lote from vs_lote($1,'VENC')",[loja2.id]))[0].codigo_lote,diario2);
   assert.equal((await query('select funcao from perfis where id=$1',[owner]))[0].funcao,'administrador');
   await db.exec('set role authenticated');
   await assert.rejects(db.exec(`update perfis set funcao='administrador'`),/permission denied/);
