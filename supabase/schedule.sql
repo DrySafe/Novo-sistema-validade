@@ -1,4 +1,5 @@
--- Execute como dono do banco, após habilitar pg_cron no painel Supabase.
+-- Execute como dono do banco. Habilita pg_cron quando ainda não instalado.
+create extension if not exists pg_cron with schema pg_catalog;
 -- 03:05 UTC corresponde a 00:05 em São Paulo. Sincronização também acontece ao abrir o app.
 -- Ao aplicar novamente, substitui somente o agendamento deste app.
 do $$

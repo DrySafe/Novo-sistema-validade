@@ -414,7 +414,7 @@ function setupEvents() {
 
     if (confirm(`⚠️ Tem certeza que deseja excluir o colaborador "${userName}"?`)) {
       try {
-        await authService.deleteEmployee(userId);
+        await authService.deleteEmployee(userId, activeLojaId || currentProfile.loja_id);
         alert('Colaborador removido com sucesso!');
         window.closeAllModals();
         loadSectorData();
@@ -470,13 +470,13 @@ function setupEvents() {
     formRegisterUser.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        await authService.registerUser({
+        const cadastro = await authService.registerUser({
           nome: document.getElementById('reg-user-name').value,
           email: document.getElementById('reg-user-email').value,
           password: document.getElementById('reg-user-password').value
         });
 
-        alert('Conta criada com sucesso!');
+        alert(cadastro.session ? 'Conta criada com sucesso!' : 'Conta criada. Confirme seu e-mail antes de entrar.');
         await checkSession();
       } catch (err) {
         alert('Erro ao criar conta: ' + err.message);

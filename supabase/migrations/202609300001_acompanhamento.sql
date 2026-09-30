@@ -1,8 +1,24 @@
 -- Requer IDs UUID e as tabelas existentes indicadas pelo frontend.
 -- Aplicar primeiro em homologação. Esta migração não altera RPCs legadas.
 begin;
+-- Preserva a view legada durante a alteração de tipo. DROP sem CASCADE:
+-- outras dependências inesperadas abortam a transação inteira.
+create temporary table vs_view_backup on commit drop as
+ select pg_get_viewdef(c.oid,true) definicao from pg_class c
+ join pg_namespace n on n.oid=c.relnamespace
+ where n.nspname='public' and c.relname='vw_regua_vencimentos' and c.relkind='v';
+drop view if exists public.vw_regua_vencimentos;
 -- O esquema real usava varchar(20); loja(10)+VENC(4)+data(8)+sequência(4) pode ter 26 caracteres.
 alter table public.ciclos_lotes alter column codigo_lote type varchar(30);
+do $$ declare definicao text; begin
+ select b.definicao into definicao from vs_view_backup b;
+ if definicao is not null then
+  execute 'create view public.vw_regua_vencimentos with (security_invoker=true) as '||definicao;
+  revoke all on public.vw_regua_vencimentos from public,anon,authenticated;
+  grant select on public.vw_regua_vencimentos to authenticated;
+  grant all on public.vw_regua_vencimentos to service_role;
+ end if;
+end $$;
 -- AV e USO não exigem validade. VAL/VENC continuam validados na RPC de entrada.
 alter table public.lotes_validade alter column data_vencimento drop not null;
 create unique index if not exists vs_codigo_lote_unico on ciclos_lotes(loja_id,codigo_lote);
