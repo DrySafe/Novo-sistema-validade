@@ -1,71 +1,11 @@
-/* ============================================================
-   CARDS & TABELAS ADAPTATIVAS PARA MOBILE
-   ============================================================ */
-
-.product-card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-/* Card Estilo "List Item" Otimizado para Toque */
-.product-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-
-.product-card img {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.product-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.product-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 0.2rem;
-}
-
-.product-sub {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Badges de Destaque da Régua */
-.badge-regua {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 800;
-  padding: 0.35rem 0.65rem;
-  border-radius: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.badge-60 { background: var(--st-60); color: #000; }
-.badge-45 { background: var(--st-45); color: #000; }
-.badge-30 { background: var(--st-30); color: #fff; }
-.badge-15 { background: var(--st-15); color: #fff; }
-.badge-7  { background: var(--st-7);  color: #fff; animate: pulse 1.5s infinite; }
+.product-card-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr)); gap: 16px; }
+.product-card { display: flex; gap: 14px; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.product-card img { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; }
+.product-info { flex: 1; min-width: 0; }
+.product-title { font-weight: 600; overflow-wrap: anywhere; }
+.product-sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+.badge-regua { border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 600; }
+.badge-60 { color: var(--primary); background: var(--primary-light); }
+.badge-45, .badge-30 { color: #3565a3; background: #edf3fb; }
+.badge-15 { color: #976017; background: #fff5e3; }
+.badge-7, .badge-vencido { color: #b73d48; background: #fff0f1; }

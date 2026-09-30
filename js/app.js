@@ -1,7 +1,10 @@
+import { lifecycleService } from './lifecycleService.js';
+import { initializeLayout } from './layout.js';
+import { renderPainel, renderItens } from './lifecycleUI.js';
+import * as lifecycleReports from './lifecycleReports.js';
 import { authService } from './authService.js';
 import { productService } from './productService.js';
 import { cycleService } from './cycleService.js';
-import { reportService } from './reportService.js';
 import { supabase } from './supabaseClient.js';
 
 /* ============================================================
@@ -27,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   appScreen = document.getElementById('app-screen');
 
   setupEvents();
+  initializeLayout();
   checkSession();
 });
 
@@ -107,16 +111,7 @@ function updateCycleTopbarDisplay() {
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
 
-  let nomeLoja = 'Hiper Economize';
-
-  if (typeof currentLoja !== 'undefined' && currentLoja && currentLoja.nome) {
-    nomeLoja = currentLoja.nome;
-  } else {
-    const storeSelector = document.getElementById('store-selector');
-    if (storeSelector && storeSelector.options && storeSelector.options[storeSelector.selectedIndex]) {
-      nomeLoja = storeSelector.options[storeSelector.selectedIndex].text;
-    }
-  }
+  const nomeLoja = currentProfile?.lojas?.nome || userLojas.find(l => l.id === activeLojaId)?.nome || 'Loja';
 
   if (elLojaNome) {
     elLojaNome.textContent = nomeLoja;
@@ -152,9 +147,11 @@ async function setupStoreSelector() {
     }
 
     if (userLojas.length === 0) {
-      const { data: todasLojas } = await supabase.from('lojas').select('*');
-      if (todasLojas) userLojas = todasLojas;
+      if (currentProfile.lojas) userLojas = [currentProfile.lojas];
     }
+
+    if (!userLojas.some(l => l.id === activeLojaId)) activeLojaId = userLojas[0]?.id || null;
+    if (activeLojaId) currentProfile.lojas = userLojas.find(l => l.id === activeLojaId);
 
     userLojas = userLojas.filter((loja, index, self) =>
       index === self.findIndex((t) => t.id === loja.id)
@@ -181,9 +178,11 @@ async function setupStoreSelector() {
         const lojaSelecionada = userLojas.find(l => l.id === activeLojaId);
         if (lojaSelecionada) currentProfile.lojas = lojaSelecionada;
 
-        currentCycle = await cycleService.getOrCreateActiveCycle(activeLojaId);
+        window.closeAllModals();
+        currentCycle = null;
+        currentData = [];
         updateCycleTopbarDisplay();
-        loadSectorData();
+        await loadSectorData();
       };
     } else {
       container.classList.add('hidden');
@@ -203,6 +202,7 @@ async function setupStoreSelector() {
    ============================================================ */
 
 window.closeAllModals = function() {
+  document.querySelectorAll('dialog[open]').forEach(d => d.close());
   document.querySelectorAll('.modal').forEach(m => {
     m.classList.remove('active');
   });
@@ -258,26 +258,6 @@ window.openRecontagemModal = function(itemId, produtoId, cicloId, nome, lote, qt
     alert("⛔ Apenas perfis de Gestão/Auditoria podem ajustar quantidades.");
     return;
   }
-
-  window.simularViradaCicloTeste = async function() {
-  const lojaAlvo = activeLojaId || currentProfile.loja_id;
-  if (!lojaAlvo) {
-    alert("Nenhuma loja ativa selecionada.");
-    return;
-  }
-
-  if (confirm("🧪 Deseja simular a virada de quinzena agora?\nIsso vai encerrar o lote VAL atual, migrar os vencidos para o lote VENC mantendo o lote de origem, e abrir um novo ciclo.")) {
-    try {
-      const { data, error } = await supabase.rpc('forcar_virada_ciclo_teste', { p_loja_id: lojaAlvo });
-      if (error) throw error;
-      
-      alert("✅ " + data);
-      await checkSession();
-    } catch (err) {
-      alert("Erro ao simular virada: " + err.message);
-    }
-  }
-};
 
   window.closeAllModals();
 
@@ -434,7 +414,7 @@ function setupEvents() {
 
     if (confirm(`⚠️ Tem certeza que deseja excluir o colaborador "${userName}"?`)) {
       try {
-        await authService.deleteEmployee(userId);
+        await authService.deleteEmployee(userId, activeLojaId || currentProfile.loja_id);
         alert('Colaborador removido com sucesso!');
         window.closeAllModals();
         loadSectorData();
@@ -445,24 +425,26 @@ function setupEvents() {
   });
 
   document.getElementById('btn-export-excel')?.addEventListener('click', () => {
-    reportService.exportToExcel(currentData, currentSector, currentProfile);
+    if (currentSector !== 'equipe') lifecycleReports.exportLifecycleExcel(currentData, currentProfile);
+    else alert('Selecione um módulo operacional para exportar o acompanhamento.');
   });
 
   document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
-    reportService.exportToPDF(currentData, currentSector, currentProfile);
+    if (currentSector !== 'equipe') lifecycleReports.exportLifecyclePDF(currentData, currentProfile);
+    else alert('Selecione um módulo operacional para exportar o acompanhamento.');
   });
 
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark');
-    if (btnToggleTheme) btnToggleTheme.textContent = '☀️';
+    if (btnToggleTheme) btnToggleTheme.textContent = '◐';
   }
 
   if (btnToggleTheme) {
     btnToggleTheme.addEventListener('click', () => {
       document.body.classList.toggle('dark');
       const isDark = document.body.classList.contains('dark');
-      btnToggleTheme.textContent = isDark ? '☀️' : '🌙';
+      btnToggleTheme.textContent = '◐';
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
     });
   }
@@ -488,13 +470,13 @@ function setupEvents() {
     formRegisterUser.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        await authService.registerUser({
+        const cadastro = await authService.registerUser({
           nome: document.getElementById('reg-user-name').value,
           email: document.getElementById('reg-user-email').value,
           password: document.getElementById('reg-user-password').value
         });
 
-        alert('Conta criada com sucesso!');
+        alert(cadastro.session ? 'Conta criada com sucesso!' : 'Conta criada. Confirme seu e-mail antes de entrar.');
         await checkSession();
       } catch (err) {
         alert('Erro ao criar conta: ' + err.message);
@@ -534,7 +516,7 @@ function setupEvents() {
 
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+      window.closeAllModals();
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       
       const target = e.currentTarget;
@@ -570,7 +552,8 @@ function setupEvents() {
       const entrySector = document.getElementById('entry-sector');
       if (entrySector) entrySector.value = currentSector === 'ciclos' ? 'validade' : currentSector;
       
-      const isValidade = (currentSector === 'validade' || currentSector === 'ciclos');
+      const isValidade = ['validade', 'ciclos', 'vencidos'].includes(currentSector);
+      document.getElementById('entry-expiration').required = isValidade;
       const fieldValidade = document.getElementById('field-group-validity');
       if (fieldValidade) fieldValidade.style.display = isValidade ? 'grid' : 'none';
 
@@ -685,6 +668,10 @@ function setupEvents() {
   if (formEntry) {
     formEntry.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (formEntry.dataset.saving === 'true') return;
+      formEntry.dataset.saving = 'true';
+      const submitEntry = formEntry.querySelector('[type="submit"]');
+      if (submitEntry) submitEntry.disabled = true;
 
       const payload = {
         lojaId: activeLojaId || currentProfile.loja_id,
@@ -735,6 +722,9 @@ function setupEvents() {
         loadSectorData();
       } catch (err) {
         alert('Erro ao salvar registro: ' + err.message);
+      } finally {
+        formEntry.dataset.saving = 'false';
+        if (submitEntry) submitEntry.disabled = false;
       }
     });
   }
@@ -799,12 +789,7 @@ function setupEvents() {
         alert('✅ Quantidade atualizada e registrada na auditoria com sucesso!');
         window.closeAllModals();
 
-        const idCicloAtual = document.getElementById('recontagem-ciclo-id').value;
-        if (idCicloAtual) {
-          window.openCycleDetails(idCicloAtual);
-        } else {
-          loadSectorData();
-        }
+        await loadSectorData();
 
       } catch (err) {
         alert('Erro ao ajustar quantidade: ' + err.message);
@@ -812,540 +797,88 @@ function setupEvents() {
     });
   }
 
-  document.querySelectorAll('.filter-cycle-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.filter-cycle-btn').forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      window.renderCycleModalItems(e.target.dataset.filter);
-    });
-  });
+
 }
 
 /* ============================================================
    SEÇÃO 6: CONSULTA E CARREGAMENTO DE DADOS DOS SETORES
    ============================================================ */
 
+let loadVersion = 0;
+let refreshing = false;
 async function loadSectorData() {
-  const container = document.getElementById('product-card-container');
-  const cycleContainer = document.getElementById('cycle-section-container');
+  const version = ++loadVersion;
+  const sector = currentSector;
+  const loja = activeLojaId || currentProfile?.loja_id;
+  if (!loja) return;
+  const cards = document.getElementById('product-card-container');
+  const cycles = document.getElementById('cycle-section-container');
+  const container = sector === 'ciclos' ? cycles : cards;
+  cycles?.classList.toggle('hidden', sector !== 'ciclos');
+  cards?.classList.toggle('hidden', sector === 'ciclos');
   if (!container) return;
-
-  const lojaAlvo = activeLojaId || currentProfile.loja_id;
-
-  if (currentSector === 'ciclos') {
-    if (cycleContainer) cycleContainer.classList.remove('hidden');
-    if (container) container.classList.add('hidden');
-
-    cycleContainer.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Carregando painel de ciclos...</div>';
-
-    try {
-      const ciclosComMetricas = await cycleService.getCycleMetrics(lojaAlvo);
-      renderCiclosCards(ciclosComMetricas, cycleContainer);
-    } catch (err) {
-      cycleContainer.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--st-7);">Erro ao carregar ciclos: ${err.message}</div>`;
+  currentData = [];
+  container.textContent = 'Carregando acompanhamento...';
+  refreshing = true;
+  try {
+    if (sector === 'equipe') {
+      const team = await authService.getTeamMembers(loja);
+      if (version !== loadVersion) return;
+      renderEquipeCards(team, container);
+      return;
     }
-  } else {
-    if (cycleContainer) cycleContainer.classList.add('hidden');
-    if (container) container.classList.remove('hidden');
-
-    container.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-muted);">Carregando dados...</div>';
-
-    try {
-      if (currentSector === 'validade') {
-        currentData = await productService.getReguaVencimentos(lojaAlvo);
-        renderValidadeCards(currentData, container);
-      } else if (currentSector === 'vencidos') {
-        currentData = await productService.getProdutosVencidos(lojaAlvo);
-        renderValidadeCards(currentData, container);
-      } else if (currentSector === 'equipe') {
-        currentData = await authService.getTeamMembers(lojaAlvo);
-        renderEquipeCards(currentData, container);
-      } else {
-        currentData = await productService.getRegistrosPerdas(lojaAlvo, currentSector);
-        renderPerdasCards(currentData, container);
-      }
-    } catch (err) {
-      container.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--st-7);">Erro ao carregar dados: ${err.message}</div>`;
+    const snapshot = await lifecycleService.carregar(loja);
+    if (version !== loadVersion) return;
+    if (sector === 'ciclos') {
+      currentData = snapshot.itens; // Relatório inclui concluídos e transferidos.
+      renderPainel(snapshot, container, currentProfile, loadSectorData);
+    } else {
+      currentData = snapshot.itens.filter(i => {
+        if (sector === 'validade') return i.tipo === 'VAL';
+        if (sector === 'vencidos') return Boolean(i.vencido_em);
+        return i.tipo === (sector === 'avarias' ? 'AV' : 'USO');
+      });
+      const visible = ['validade', 'vencidos'].includes(sector)
+        ? currentData.filter(i => i.status === 'ativo' && i.quantidade > 0 && (sector === 'vencidos' || !i.vencido_em))
+        : currentData;
+      renderItens(visible, container, currentProfile, loadSectorData);
     }
+    currentCycle = await cycleService.getOrCreateActiveCycle(loja);
+    if (version === loadVersion) updateCycleTopbarDisplay();
+  } catch (err) {
+    if (version === loadVersion) container.textContent = 'Erro ao carregar: ' + err.message;
+  } finally { if (version === loadVersion) refreshing = false; }
+}
+// Atualiza pendências após mudanças de dia/rodada, sem fechar uma operação em andamento.
+setInterval(() => {
+  if (currentProfile && !refreshing && !document.hidden && !document.querySelector('dialog[open], .modal.active') && currentSector !== 'equipe') loadSectorData();
+}, 60000);
+
+function renderEquipeCards(members, container) {
+  container.replaceChildren();
+  for (const member of members || []) {
+    const card = document.createElement('article');
+    card.className = 'vs-card';
+    const text = document.createElement('p');
+    text.textContent = (member.nome || 'Sem nome') + ' — ' + (member.funcao || 'Operador');
+    const edit = document.createElement('button');
+    edit.type = 'button'; edit.className = 'btn btn-secondary'; edit.textContent = 'Editar';
+    edit.onclick = () => window.openEditUserModal(member.id, member.nome, member.funcao);
+    card.append(text, edit); container.append(card);
   }
 }
 
-/* ============================================================
-   SEÇÃO 7: COMPONENTES DE RENDERIZAÇÃO DE CARDS (INTERFACE)
-   ============================================================ */
-
-/* ==========================================================================
-   RENDERIZAÇÃO DE CICLOS E CARDS (DOM NATIVO - À PROVA DE ERROS)
-   ========================================================================== */
-
-function renderCiclosCards(ciclos, container) {
-  if (!ciclos || ciclos.length === 0) {
-    container.innerHTML = "";
-    const msg = document.createElement("div");
-    msg.style.textAlign = "center";
-    msg.style.padding = "2rem";
-    msg.style.color = "var(--text-muted)";
-    msg.textContent = "Nenhum ciclo quinzenal cadastrado para esta loja.";
-    container.appendChild(msg);
-    return;
-  }
-
-  const userRole = (currentProfile.funcao || "").toLowerCase();
-  const isAdmin = ["administrador", "admin", "gerente", "gestor"].includes(userRole);
-
-  const ciclosAtivos = ciclos.filter(function(c) { return c.status === "EM EDIÇÃO"; });
-  const ciclosArquivados = ciclos.filter(function(c) { return c.status !== "EM EDIÇÃO"; });
-
-  container.innerHTML = "";
-  container.style.display = "block";
-
-  const cols = window.innerWidth >= 1024 ? "repeat(2, 1fr)" : "1fr";
-
-  // 1. Seção de Lotes Ativos
-  if (ciclosAtivos.length > 0) {
-    const secAtivos = document.createElement("div");
-    secAtivos.style.marginBottom = "1.5rem";
-
-    const titAtivos = document.createElement("h3");
-    titAtivos.style.fontSize = "0.9rem";
-    titAtivos.style.textTransform = "uppercase";
-    titAtivos.style.color = "var(--text-muted)";
-    titAtivos.style.marginBottom = "0.75rem";
-    titAtivos.style.fontWeight = "700";
-    titAtivos.textContent = "🟢 Lotes Ativos em Edição";
-
-    const gridAtivos = document.createElement("div");
-    gridAtivos.style.display = "grid";
-    gridAtivos.style.gridTemplateColumns = cols;
-    gridAtivos.style.gap = "0.75rem";
-
-    ciclosAtivos.forEach(function(c) {
-      gridAtivos.appendChild(renderCardCicloNode(c, true, isAdmin));
-    });
-
-    secAtivos.appendChild(titAtivos);
-    secAtivos.appendChild(gridAtivos);
-    container.appendChild(secAtivos);
-  }
-
-  // 2. Seção de Lotes Arquivados
-  if (ciclosArquivados.length > 0) {
-    const secArq = document.createElement("div");
-
-    const titArq = document.createElement("h3");
-    titArq.style.fontSize = "0.9rem";
-    titArq.style.textTransform = "uppercase";
-    titArq.style.color = "var(--text-muted)";
-    titArq.style.marginBottom = "0.75rem";
-    titArq.style.fontWeight = "700";
-    titArq.style.borderTop = "1px solid var(--border)";
-    titArq.style.paddingTop = "1.25rem";
-    titArq.textContent = "📁 Lotes Finalizados e Arquivados";
-
-    const gridArq = document.createElement("div");
-    gridArq.style.display = "grid";
-    gridArq.style.gridTemplateColumns = cols;
-    gridArq.style.gap = "0.75rem";
-
-    ciclosArquivados.forEach(function(c) {
-      gridArq.appendChild(renderCardCicloNode(c, false, isAdmin));
-    });
-
-    secArq.appendChild(titArq);
-    secArq.appendChild(gridArq);
-    container.appendChild(secArq);
-  }
+function showLoginScreen() {
+  loginScreen?.classList.remove('hidden');
+  appScreen?.classList.add('hidden');
+  document.getElementById('bottom-nav')?.classList.add('hidden');
+  document.getElementById('store-selector-container')?.classList.add('hidden');
+  window.closeAllModals();
 }
 
-/* ==========================================================================
-   MÓDULO: RENDERIZAÇÃO DAS ABAS DE VALIDADE, VENCIDOS, USO LOJA E AVARIAS
-   (DOM NATIVO - À PROVA DE ERROS DE SINTAXE)
-   ========================================================================== */
 
-function renderValidadeCards(registros, container) {
-  if (!container) return;
 
-  container.innerHTML = "";
 
-  if (!registros || registros.length === 0) {
-    const msg = document.createElement("div");
-    msg.style.textAlign = "center";
-    msg.style.padding = "2rem";
-    msg.style.color = "var(--text-muted)";
-    msg.textContent = "Nenhum registro encontrado nesta seção.";
-    container.appendChild(msg);
-    return;
-  }
 
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = window.innerWidth >= 1024 ? "repeat(2, 1fr)" : "1fr";
-  container.style.gap = "0.75rem";
 
-  registros.forEach(function(item) {
-    const card = document.createElement("div");
-    card.style.background = "var(--surface-panel)";
-    card.style.border = "1px solid var(--border)";
-    card.style.borderRadius = "6px";
-    card.style.padding = "1rem";
-    card.style.display = "flex";
-    card.style.flexDirection = "column";
-    card.style.gap = "0.5rem";
 
-    // Linha Superior (Nome do Produto + Badge de Quantidade)
-    const topRow = document.createElement("div");
-    topRow.style.display = "flex";
-    topRow.style.justifyContent = "space-between";
-    topRow.style.alignItems = "flex-start";
-
-    const prodInfo = document.createElement("div");
-    const tit = document.createElement("h4");
-    tit.style.margin = "0";
-    tit.style.fontSize = "0.95rem";
-    tit.style.color = "var(--text-main)";
-    tit.style.fontWeight = "700";
-    tit.textContent = item.produtos && item.produtos.nome ? item.produtos.nome : "Produto não identificado";
-
-    const ean = document.createElement("span");
-    ean.style.fontSize = "0.7rem";
-    ean.style.color = "var(--text-muted)";
-    ean.style.fontFamily = "var(--font-mono)";
-    ean.textContent = "EAN: " + (item.produtos && item.produtos.ean ? item.produtos.ean : "S/EAN");
-
-    prodInfo.appendChild(tit);
-    prodInfo.appendChild(ean);
-
-    const qtdBadge = document.createElement("span");
-    qtdBadge.style.background = "var(--surface)";
-    qtdBadge.style.padding = "0.2rem 0.5rem";
-    qtdBadge.style.borderRadius = "4px";
-    qtdBadge.style.fontSize = "0.75rem";
-    qtdBadge.style.fontWeight = "bold";
-    qtdBadge.style.color = "var(--text-main)";
-    qtdBadge.style.border = "1px solid var(--border)";
-    qtdBadge.textContent = "Qtd: " + (item.quantidade || 0);
-
-    topRow.appendChild(prodInfo);
-    topRow.appendChild(qtdBadge);
-
-    // Linha Inferior (Vencimento + Código do Lote)
-    const bottomRow = document.createElement("div");
-    bottomRow.style.display = "flex";
-    bottomRow.style.justifyContent = "space-between";
-    bottomRow.style.alignItems = "center";
-    bottomRow.style.marginTop = "0.25rem";
-    bottomRow.style.fontSize = "0.75rem";
-    bottomRow.style.color = "var(--text-muted)";
-
-    const dtVencFormatted = item.data_vencimento 
-      ? new Date(item.data_vencimento + "T00:00:00").toLocaleDateString("pt-BR") 
-      : "N/A";
-
-    const spanVenc = document.createElement("span");
-    spanVenc.textContent = "Vencimento: " + dtVencFormatted;
-
-    const spanLote = document.createElement("span");
-    spanLote.textContent = "Lote: " + (item.lote || "N/A");
-
-    bottomRow.appendChild(spanVenc);
-    bottomRow.appendChild(spanLote);
-
-    card.appendChild(topRow);
-    card.appendChild(bottomRow);
-
-    container.appendChild(card);
-  });
-}
-
-// Disponibiliza a função globalmente para as chamadas dinâmicas das abas
-window.renderValidadeCards = renderValidadeCards;
-window.renderPerdasCards = renderPerdasCards;
-
-function renderCardCicloNode(c, isAtivo, isAdmin) {
-  const m = c.metricas || { total: 0, d60: 0, d45: 0, d30: 0, d15: 0, d7: 0, vencidos: 0 };
-  const dtInicio = new Date(c.created_at).toLocaleDateString("pt-BR");
-
-  const card = document.createElement("div");
-  card.style.background = "var(--surface-panel)";
-  card.style.border = "1px solid var(--border)";
-  card.style.borderLeft = isAtivo ? "4px solid #059669" : "4px solid #64748b";
-  card.style.borderRadius = "6px";
-  card.style.padding = "1rem";
-  card.style.display = "flex";
-  card.style.flexDirection = "column";
-  card.style.gap = "0.75rem";
-
-  // Cabeçalho do Card
-  const top = document.createElement("div");
-  top.style.display = "flex";
-  top.style.justifyContent = "space-between";
-  top.style.alignItems = "flex-start";
-
-  const info = document.createElement("div");
-  const cod = document.createElement("span");
-  cod.style.fontSize = "0.7rem";
-  cod.style.color = "var(--text-muted)";
-  cod.style.fontFamily = "var(--font-mono)";
-  cod.textContent = "CÓDIGO: " + c.codigo_lote;
-
-  const tit = document.createElement("h4");
-  tit.style.margin = "0.1rem 0";
-  tit.style.fontSize = "1rem";
-  tit.style.color = "var(--text-main)";
-  tit.textContent = isAtivo ? "🟢 LOTE ATUAL EM EDIÇÃO" : "📋 LOTE FINALIZADO";
-
-  const dt = document.createElement("small");
-  dt.style.color = "var(--text-muted)";
-  dt.style.fontSize = "0.68rem";
-  dt.textContent = "Abertura: " + dtInicio;
-
-  info.appendChild(cod);
-  info.appendChild(tit);
-  info.appendChild(dt);
-
-  const badge = document.createElement("span");
-  badge.style.fontSize = "0.65rem";
-  badge.style.padding = "2px 8px";
-  badge.style.borderRadius = "4px";
-  badge.style.fontWeight = "700";
-  badge.style.background = isAtivo ? "rgba(5, 150, 105, 0.2)" : "rgba(100, 116, 139, 0.2)";
-  badge.style.color = isAtivo ? "#34d399" : "#94a3b8";
-  badge.style.border = isAtivo ? "1px solid #059669" : "1px solid #475569";
-  badge.textContent = c.status;
-
-  top.appendChild(info);
-  top.appendChild(badge);
-
-  // Painel de Métricas
-  const panel = document.createElement("div");
-  panel.style.background = "var(--surface)";
-  panel.style.padding = "0.6rem";
-  panel.style.border = "1px solid var(--border)";
-  panel.style.borderRadius = "4px";
-
-  const lblMet = document.createElement("div");
-  lblMet.style.fontSize = "0.72rem";
-  lblMet.style.fontWeight = "bold";
-  lblMet.style.marginBottom = "0.4rem";
-  lblMet.style.color = "var(--text-main)";
-  lblMet.textContent = "VARREDURA DA QUINZENA (" + m.total + " UNIDADES):";
-
-  const gridMet = document.createElement("div");
-  gridMet.style.display = "grid";
-  gridMet.style.gridTemplateColumns = "repeat(6, 1fr)";
-  gridMet.style.gap = "0.25rem";
-  gridMet.style.textAlign = "center";
-
-  const arrMet = [
-    { txt: "60d\n" + m.d60, bg: "rgba(5, 150, 105, 0.1)", clr: "#047857" },
-    { txt: "45d\n" + m.d45, bg: "rgba(29, 78, 216, 0.1)", clr: "#1d4ed8" },
-    { txt: "30d\n" + m.d30, bg: "rgba(180, 83, 9, 0.1)", clr: "#b45309" },
-    { txt: "15d\n" + m.d15, bg: "rgba(194, 65, 12, 0.1)", clr: "#c2410c" },
-    { txt: "7d\n" + m.d7, bg: "rgba(185, 28, 28, 0.1)", clr: "#b91c1c" },
-    { txt: "Venc\n" + m.vencidos, bg: "#b91c1c", clr: "#ffffff" }
-  ];
-
-  arrMet.forEach(function(item) {
-    const box = document.createElement("div");
-    box.style.background = item.bg;
-    box.style.color = item.clr;
-    box.style.padding = "3px 2px";
-    box.style.fontSize = "0.65rem";
-    box.style.fontWeight = "bold";
-    box.style.borderRadius = "3px";
-    box.style.whiteSpace = "pre-line";
-    box.textContent = item.txt;
-    gridMet.appendChild(box);
-  });
-
-  panel.appendChild(lblMet);
-  panel.appendChild(gridMet);
-
-  // Rodapé e Botões
-  const footer = document.createElement("div");
-  footer.style.display = "flex";
-  footer.style.gap = "0.5rem";
-  footer.style.justifyContent = "flex-end";
-  footer.style.alignItems = "center";
-  footer.style.borderTop = "1px solid var(--border)";
-  footer.style.paddingTop = "0.6rem";
-
-  if (isAtivo) {
-    const btnVirada = document.createElement("button");
-    btnVirada.type = "button";
-    btnVirada.className = "btn btn-secondary";
-    btnVirada.style.background = "#78350f";
-    btnVirada.style.color = "#fde68a";
-    btnVirada.style.borderColor = "#92400e";
-    btnVirada.style.fontSize = "0.7rem";
-    btnVirada.style.padding = "0.3rem 0.6rem";
-    btnVirada.textContent = "🧪 Simular Virada";
-    btnVirada.onclick = function() { window.simularViradaCicloTeste(); };
-    footer.appendChild(btnVirada);
-  }
-
-  const btnInsp = document.createElement("button");
-  btnInsp.type = "button";
-  btnInsp.className = "btn btn-secondary";
-  btnInsp.style.fontSize = "0.7rem";
-  btnInsp.style.padding = "0.3rem 0.6rem";
-  btnInsp.textContent = "🔍 Inspecionar";
-  btnInsp.onclick = function() { window.openCycleDetails(c.id); };
-  footer.appendChild(btnInsp);
-
-  if (isAtivo && isAdmin) {
-    const btnEnc = document.createElement("button");
-    btnEnc.type = "button";
-    btnEnc.className = "btn btn-primary";
-    btnEnc.style.background = "#059669";
-    btnEnc.style.fontSize = "0.7rem";
-    btnEnc.style.padding = "0.3rem 0.6rem";
-    btnEnc.textContent = "🔒 Encerrar";
-    btnEnc.onclick = function() { window.finalizarCicloAtual(c.id); };
-    footer.appendChild(btnEnc);
-  }
-
-  card.appendChild(top);
-  card.appendChild(panel);
-  card.appendChild(footer);
-
-  return card;
-}
-
-/* ============================================================
-   SEÇÃO 8: MÉTODOS AUXILIARES E UTILITÁRIOS
-   ============================================================ */
-
-function getBadgeClass(status) {
-  if (!status) return 'badge-60';
-  if (status.includes('Crítico')) return 'badge-7';
-  if (status.includes('15')) return 'badge-15';
-  if (status.includes('30')) return 'badge-30';
-  if (status.includes('45')) return 'badge-45';
-  if (status.includes('60')) return 'badge-60';
-  return 'badge-vencido';
-}
-
-// ============================================================
-// FUNÇÃO GLOBAL DE SIMULAÇÃO DE VIRADA (TESTE)
-// ============================================================
-window.simularViradaCicloTeste = async function() {
-  const lojaAlvo = activeLojaId || currentProfile.loja_id;
-  if (!lojaAlvo) {
-    alert("Nenhuma loja ativa selecionada.");
-    return;
-  }
-
-  if (confirm("🧪 Deseja simular a virada de quinzena agora?\nIsso vai encerrar o lote VAL atual, migrar os vencidos para o lote VENC mantendo o lote de origem, e abrir um novo ciclo.")) {
-    try {
-      const { data, error } = await supabase.rpc('forcar_virada_ciclo_teste', { p_loja_id: lojaAlvo });
-      if (error) throw error;
-      
-      alert("✅ " + data);
-      await checkSession();
-    } catch (err) {
-      alert("Erro ao simular virada: " + err.message);
-    }
-  }
-
-  /* ==========================================================================
-   MÓDULO: RENDERIZAÇÃO DAS ABAS DE USO LOJA E AVARIAS (renderPerdasCards)
-   (DOM NATIVO - À PROVA DE ERROS DE SINTAXE)
-   ========================================================================== */
-
-function renderPerdasCards(registros, container) {
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  if (!registros || registros.length === 0) {
-    const msg = document.createElement("div");
-    msg.style.textAlign = "center";
-    msg.style.padding = "2rem";
-    msg.style.color = "var(--text-muted)";
-    msg.textContent = "Nenhum registro encontrado nesta seção.";
-    container.appendChild(msg);
-    return;
-  }
-
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = window.innerWidth >= 1024 ? "repeat(2, 1fr)" : "1fr";
-  container.style.gap = "0.75rem";
-
-  registros.forEach(function(item) {
-    const card = document.createElement("div");
-    card.style.background = "var(--surface-panel)";
-    card.style.border = "1px solid var(--border)";
-    card.style.borderRadius = "6px";
-    card.style.padding = "1rem";
-    card.style.display = "flex";
-    card.style.flexDirection = "column";
-    card.style.gap = "0.5rem";
-
-    // Linha Superior (Nome do Produto + Badge de Quantidade)
-    const topRow = document.createElement("div");
-    topRow.style.display = "flex";
-    topRow.style.justifyContent = "space-between";
-    topRow.style.alignItems = "flex-start";
-
-    const prodInfo = document.createElement("div");
-    const tit = document.createElement("h4");
-    tit.style.margin = "0";
-    tit.style.fontSize = "0.95rem";
-    tit.style.color = "var(--text-main)";
-    tit.style.fontWeight = "700";
-    tit.textContent = item.produtos && item.produtos.nome ? item.produtos.nome : (item.produto_nome || "Produto não identificado");
-
-    const ean = document.createElement("span");
-    ean.style.fontSize = "0.7rem";
-    ean.style.color = "var(--text-muted)";
-    ean.style.fontFamily = "var(--font-mono)";
-    ean.textContent = "EAN: " + (item.produtos && item.produtos.ean ? item.produtos.ean : (item.ean || "S/EAN"));
-
-    prodInfo.appendChild(tit);
-    prodInfo.appendChild(ean);
-
-    const qtdBadge = document.createElement("span");
-    qtdBadge.style.background = "rgba(225, 29, 72, 0.15)";
-    qtdBadge.style.color = "#f43f5e";
-    qtdBadge.style.padding = "0.2rem 0.5rem";
-    qtdBadge.style.borderRadius = "4px";
-    qtdBadge.style.fontSize = "0.75rem";
-    qtdBadge.style.fontWeight = "bold";
-    qtdBadge.style.border = "1px solid rgba(225, 29, 72, 0.3)";
-    qtdBadge.textContent = "Qtd: " + (item.quantidade || 0);
-
-    topRow.appendChild(prodInfo);
-    topRow.appendChild(qtdBadge);
-
-    // Linha Inferior (Data do Registro + Motivo/Observação/Lote)
-    const bottomRow = document.createElement("div");
-    bottomRow.style.display = "flex";
-    bottomRow.style.justifyContent = "space-between";
-    bottomRow.style.alignItems = "center";
-    bottomRow.style.marginTop = "0.25rem";
-    bottomRow.style.fontSize = "0.75rem";
-    bottomRow.style.color = "var(--text-muted)";
-
-    const dtReg = item.created_at 
-      ? new Date(item.created_at).toLocaleDateString("pt-BR") 
-      : "N/A";
-
-    const spanData = document.createElement("span");
-    spanData.textContent = "Data: " + dtReg;
-
-    const spanLote = document.createElement("span");
-    spanLote.textContent = "Lote: " + (item.lote || item.codigo_lote || "N/A");
-
-    bottomRow.appendChild(spanData);
-    bottomRow.appendChild(spanLote);
-
-    card.appendChild(topRow);
-    card.appendChild(bottomRow);
-
-    container.appendChild(card);
-  });
-}
-
-// Garante disponibilidade global para chamadas das abas Uso Loja e Avarias
-window.renderPerdasCards = renderPerdasCards;
-};

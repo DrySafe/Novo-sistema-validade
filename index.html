@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+<html lang="pt-BR"><head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <!-- Permissão CSP para liberar JS das bibliotecas de relatório sem erro de eval -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';">
   <title>ValidaSuper - Prevenção de Perdas</title>
 
   <!-- Tipografia Industrial Fluida -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 
   <!-- CSS Modular -->
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/tables.css">
+  <link rel="stylesheet" href="css/lifecycle.css">
 
   <!-- CDNs -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,22 +31,22 @@
     
     <!-- Topbar Header -->
     <header class="topbar">
-      <div class="brand-title">ValidaSuper</div>
+      <div class="brand-title"><span class="brand-name">ValidaSuper</span></div>
       
       <!-- Seletor Dinâmico de Loja -->
       <div id="store-selector-container" class="hidden" style="margin: 0 0.5rem; flex: 1; max-width: 220px;">
-        <select id="select-active-store" class="select-store-header" style="width: 100%; padding: 0.4rem 0.6rem; border-radius: 8px; font-weight: 600; border: 1px solid var(--border); background: var(--surface-panel); color: var(--text-main); cursor: pointer;"></select>
+        <select id="select-active-store" class="select-store-header" style="width: 100%; padding: 0.4rem 0.6rem; border-radius: 8px; font-weight: 600; border: 1px solid var(--border); background: var(--surface-panel); color: var(--text-main); cursor: pointer;" aria-label="Loja ativa"></select>
       </div>
 
       <div class="topbar-actions">
         <div style="display: flex; gap: 0.5rem; align-items: center;">
           <!-- Badge de Iniciais do Usuário (Abre Painel de Gestão) -->
-          <button type="button" id="btn-user-avatar-badge" class="avatar-badge" onclick="window.openUserProfileModal()" title="Minha Conta & Gestão">
+          <button type="button" id="btn-user-avatar-badge" class="avatar-badge" onclick="window.openUserProfileModal()" title="Minha Conta &amp; Gestão" aria-label="Minha Conta &amp; Gestão">
             <span id="user-initials">--</span>
           </button>
 
-          <button type="button" id="btn-toggle-theme" class="btn-icon" title="Alternar Tema">🌙</button>
-          <button type="button" id="btn-logout" class="btn-icon" title="Sair">🚪</button>
+          <button type="button" id="btn-toggle-theme" class="btn-icon" title="Alternar Tema" aria-label="Alternar Tema">🌙</button>
+          <button type="button" id="btn-logout" class="btn-icon" title="Sair" aria-label="Sair">🚪</button>
         </div>
       </div>
     </header>
@@ -62,11 +62,11 @@
       <form id="form-login">
         <div class="form-group">
           <label for="login-email">E-mail Corporativo</label>
-          <input type="email" id="login-email" required placeholder="operador@loja.com">
+          <input type="email" id="login-email" required="" placeholder="operador@loja.com">
         </div>
         <div class="form-group">
           <label for="login-password">Senha</label>
-          <input type="password" id="login-password" required placeholder="••••••••">
+          <input type="password" id="login-password" required="" placeholder="••••••••">
         </div>
         <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
         <button type="button" id="btn-show-register" class="btn btn-secondary" style="margin-top: 0.75rem;">
@@ -80,15 +80,15 @@
         
         <div class="form-group">
           <label for="reg-user-name">Nome Completo</label>
-          <input type="text" id="reg-user-name" required placeholder="Ex: Carlos Silva">
+          <input type="text" id="reg-user-name" required="" placeholder="Ex: Carlos Silva">
         </div>
         <div class="form-group">
           <label for="reg-user-email">E-mail Corporativo</label>
-          <input type="email" id="reg-user-email" required placeholder="seuemail@loja.com">
+          <input type="email" id="reg-user-email" required="" placeholder="seuemail@loja.com">
         </div>
         <div class="form-group">
           <label for="reg-user-password">Senha de Acesso</label>
-          <input type="password" id="reg-user-password" required placeholder="Mínimo 6 caracteres">
+          <input type="password" id="reg-user-password" required="" placeholder="Mínimo 6 caracteres">
         </div>
 
         <button type="submit" class="btn btn-primary">Criar Conta</button>
@@ -101,33 +101,10 @@
     <!-- Tela Principal do App -->
     <main id="app-screen" class="container hidden">
       <!-- Visor Informativo do Usuário -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <div>
-          <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
-            Olá, <strong id="display-user-name" style="color: var(--text-main);">Carregando...</strong>
-          </span>
-          <h3 style="font-family: var(--font-display); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0 0 0;">
-            <span id="display-loja-nome" style="color: var(--text-main); font-weight: 700;">Carregando...</span>
-            <span id="display-lote-badge" style="font-size: 0.65rem; background: rgba(5, 150, 105, 0.15); color: #34d399; border: 1px solid #059669; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
-              --
-            </span>
-          </h3>
-        </div>
-        
-        <button id="btn-open-modal" class="btn btn-primary" style="width: auto; min-height: 44px; padding: 0 1rem;">
-          + Cadastrar
-        </button>
-      </div>
+      <div class="workspace-header"><div class="workspace-heading"><p>Olá, <strong id="display-user-name">Carregando...</strong></p><h1 id="workspace-title">Acompanhamento</h1><div class="workspace-context"><span id="display-loja-nome">Carregando...</span><span id="display-lote-badge">—</span></div></div><div class="workspace-actions"><button id="btn-open-modal" class="btn btn-primary">+ Novo lançamento</button><details class="report-menu"><summary class="btn btn-secondary">Relatórios <span aria-hidden="true">⌄</span></summary><div class="report-options"><button id="btn-export-excel" class="btn btn-secondary">Exportar Excel</button><button id="btn-export-pdf" class="btn btn-secondary">Exportar PDF</button></div></details></div></div>
 
       <!-- Barra de Ações / Exportação de Relatórios -->
-      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: flex-end;">
-        <button id="btn-export-excel" class="btn btn-secondary" style="width: auto; padding: 0.5rem 0.8rem; font-size: 0.85rem;">
-          📊 Exportar Excel
-        </button>
-        <button id="btn-export-pdf" class="btn btn-secondary" style="width: auto; padding: 0.5rem 0.8rem; font-size: 0.85rem;">
-          📄 Gerar PDF
-        </button>
-      </div>
+      
 
       <!-- Contêiner do Painel de Ciclos Quinzenais -->
       <div id="cycle-section-container" class="hidden" style="margin-bottom: 1.5rem;">
@@ -141,32 +118,32 @@
     </main>
 
     <!-- Bottom Nav (Primeiro Item: Ciclos) -->
-    <nav id="bottom-nav" class="bottom-nav hidden">
-      <button class="nav-item active" data-sector="ciclos">
+    <nav id="bottom-nav" class="bottom-nav hidden" aria-label="Navegação principal">
+      <button class="nav-item active" data-sector="ciclos" type="button">
         <span class="nav-icon">🔄</span>
         <span>Ciclos</span>
       </button>
-      <button class="nav-item" data-sector="validade">
+      <button class="nav-item" data-sector="validade" type="button">
         <span class="nav-icon">📅</span>
         <span>Validade</span>
       </button>
-      <button class="nav-item" data-sector="vencidos">
+      <button class="nav-item" data-sector="vencidos" type="button">
         <span class="nav-icon">🚫</span>
         <span>Vencidos</span>
       </button>
-      <button class="nav-item" data-sector="uso_loja">
+      
+      
+      
+    <div class="nav-secondary" id="nav-secondary"><button class="nav-item" data-sector="uso_loja" type="button">
         <span class="nav-icon">🏪</span>
         <span>Uso Loja</span>
-      </button>
-      <button class="nav-item" data-sector="avarias">
+      </button><button class="nav-item" data-sector="avarias" type="button">
         <span class="nav-icon">📦</span>
         <span>Avarias</span>
-      </button>
-      <button id="nav-item-equipe" class="nav-item hidden" data-sector="equipe">
+      </button><button id="nav-item-equipe" class="nav-item hidden" data-sector="equipe" type="button">
         <span class="nav-icon">👥</span>
         <span>Equipe</span>
-      </button>
-    </nav>
+      </button></div><button type="button" class="nav-more-toggle" id="nav-more-toggle" aria-expanded="false" aria-controls="nav-secondary"><span class="nav-icon" aria-hidden="true">⋯</span><span>Mais</span></button></nav>
 
   </div>
 
@@ -175,11 +152,11 @@
   <!-- ============================================================ -->
 
   <!-- MODAL 1: LANÇAMENTO DE PRODUTO -->
-  <div id="modal-entry" class="modal">
+  <div id="modal-entry" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="modal-title" class="modal-title">NOVO LANÇAMENTO</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
 
       <form id="form-entry">
@@ -189,13 +166,13 @@
         <div class="visor-produto">
           <div class="visor-header">CÓDIGO DE BARRAS / EAN</div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <input type="text" id="entry-ean" required placeholder="0000000000000" style="background:none; border:none; color:#4ade80; font-family:var(--font-mono); font-size:1.4rem; font-weight:700; width:100%; outline:none;">
+            <input type="text" id="entry-ean" required="" placeholder="0000000000000" style="background:none; border:none; color:#4ade80; font-family:var(--font-mono); font-size:1.4rem; font-weight:700; width:100%; outline:none;">
             <button type="button" id="btn-toggle-camera" style="background:#1e293b; border:1px solid #334155; color:#fff; padding:0.5rem; border-radius:8px; font-size:1.2rem; cursor:pointer;">📷</button>
           </div>
         </div>
 
         <div id="camera-container" class="hidden" style="position: relative; width: 100%; height: 200px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 1rem;">
-          <video id="scanner-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+          <video id="scanner-video" autoplay="" playsinline="" style="width: 100%; height: 100%; object-fit: cover;"></video>
           <div style="position: absolute; inset: 20%; border: 2px dashed #ef4444; border-radius: 8px; pointer-events: none;"></div>
         </div>
 
@@ -209,22 +186,22 @@
 
         <div class="form-group">
           <label for="entry-product-name">Nome do Produto</label>
-          <input type="text" id="entry-product-name" required placeholder="Ex: Leite Integral 1L">
+          <input type="text" id="entry-product-name" required="" placeholder="Ex: Leite Integral 1L">
         </div>
 
         <div class="form-group">
           <label for="entry-price">Preço Atual (R$) *</label>
-          <input type="number" id="entry-price" step="0.01" min="0.01" required placeholder="Ex: 5.90">
+          <input type="number" id="entry-price" step="0.01" min="0.01" required="" placeholder="Ex: 5.90">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label for="entry-batch">Lote</label>
-            <input type="text" id="entry-batch" required placeholder="Ex: L01">
+            <input type="text" id="entry-batch" required="" placeholder="Ex: L01">
           </div>
           <div class="form-group">
             <label for="entry-qty">Quantidade</label>
-            <input type="number" id="entry-qty" min="1" required placeholder="10">
+            <input type="number" id="entry-qty" min="1" required="" placeholder="10">
           </div>
         </div>
 
@@ -248,21 +225,21 @@
   </div>
 
   <!-- MODAL 2: CADASTRO DE COLABORADOR (EQUIPE) -->
-  <div id="modal-employee" class="modal">
+  <div id="modal-employee" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-employee-title">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">CADASTRAR COLABORADOR</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <h3 class="modal-title" id="modal-employee-title">CADASTRAR COLABORADOR</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
 
       <form id="form-employee">
         <div class="form-group">
           <label for="emp-name">Nome Completo</label>
-          <input type="text" id="emp-name" required placeholder="Ex: João Souza">
+          <input type="text" id="emp-name" required="" placeholder="Ex: João Souza">
         </div>
         <div class="form-group">
           <label for="emp-role">Função / Perfil</label>
-          <select id="emp-role" required>
+          <select id="emp-role" required="">
             <option value="operador">Operador / Repositor</option>
             <option value="gerente">Gerente de Setor</option>
             <option value="precificacao">Setor de Precificação</option>
@@ -272,11 +249,11 @@
         </div>
         <div class="form-group">
           <label for="emp-email">E-mail de Acesso</label>
-          <input type="email" id="emp-email" required placeholder="colaborador@loja.com">
+          <input type="email" id="emp-email" required="" placeholder="colaborador@loja.com">
         </div>
         <div class="form-group">
           <label for="emp-password">Senha Provisória</label>
-          <input type="password" id="emp-password" required placeholder="Mínimo 6 caracteres">
+          <input type="password" id="emp-password" required="" placeholder="Mínimo 6 caracteres">
         </div>
         <div class="form-group">
           <label for="emp-avatar">URL da Foto (Opcional)</label>
@@ -288,21 +265,21 @@
   </div>
 
   <!-- MODAL 3: EDITAR COLABORADOR (EQUIPE) -->
-  <div id="modal-edit-user" class="modal">
+  <div id="modal-edit-user" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-edit-user-title">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">EDITAR COLABORADOR</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <h3 class="modal-title" id="modal-edit-user-title">EDITAR COLABORADOR</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
       <form id="form-edit-user">
         <input type="hidden" id="edit-user-id">
         <div class="form-group">
           <label for="edit-user-name">Nome Completo</label>
-          <input type="text" id="edit-user-name" required>
+          <input type="text" id="edit-user-name" required="">
         </div>
         <div class="form-group">
           <label for="edit-user-role">Função / Cargo</label>
-          <select id="edit-user-role" required>
+          <select id="edit-user-role" required="">
             <option value="operador">Operador / Repositor</option>
             <option value="gerente">Gerente de Setor</option>
             <option value="precificacao">Setor de Precificação</option>
@@ -317,11 +294,11 @@
   </div>
 
   <!-- MODAL 4: UNIFICADO DE PERFIL E GESTÃO DE LOJAS -->
-  <div id="modal-user-profile" class="modal">
+  <div id="modal-user-profile" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-user-profile-title">
     <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
-        <h3 class="modal-title">MINHA CONTA & GESTÃO</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <h3 class="modal-title" id="modal-user-profile-title">MINHA CONTA &amp; GESTÃO</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
 
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
@@ -334,23 +311,23 @@
       <form id="form-edit-self-profile">
         <div class="form-group">
           <label for="self-name">Nome Completo</label>
-          <input type="text" id="self-name" required>
+          <input type="text" id="self-name" required="">
         </div>
         <div class="form-group">
           <label for="self-role">Função Atual</label>
-          <input type="text" id="self-role" disabled style="opacity: 0.7; background: rgba(0,0,0,0.05);">
+          <input type="text" id="self-role" disabled="" style="opacity: 0.7; background: rgba(0,0,0,0.05);">
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Meu Nome</button>
-      </form>
+      </form><button type="button" id="btn-profile-logout" class="btn btn-secondary">Sair da conta</button>
     </div>
   </div>
 
   <!-- MODAL 5: CADASTRAR OU EDITAR UNIDADE / LOJA (COMPLETO) -->
-  <div id="modal-onboarding" class="modal">
+  <div id="modal-onboarding" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-store-form-title">
     <div class="modal-content" style="max-width: 580px;">
       <div class="modal-header">
         <h3 id="modal-store-form-title" class="modal-title">CADASTRO DA UNIDADE / LOJA</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
       <p id="modal-store-form-sub" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
         Preencha os dados empresariais para configurar o ambiente de gestão.
@@ -364,11 +341,11 @@
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 0.75rem;">
           <div class="form-group">
             <label for="ob-store-num">Número da Loja *</label>
-            <input type="text" id="ob-store-num" required placeholder="Ex: 01, 03" maxlength="10">
+            <input type="text" id="ob-store-num" required="" placeholder="Ex: 01, 03" maxlength="10">
           </div>
           <div class="form-group">
             <label for="ob-store-name">Nome Fantasia *</label>
-            <input type="text" id="ob-store-name" required placeholder="Ex: Supermercado Centro">
+            <input type="text" id="ob-store-name" required="" placeholder="Ex: Supermercado Centro">
           </div>
         </div>
 
@@ -380,7 +357,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
             <label for="ob-store-cnpj">CNPJ *</label>
-            <input type="text" id="ob-store-cnpj" required placeholder="00.000.000/0001-00">
+            <input type="text" id="ob-store-cnpj" required="" placeholder="00.000.000/0001-00">
           </div>
           <div class="form-group">
             <label for="ob-store-ie">Inscrição Estadual (IE)</label>
@@ -433,14 +410,14 @@
   </div>
 
   <!-- MODAL 6: INSPEÇÃO E AUDITORIA DO CICLO QUINZENAL -->
-  <div id="modal-cycle-detail" class="modal">
+  <div id="modal-cycle-detail" class="modal" role="dialog" aria-modal="true" aria-labelledby="cycle-modal-title">
     <div class="modal-content" style="max-width: 680px;">
       <div class="modal-header">
         <div>
           <h3 id="cycle-modal-title" class="modal-title">DETALHES DO LOTE</h3>
           <p id="cycle-modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Carregando...</p>
         </div>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
 
       <!-- Filtros Rápidos por Régua no Modal -->
@@ -458,11 +435,11 @@
   </div>
 
   <!-- MODAL 7: RECONTAGEM / ZERAMENTO DE ESTOQUE (AUDITORIA) -->
-  <div id="modal-recontagem" class="modal">
+  <div id="modal-recontagem" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-recontagem-title">
     <div class="modal-content" style="max-width: 450px;">
       <div class="modal-header">
-        <h3 class="modal-title">AJUSTE DE QUANTIDADE</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <h3 class="modal-title" id="modal-recontagem-title">AJUSTE DE QUANTIDADE</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
 
       <div style="background: var(--surface-panel); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
@@ -482,18 +459,18 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
           <div class="form-group" style="margin: 0;">
             <label style="color: var(--text-muted); font-size: 0.8rem;">Qtd Anterior</label>
-            <input type="text" id="recontagem-qtd-display" disabled style="background: rgba(0,0,0,0.1); border: 1px solid var(--border); color: var(--text-muted); font-size: 1.2rem; font-family: var(--font-mono); text-align: center;">
+            <input type="text" id="recontagem-qtd-display" disabled="" style="background: rgba(0,0,0,0.1); border: 1px solid var(--border); color: var(--text-muted); font-size: 1.2rem; font-family: var(--font-mono); text-align: center;">
           </div>
           <div class="form-group" style="margin: 0;">
             <label for="recontagem-qtd-nova" style="color: var(--text-main); font-weight: bold; font-size: 0.8rem;">Nova Qtd *</label>
-            <input type="number" id="recontagem-qtd-nova" min="0" required style="border: 2px solid var(--primary); font-size: 1.2rem; font-family: var(--font-mono); text-align: center; color: var(--primary);">
+            <input type="number" id="recontagem-qtd-nova" min="0" required="" style="border: 2px solid var(--primary); font-size: 1.2rem; font-family: var(--font-mono); text-align: center; color: var(--primary);">
           </div>
         </div>
 
         <div class="form-group">
           <label for="recontagem-motivo">Motivo do Ajuste *</label>
-          <select id="recontagem-motivo" required>
-            <option value="" disabled selected>Selecione uma justificativa...</option>
+          <select id="recontagem-motivo" required="">
+            <option value="" disabled="" selected="">Selecione uma justificativa...</option>
             <option value="Venda">Venda / Saída de PDV</option>
             <option value="Uso Loja">Uso Interno / Consumo Loja</option>
             <option value="Perda/Avaria">Perda / Avaria / Vencimento</option>
@@ -516,11 +493,11 @@
   </div>
 
   <!-- MODAL 8: BAIXA INTELIGENTE DE PRODUTO (TOTVS) -->
-  <div id="modal-baixa" class="modal">
+  <div id="modal-baixa" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-baixa-title">
     <div class="modal-content" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 class="modal-title">REGISTRAR BAIXA DE PRODUTO</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()">&times;</button>
+        <h3 class="modal-title" id="modal-baixa-title">REGISTRAR BAIXA DE PRODUTO</h3>
+        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
       </div>
 
       <div style="background: var(--surface-panel); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
@@ -538,8 +515,8 @@
 
         <div class="form-group">
           <label for="baixa-destino">Destino Comercial (Baixa TOTVS) *</label>
-          <select id="baixa-destino" required>
-            <option value="" disabled selected>Selecione o destino da baixa...</option>
+          <select id="baixa-destino" required="">
+            <option value="" disabled="" selected="">Selecione o destino da baixa...</option>
             <option value="Descarte">🗑️ Descarte (Quebra física / Destruição)</option>
             <option value="Troca">🔄 Troca (Devolução para Fornecedor / CD)</option>
             <option value="Venda">💰 Venda (Saída / Liquidação)</option>
@@ -549,7 +526,7 @@
 
         <div class="form-group">
           <label for="baixa-motivo">Motivo / Observação *</label>
-          <input type="text" id="baixa-motivo" required placeholder="Ex: Vencido na gôndola, avaria de transporte...">
+          <input type="text" id="baixa-motivo" required="" placeholder="Ex: Vencido na gôndola, avaria de transporte...">
         </div>
 
         <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
@@ -561,5 +538,6 @@
   </div>
 
   <script type="module" src="js/app.js"></script>
-</body>
-</html>
+
+
+</body></html>

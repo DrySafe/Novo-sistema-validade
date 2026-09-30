@@ -58,7 +58,7 @@ export const authService = {
 
     if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
 
-    await this.login(email, password);
+    // Supabase pode exigir confirmação de e-mail; não força login antes dela.
     return authData;
   },
 
@@ -74,52 +74,20 @@ export const authService = {
       usuarioId 
     } = dadosLoja;
 
-    // 1. Insere a nova unidade comercial com o número/código da loja
-    const { data: loja, error: errorLoja } = await supabase
-      .from('lojas')
-      .insert({
-        numero_loja: numeroLoja || '01',
-        nome: nomeLoja,
-        razao_social: razaoSocial || null,
-        cnpj: cnpj || null,
-        inscricao_estadual: ie || null,
-        logradouro: logradouro || null,
-        numero: numero || null,
-        bairro: bairro || null,
-        cidade: cidade || null,
-        uf: uf || null,
-        cep: cep || null,
-        telefone: telefone || null
-      })
-      .select('*')
-      .single();
-
-    if (errorLoja) throw new Error("Erro ao criar loja: " + errorLoja.message);
-
-    // 2. Garante o vínculo do usuário com a nova loja na tabela associativa
-    const { error: errorVinculo } = await supabase
-      .from('usuario_lojas')
-      .upsert({ usuario_id: usuarioId, loja_id: loja.id }, { onConflict: 'usuario_id,loja_id' });
-
-    if (errorVinculo) console.warn("Aviso ao vincular loja:", errorVinculo.message);
-
-    // 3. Atualiza o perfil se for a primeira loja do usuário
-    await supabase
-      .from('perfis')
-      .update({ loja_id: loja.id })
-      .eq('id', usuarioId)
-      .is('loja_id', null);
+    const { data: loja, error } = await supabase.rpc('vs_salvar_loja', {
+      p: { numero_loja: numeroLoja || '01', nome: nomeLoja, razao_social: razaoSocial || null,
+        cnpj: cnpj || null, inscricao_estadual: ie || null, logradouro: logradouro || null,
+        numero: numero || null, bairro: bairro || null, cidade: cidade || null, uf: uf || null,
+        cep: cep || null, telefone: telefone || null }, p_id: null
+    });
+    if (error) throw error;
 
     return loja;
   },
 
   // 2.2 Atualiza Dados Completos de Uma Loja Existente
   async updateStore(lojaId, dados) {
-    const { data, error } = await supabase
-      .from('lojas')
-      .update(dados)
-      .eq('id', lojaId)
-      .select();
+    const { data, error } = await supabase.rpc('vs_salvar_loja', { p: dados, p_id: lojaId });
 
     if (error) throw new Error("Erro ao atualizar loja: " + error.message);
     return data;
@@ -143,29 +111,11 @@ export const authService = {
 
   // 3.2 Cadastra Novo Colaborador Gerando Credenciais no Auth
   async addEmployee({ lojaId, nome, funcao, email, password, avatarUrl }) {
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password
+    const { data, error } = await supabase.functions.invoke('gerenciar-equipe', {
+      body: { lojaId, nome, funcao, email, password, avatarUrl }
     });
+    if (error || data?.error) throw new Error(data?.error || error.message);
 
-    if (authError) throw new Error("Erro ao criar credenciais: " + authError.message);
-
-    const userId = authData.user?.id;
-    if (!userId) throw new Error("Ocorreu um erro inesperado ao gerar a conta de acesso.");
-
-    const { data, error } = await supabase
-      .from('perfis')
-      .upsert({
-        id: userId,
-        loja_id: lojaId,
-        nome,
-        funcao,
-        foto_url: avatarUrl || null
-      })
-      .select();
-
-    if (error) throw new Error("Erro ao vincular perfil: " + error.message);
-    
     return data;
   },
 
@@ -175,26 +125,17 @@ export const authService = {
 
   // 4.1 Atualiza Nome, Cargo ou Loja do Perfil de um Usuário
   async updateUserProfile(usuarioId, { nome, funcao, lojaId }) {
-    const { data, error } = await supabase
-      .from('perfis')
-      .update({
-        nome,
-        funcao,
-        loja_id: lojaId || null
-      })
-      .eq('id', usuarioId)
-      .select();
+    const { data, error } = await supabase.rpc('vs_editar_perfil', {
+      p_usuario: usuarioId, p_nome: nome, p_funcao: funcao, p_loja: lojaId || null
+    });
 
     if (error) throw new Error("Erro ao atualizar perfil: " + error.message);
     return data;
   },
 
   // 4.2 Exclui o Registro do Colaborador do Banco de Dados
-  async deleteEmployee(usuarioId) {
-    const { error } = await supabase
-      .from('perfis')
-      .delete()
-      .eq('id', usuarioId);
+  async deleteEmployee(usuarioId, lojaId) {
+    const { error } = await supabase.rpc('vs_remover_membro', { p_usuario: usuarioId, p_loja: lojaId });
 
     if (error) throw new Error("Erro ao excluir usuário: " + error.message);
     return true;
