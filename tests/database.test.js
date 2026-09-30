@@ -12,18 +12,13 @@ test('migração e fluxo completo com isolamento, concorrência, preços e desti
       create table auth.users(id uuid primary key);
       create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
       create function auth.role() returns text language sql stable as $$ select coalesce(current_setting('request.jwt.claim.role',true),current_setting('request.jwt.claims',true)::jsonb->>'role') $$;
-      create table lojas(id uuid primary key,numero_loja text);
-      create table perfis(id uuid primary key,loja_id uuid,nome text,funcao text);
-      create table usuario_lojas(usuario_id uuid,loja_id uuid);
-      create table produtos(id uuid primary key default gen_random_uuid(),ean text,nome text,imagem_url text,preco_atual numeric);
-      create table ciclos_lotes(id uuid primary key default gen_random_uuid(),loja_id uuid,codigo_lote varchar(30),sequencia_num integer,status text,data_abertura timestamptz,created_at timestamptz default now());
-      create table lotes_validade(id uuid primary key default gen_random_uuid(),loja_id uuid,produto_id uuid,lote text,data_vencimento date,quantidade integer,localizacao text,usuario_id uuid,status text,ciclo_lote_id uuid,origem_cadastro text,lote_origem_codigo text,created_at timestamptz default now());
+      ${fs.readFileSync(new URL('./fixtures/schema-real.sql', import.meta.url), 'utf8')}
       create function forcar_virada_ciclo_teste(uuid) returns text language sql as $$ select 'legado' $$;
       create function gerar_codigo_lote(uuid) returns text language sql as $$ select 'legado' $$;
       create function gerar_codigo_lote(uuid,varchar) returns text language sql as $$ select 'legado' $$;
       insert into auth.users values('00000000-0000-0000-0000-000000000001');
-      insert into lojas values('00000000-0000-0000-0000-000000000010','03'),('00000000-0000-0000-0000-000000000020','04');
-      insert into perfis values('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000010','Operador','operador');
+      insert into lojas(id,numero_loja,nome) values('00000000-0000-0000-0000-000000000010','03','Loja 03'),('00000000-0000-0000-0000-000000000020','04','Loja 04');
+      insert into perfis(id,loja_id,nome,funcao) values('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000010','Operador','operador');
       select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false);
       select set_config('request.jwt.claim.role','authenticated',false);
     `);
@@ -33,6 +28,8 @@ test('migração e fluxo completo com isolamento, concorrência, preços e desti
     const loja = '00000000-0000-0000-0000-000000000010';
     const query = async (sql, params) => (await db.query(sql, params)).rows;
     const payload = { lojaId: loja, ean: '7890000000001', produtoNome: 'Produto teste', quantidade: 100, precoAtual: 10, dataVencimento: '2026-10-31', setor: 'validade', localizacao: 'Gôndola' };
+    assert.equal((await query("select character_maximum_length n from information_schema.columns where table_name='ciclos_lotes' and column_name='codigo_lote'"))[0].n,30);
+    await db.exec("update lojas set numero_loja='1234567890' where id='00000000-0000-0000-0000-000000000020'");
     const create = async p => (await query('select vs_criar($1::jsonb) as resultado', [JSON.stringify(p)]))[0].resultado;
     const entry = await create(payload); const itemId = entry.registro.id;
     assert.equal(entry.isDuplicado, false);
@@ -82,6 +79,7 @@ test('migração e fluxo completo com isolamento, concorrência, preços e desti
     assert.equal((await query('select count(*) n from vs_eventos'))[0].n,before);
     await query('select vs_rotina_diaria()');
     assert.equal((await query("select count(*) n from vs_rodadas where loja_id='00000000-0000-0000-0000-000000000020'"))[0].n,1);
+    assert.equal((await query("select length(codigo_lote) n from ciclos_lotes where loja_id='00000000-0000-0000-0000-000000000020'"))[0].n,23);
     await db.exec(`insert into lotes_validade(loja_id,produto_id,lote,data_vencimento,quantidade,localizacao,usuario_id,status,ciclo_lote_id,origem_cadastro)
       select '00000000-0000-0000-0000-000000000020',p.id,c.codigo_lote,'2026-12-31',1,'Gôndola',auth.uid(),'ativo',c.id,'PADRAO'
       from produtos p cross join ciclos_lotes c where p.ean='7890000000001' and c.loja_id='00000000-0000-0000-0000-000000000020' limit 1;`);

@@ -14,6 +14,8 @@ Controle de validades e prevenção de perdas por loja. Frontend estático HTML/
 
 ## Instalação no Supabase
 
+A comparação com o esquema real enviado está em `supabase/COMPATIBILIDADE.md`. Tipos/constraints e o trigger operacional passaram no teste local; as políticas existentes de vínculos e cargos apresentam um bloqueio de segurança que precisa ser resolvido antes da produção.
+
 1. Faça backup e aplique primeiro em homologação. A migração assume IDs UUID, os campos usados pelo frontend e as funções legadas fornecidas pelo proprietário. As definições completas de tabelas, constraints e triggers ainda devem ser comparadas ao ambiente real.
 2. Execute `supabase/migrations/202609300001_acompanhamento.sql` como dono do banco. A transação aborta se houver incompatibilidade ou códigos de lote duplicados. Não reaplique uma migração já concluída.
 3. Habilite a extensão pg_cron e execute `supabase/schedule.sql`. O agendamento diário roda às 00:05 de São Paulo. A abertura do app também sincroniza, mas sem o agendamento não há processamento independente de usuários conectados.

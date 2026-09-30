@@ -1,6 +1,8 @@
 -- Requer IDs UUID e as tabelas existentes indicadas pelo frontend.
 -- Aplicar primeiro em homologação. Esta migração não altera RPCs legadas.
 begin;
+-- O esquema real usava varchar(20); loja(10)+VENC(4)+data(8)+sequência(4) pode ter 26 caracteres.
+alter table public.ciclos_lotes alter column codigo_lote type varchar(30);
 -- AV e USO não exigem validade. VAL/VENC continuam validados na RPC de entrada.
 alter table public.lotes_validade alter column data_vencimento drop not null;
 create unique index if not exists vs_codigo_lote_unico on ciclos_lotes(loja_id,codigo_lote);
