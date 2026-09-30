@@ -1,24 +1,16 @@
-# ValidaSuper
+# Estado da implementação
 
-Webapp de prevenção de perdas para supermercados: organiza conferências de validade por loja e ciclo, consulta produtos por EAN, registra quantidades e permite exportar relatórios. Frontend estático em HTML/CSS/JavaScript, Supabase para autenticação e persistência, publicação indicada na Vercel.
+## Implementado nesta alteração
 
-## Correções iniciais
-- renderPerdasCards voltou ao escopo do módulo, evitando ReferenceError durante a inicialização.
-- Implementado showLoginScreen.
-- Cabeçalho usa a loja ativa e o ID correto do seletor.
-- Removida consulta indiscriminada a todas as lojas como fallback; seleção salva é validada contra os vínculos carregados. Isso não substitui RLS.
+Rodadas de 15 dias separadas dos lotes de origem; acompanhamento contínuo de itens de lotes antigos; revisões obrigatórias por rodada e mudança de faixa; preços por item; movimentações com justificativa e baixas parciais; transferência para VENC diário preservando origem; histórico e relatórios Excel/PDF; endpoints transacionais e isolamento de loja; agendamento diário preparado; testes automatizados e CI.
 
-## Pendências para concluir
-1. Versionar esquema, migrations, políticas RLS e RPCs do Supabase. Validar isolamento entre lojas e permissões de gestor no banco.
-2. Implementar renderEquipeCards, openCycleDetails, renderCycleModalItems e finalizarCicloAtual, hoje referenciados sem implementação.
-3. Unificar perdas: createEntry grava em lotes_validade inclusive AV/USO, mas getRegistrosPerdas consulta registros_perdas. Definir tabela canônica e preservar motivo, setor e rastreabilidade.
-4. Tornar baixa e auditoria uma transação no banco, com controle de concorrência. Hoje há duas operações e erros de auditoria são ignorados.
-5. Corrigir cadastro com confirmação de e-mail e gestão de colaboradores. signUp no cliente principal pode trocar a sessão do gestor; convite deve passar por backend autorizado.
-6. Uniformizar datas: hoje UTC, horário local e lte/lt discordam sobre vencimento no dia atual. Exportações também podem exibir o dia anterior.
-7. Validar quantidades, duplicidades por produto/validade/local e impedir envios simultâneos.
-8. Restaurar ações de ajuste/baixa e badges nos cards de validade; revisar exportações por loja/setor e dados desatualizados.
-9. Remover a simulação de virada da operação normal, disponibilizar scanner compatível e consolidar CSS conflitante.
-10. Validar ponta a ponta: cadastro, confirmação, login, onboarding, duas lojas, EAN, validade, perdas, baixa, auditoria, encerramento e exportações.
+## Implantação pendente
 
-## Validação desta etapa
-node --check js/app.js passou. Teste local em VM confirmou avaliação do módulo sem ReferenceError, retorno ao login e renderização do estado vazio de perdas. Não foram acessados dados de produção nem verificadas RLS/RPCs; não é confirmação de funcionamento ponta a ponta.
+Não há acesso direto ao Supabase nesta conexão. Comparar `supabase/inspect-schema.sql` com o ambiente real, validar a migração em homologação, aplicar o SQL e o agendamento antes de publicar o frontend. Conferir backup, triggers existentes e eventuais rotinas de virada antigas; estas não devem continuar migrando os mesmos itens em paralelo com a nova rotina. Seguir README.md.
+
+## Próximas etapas independentes
+
+- Revisar criação de contas, convites de colaboradores e políticas de alteração de perfis/vínculos. O fluxo anterior de gestão de equipe permanece.
+- Homologar câmera e exportações em navegadores móveis; scanner ainda depende de BarcodeDetector.
+- Se desejado, integrar vendas e preços com TOTVS. A implementação atual registra os valores/referências informados pelo operador, sem comunicação automática com o ERP.
+- Validar qualidade dos registros legados: informações históricas ausentes são sinalizadas e não podem ser reconstruídas automaticamente.

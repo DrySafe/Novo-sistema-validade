@@ -1,0 +1,11 @@
+.vs-list { display: grid; gap: .8rem; margin-top: 1rem; }
+.vs-card { border: 1px solid var(--border); background: var(--surface-panel); border-radius: 6px; padding: 1rem; }
+.vs-card p, .vs-dialog p { margin: .5rem 0; font-size: .85rem; overflow-wrap: anywhere; }
+.vs-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+.vs-actions .btn { width: auto; }
+.vs-pendente { color: var(--warning); font-size: .8rem; }
+.vs-dialog { width: min(94vw, 680px); max-height: 90dvh; margin: auto; padding: 1.2rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-main); overflow-y: auto; }
+.vs-dialog::backdrop { background: rgba(15,23,42,.7); }
+.vs-dialog ol { margin: 1rem 0 1rem 1.2rem; }
+.vs-dialog li { padding: .5rem; border-bottom: 1px solid var(--border); font-size: .8rem; overflow-wrap: anywhere; }
+@media(min-width:1024px) { .vs-list { grid-template-columns: repeat(2,minmax(0,1fr)); } }

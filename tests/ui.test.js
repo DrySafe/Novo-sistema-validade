@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
+
+test('painel mantém lotes antigos, esconde vencidos e abre revisão ou baixa parcial', async () => {
+  const dom = new JSDOM('<div id="cards"></div>', { url: 'https://validasuper.test' });
+  globalThis.window = dom.window; globalThis.document = dom.window.document;
+  dom.window.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+  dom.window.HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); this.dispatchEvent(new dom.window.Event('close')); };
+  window.supabase = { createClient: () => ({}) };
+  const { renderPainel, renderItens } = await import('../js/lifecycleUI.js');
+  const item = { id: 'i1', tipo: 'VAL', produto_nome: '<img src=x onerror=alert(1)>', origem_codigo: '03VAL0820260001', quantidade: 12, status: 'ativo', pendencias: ['Conferência quinzenal'], faixa: '7', data_vencimento: '2026-10-07', preco_atual: 8, eventos: [] };
+  const container = document.getElementById('cards');
+  renderPainel({ rodada: { inicio: '2026-09-30', fim: '2026-10-14' }, itens: [item, { ...item, id: 'i2', vencido_em: '2026-09-30' }] }, container, {}, async () => {});
+  assert.equal(container.querySelectorAll('article').length,1);
+  assert.equal(container.querySelectorAll('img').length,0);
+  assert.match(container.textContent,/03VAL0820260001/);
+  container.querySelector('button').click();
+  let dialog = document.querySelector('dialog');
+  assert.ok(dialog); assert.equal(dialog.querySelector('input[type=number]').readOnly,true);
+  dialog.close();
+  renderItens([{ ...item, vencido_em: '2026-09-30', faixa: 'VENC', pendencias: [], lote_vencidos: '03VENC300920260001' }], container, {}, async () => {});
+  assert.doesNotMatch(container.textContent,/Revisar saldo/);
+  container.querySelector('button').click();
+  dialog = document.querySelector('dialog');
+  const options = [...dialog.querySelectorAll('option')].map(o => o.value);
+  assert.ok(options.includes('Descarte')); assert.ok(options.includes('Troca')); assert.ok(options.includes('Bonificação'));
+  assert.ok(!options.includes('Venda'));
+  assert.equal(dialog.querySelector('input[type=number]').readOnly,false);
+  dom.window.close();
+});
