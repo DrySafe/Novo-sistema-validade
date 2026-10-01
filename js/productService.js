@@ -1,16 +1,10 @@
+import { buscarOpenFoodFacts } from './productLookup.js';
 import { supabase } from './supabaseClient.js';
 import { lifecycleService } from './lifecycleService.js';
 
 export const productService = {
   async fetchEanExternalApi(ean) {
-    if (!/^[0-9]{8,14}$/.test(ean)) return null;
-    try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`);
-      if (!response.ok) return null;
-      const { status, product } = await response.json();
-      if (status !== 1 || !product) return null;
-      return { ean, nome: product.product_name_pt || product.product_name || 'Produto sem nome', imagem_url: product.image_front_url || product.image_url || null };
-    } catch { return null; }
+    return buscarOpenFoodFacts(ean);
   },
   async createEntry(payload) {
     const { data, error } = await supabase.rpc('vs_criar', { p: payload });
