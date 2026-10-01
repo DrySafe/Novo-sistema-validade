@@ -1,3 +1,4 @@
+import { configurarBuscaProduto } from './productLookup.js';
 import { lifecycleService } from './lifecycleService.js';
 import { initializeLayout } from './layout.js';
 import { renderPainel, renderItens } from './lifecycleUI.js';
@@ -585,32 +586,7 @@ function setupEvents() {
     });
   }
 
-  const entryEanInput = document.getElementById('entry-ean');
-  if (entryEanInput) {
-    entryEanInput.addEventListener('blur', async () => {
-      const ean = entryEanInput.value.trim();
-      if (!ean) return;
-
-      const previewBox = document.getElementById('product-preview-box');
-      const previewImg = document.getElementById('preview-img');
-      const previewTitle = document.getElementById('preview-title');
-      const nameInput = document.getElementById('entry-product-name');
-      const imageUrlInput = document.getElementById('entry-image-url');
-
-      const extProd = await productService.fetchEanExternalApi(ean);
-
-      if (extProd) {
-        if (!nameInput.value) nameInput.value = extProd.nome;
-        imageUrlInput.value = extProd.imagem_url;
-
-        previewImg.src = extProd.imagem_url || DEFAULT_AVATAR;
-        previewTitle.textContent = extProd.nome || 'Produto sem nome';
-        if (previewBox) previewBox.classList.remove('hidden');
-      } else {
-        if (previewBox) previewBox.classList.add('hidden');
-      }
-    });
-  }
+  const buscarProdutoLido = configurarBuscaProduto(document, ean => productService.fetchEanExternalApi(ean));
 
   const btnToggleCamera = document.getElementById('btn-toggle-camera');
   const cameraContainer = document.getElementById('camera-container');
@@ -628,10 +604,11 @@ function setupEvents() {
         await window.iniciarScanner('scanner-video', async (codigoLido) => {
           const eanInput = document.getElementById('entry-ean');
           eanInput.value = codigoLido;
-          eanInput.dispatchEvent(new Event('blur'));
+          eanInput.dispatchEvent(new Event('input', { bubbles: true }));
 
           await window.pararScanner();
           cameraContainer.classList.add('hidden');
+          await buscarProdutoLido();
         });
       } catch (err) {
         alert("Erro ao acessar a câmera: " + err.message);
