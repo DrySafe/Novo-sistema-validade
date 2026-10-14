@@ -1,3 +1,4 @@
+import { permissionsFor } from './permissions.js';
 import { configurarBuscaProduto } from './productLookup.js';
 import { lifecycleService } from './lifecycleService.js';
 import { initializeLayout } from './layout.js';
@@ -86,7 +87,7 @@ async function checkSession() {
 
       const btnEquipe = document.getElementById('nav-item-equipe');
       if (btnEquipe) {
-        btnEquipe.classList.toggle('hidden', !['administrador', 'admin', 'gestor', 'gerente'].includes(userRole));
+        btnEquipe.classList.toggle('hidden', !permissionsFor(currentProfile).equipe);
       }
 
       if (loginScreen) loginScreen.classList.add('hidden');
@@ -249,6 +250,7 @@ window.openUserProfileModal = function() {
 
     const modalProfile = document.getElementById('modal-user-profile');
     if (modalProfile) modalProfile.classList.add('active');
+    updateActionPermissions();
   }, 30);
 };
 
@@ -502,7 +504,7 @@ function setupEvents() {
         await checkSession();
       } catch (err) {
         if (alertBox) {
-          alertBox.textContent = '⚠️ E-mail ou senha incorretos. Tente novamente.';
+          alertBox.textContent = err.status === 400 || err.code === 'invalid_credentials' ? 'E-mail ou senha incorretos. Tente novamente.' : 'Não foi possível entrar. Verifique a conexão e tente novamente.';
           alertBox.classList.remove('hidden');
         }
       }
@@ -536,8 +538,8 @@ function setupEvents() {
       return;
     }
 
-    if (userRole === 'adm' && currentSector !== 'equipe') {
-      alert("Atenção: O perfil ADM não tem permissão para inserir novos produtos.");
+    if (currentSector !== 'equipe' && !permissionsFor(currentProfile).entrada) {
+      alert('Seu perfil não permite novos lançamentos.');
       return;
     }
 
@@ -548,15 +550,24 @@ function setupEvents() {
     if (mEmployee) mEmployee.classList.remove('active');
 
     if (currentSector === 'equipe') {
+      if (!permissionsFor(currentProfile).equipe) return;
       if (mEmployee) mEmployee.classList.add('active');
     } else {
+      document.getElementById('form-entry').reset();
+      buscarProdutoLido();
       const entrySector = document.getElementById('entry-sector');
       if (entrySector) entrySector.value = currentSector === 'ciclos' ? 'validade' : currentSector;
       
       const isValidade = ['validade', 'ciclos', 'vencidos'].includes(currentSector);
       document.getElementById('entry-expiration').required = isValidade;
-      const fieldValidade = document.getElementById('field-group-validity');
-      if (fieldValidade) fieldValidade.style.display = isValidade ? 'grid' : 'none';
+      document.getElementById('entry-expiration-group').classList.toggle('hidden', !isValidade);
+      document.getElementById('entry-validity-row').style.gridTemplateColumns = isValidade ? '1fr 1fr' : '1fr';
+      const needsReason = ['avarias', 'uso_loja'].includes(currentSector);
+      document.getElementById('entry-reason-group').classList.toggle('hidden', !needsReason);
+      document.getElementById('entry-reason').required = needsReason;
+      document.getElementById('entry-context').textContent = needsReason
+        ? 'Entrada na fila de avarias/uso, aguardando destinação. Registre a saída em Movimentar para contabilizá-la. Nome e foto valem para esta entrada.'
+        : 'Informe o lote físico do fabricante. O acompanhamento interno é automático; nome e foto valem para esta entrada.';
 
       if (mEntry) mEntry.classList.add('active');
     }
@@ -611,6 +622,7 @@ function setupEvents() {
           await buscarProdutoLido();
         });
       } catch (err) {
+        await window.pararScanner();
         alert("Erro ao acessar a câmera: " + err.message);
         cameraContainer.classList.add('hidden');
       }
@@ -629,10 +641,10 @@ function setupEvents() {
           motivo: document.getElementById('baixa-motivo').value,
           usuarioId: currentProfile.id,
           lojaId: activeLojaId || currentProfile.loja_id,
-          qtd: parseInt(document.getElementById('baixa-qtd-atual').value)
+          qtd: Number(document.getElementById('baixa-qtd-atual').value)
         });
 
-        alert('✅ Baixa comercial registrada com sucesso para o TOTVS!');
+        alert('Baixa registrada no acompanhamento. A operação no TOTVS deve ser feita separadamente.');
         window.closeAllModals();
         loadSectorData();
       } catch (err) {
@@ -659,7 +671,7 @@ function setupEvents() {
         precoAtual: parseFloat(document.getElementById('entry-price')?.value || 0),
         imagemUrl: document.getElementById('entry-image-url').value,
         lote: document.getElementById('entry-batch').value,
-        quantidade: parseInt(document.getElementById('entry-qty').value),
+        quantidade: Number(document.getElementById('entry-qty').value),
         dataVencimento: document.getElementById('entry-expiration').value,
         localizacao: document.getElementById('entry-location').value,
         motivo: document.getElementById('entry-reason')?.value || '',
@@ -671,7 +683,7 @@ function setupEvents() {
 
         if (result.isDuplicado) {
           const dup = result.registroExistente;
-          const dataHora = new Date(dup.created_at).toLocaleString('pt-BR');
+          const dataHora = new Date(dup.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
           const quemCadastrou = dup.perfis?.nome || 'Outro Operador';
 
           const confirmar = confirm(
@@ -679,7 +691,7 @@ function setupEvents() {
             `• Cadastrado por: ${quemCadastrou}\n` +
             `• Local: ${dup.localizacao}\n` +
             `• Data/Hora: ${dataHora}\n` +
-            `• Lote: ${dup.lote} | Qtd: ${dup.quantidade} un\n\n` +
+            `• Acompanhamento: ${dup.lote} | Lote físico: ${payload.lote} | Qtd: ${dup.quantidade} un\n\n` +
             `Deseja adicionar esse produto novamente mesmo assim?`
           );
 
@@ -757,8 +769,8 @@ function setupEvents() {
           itemId: document.getElementById('recontagem-item-id').value,
           produtoId: document.getElementById('recontagem-produto-id').value,
           cicloLoteId: document.getElementById('recontagem-ciclo-id').value,
-          qtdAnterior: parseInt(document.getElementById('recontagem-qtd-anterior').value),
-          qtdNova: parseInt(document.getElementById('recontagem-qtd-nova').value),
+          qtdAnterior: Number(document.getElementById('recontagem-qtd-anterior').value),
+          qtdNova: Number(document.getElementById('recontagem-qtd-nova').value),
           motivo: document.getElementById('recontagem-motivo').value,
           observacao: document.getElementById('recontagem-obs').value
         });
@@ -791,6 +803,11 @@ async function loadSectorData() {
   const cards = document.getElementById('product-card-container');
   const cycles = document.getElementById('cycle-section-container');
   const container = sector === 'ciclos' ? cycles : cards;
+  const viewport = document.getElementById('app-screen');
+  const viewKey = loja + ':' + sector;
+  const sameView = viewport.dataset.viewKey === viewKey;
+  const scrollTop = sameView ? viewport.scrollTop : 0;
+  viewport.dataset.viewKey = viewKey;
   cycles?.classList.toggle('hidden', sector !== 'ciclos');
   cards?.classList.toggle('hidden', sector === 'ciclos');
   if (!container) return;
@@ -798,6 +815,7 @@ async function loadSectorData() {
   container.textContent = 'Carregando acompanhamento...';
   refreshing = true;
   try {
+    updateActionPermissions();
     if (sector === 'equipe') {
       const team = await authService.getTeamMembers(loja);
       if (version !== loadVersion) return;
@@ -806,6 +824,8 @@ async function loadSectorData() {
     }
     const snapshot = await lifecycleService.carregar(loja);
     if (version !== loadVersion) return;
+    currentProfile.permissoes = snapshot.api_version === 2 ? snapshot.permissoes : { entrada: false, movimentacao: false, revisao: false, correcao: false, equipe: false };
+    updateActionPermissions();
     if (sector === 'ciclos') {
       currentData = snapshot.itens; // Relatório inclui concluídos e transferidos.
       renderPainel(snapshot, container, currentProfile, loadSectorData);
@@ -815,16 +835,13 @@ async function loadSectorData() {
         if (sector === 'vencidos') return Boolean(i.vencido_em);
         return i.tipo === (sector === 'avarias' ? 'AV' : 'USO');
       });
-      const visible = ['validade', 'vencidos'].includes(sector)
-        ? currentData.filter(i => i.status === 'ativo' && i.quantidade > 0 && (sector === 'vencidos' || !i.vencido_em))
-        : currentData;
-      renderItens(visible, container, currentProfile, loadSectorData);
+      renderSectorItems(currentData, container, sector, loja);
     }
     currentCycle = await cycleService.getOrCreateActiveCycle(loja);
     if (version === loadVersion) updateCycleTopbarDisplay();
   } catch (err) {
     if (version === loadVersion) container.textContent = 'Erro ao carregar: ' + err.message;
-  } finally { if (version === loadVersion) refreshing = false; }
+  } finally { if (version === loadVersion) { refreshing = false; viewport.scrollTop = scrollTop; } }
 }
 // Atualiza pendências após mudanças de dia/rodada, sem fechar uma operação em andamento.
 setInterval(() => {
@@ -859,3 +876,34 @@ function showLoginScreen() {
 
 
 
+
+function updateActionPermissions() {
+  const p = permissionsFor(currentProfile || {});
+  const add = document.getElementById('btn-open-modal');
+  add.classList.toggle('hidden', currentSector === 'equipe' ? !p.equipe : !p.entrada);
+  add.textContent = currentSector === 'equipe' ? '+ Cadastrar colaborador' : '+ Novo lançamento';
+  document.getElementById('nav-item-equipe').classList.toggle('hidden', !p.equipe);
+  document.getElementById('tab-btn-gestao-loja').classList.toggle('hidden', !p.editarLoja);
+  document.getElementById('tab-btn-nova-loja').classList.toggle('hidden', !p.criarLoja);
+  const admin = ['administrador', 'admin'].includes(currentProfile?.funcao);
+  for (const option of document.querySelectorAll('#emp-role option, #edit-user-role option')) option.disabled = !admin && option.value !== 'operador';
+}
+const sectorFilters = new Map();
+function renderSectorItems(items, container, sector, loja) {
+  container.replaceChildren();
+  container.className = '';
+  const filter = document.createElement('select');
+  filter.setAttribute('aria-label', 'Situação dos itens');
+  for (const [value, label] of [['ativos', 'Itens ativos com saldo'], ['concluidos', 'Itens concluídos'], ['todos', 'Todos os registros']]) {
+    const opt = document.createElement('option'); opt.value = value; opt.textContent = label; filter.append(opt);
+  }
+  const key = loja + ':' + sector; filter.value = sectorFilters.get(key) || 'ativos';
+  const list = document.createElement('div'); container.append(filter, list);
+  const render = () => renderItens(items.filter(i => {
+    const active = i.status === 'ativo' && i.quantidade > 0;
+    if (filter.value === 'concluidos') return !active;
+    if (filter.value === 'todos') return true;
+    return active && (sector !== 'validade' || !i.vencido_em);
+  }), list, currentProfile, loadSectorData);
+  filter.onchange = () => { sectorFilters.set(key, filter.value); render(); }; render();
+}

@@ -1,16 +1,18 @@
-# Estado da implementação
+# Estado da implementação — 14/10/2026
 
-## Implementado nesta alteração
+As correções da revisão e a edição auditada de quantidade estão implementadas no checkout. A política e as instruções de implantação estão em [docs/correcao-quantidade.md](docs/correcao-quantidade.md).
 
-Rodadas de 15 dias separadas dos lotes de origem; acompanhamento contínuo de itens de lotes antigos; revisões obrigatórias por rodada e mudança de faixa; preços por item; movimentações com justificativa e baixas parciais; transferência para VENC diário preservando origem; histórico e relatórios Excel/PDF; endpoints transacionais e isolamento de loja; agendamento diário preparado; testes automatizados e CI.
+## Validado
+
+- 23 testes automatizados passaram e o build estático passou.
+- O Chromium executou o frontend com PGlite migrado: correção de 12 para 120 unidades, autoria/data/motivo visíveis, concorrência rejeitada e entrada original preservada.
+- Política de cargos validada no papel PostgreSQL authenticated, com recusa de alteração direta de saldo/eventos.
+- Layout inspecionado em 320, 390, 768 e 1440 px.
 
 ## Implantação pendente
 
-Não há acesso direto ao Supabase nesta conexão. Comparar `supabase/inspect-schema.sql` com o ambiente real, validar a migração em homologação, aplicar o SQL e o agendamento antes de publicar o frontend. Conferir backup, triggers existentes e eventuais rotinas de virada antigas; estas não devem continuar migrando os mesmos itens em paralelo com a nova rotina. Seguir README.md.
+A migração foi aplicada pelo proprietário e confirmada no Supabase real em 14/10/2026: API versão 2 e permissões corretas. O frontend atualizado passou em login, leitura dos módulos, equipe, histórico e exportações usando a conta administrativa configurada. A consulta de perfil não retorna mais HTTP 300. Falta publicar o frontend na Vercel, começando por prévia e homologação. Nenhuma correção ou movimentação manual de estoque foi criada nessa validação.
 
-## Próximas etapas independentes
+## Homologação real após implantação
 
-- Revisar criação de contas, convites de colaboradores e políticas de alteração de perfis/vínculos. O fluxo anterior de gestão de equipe permanece.
-- Homologar câmera e exportações em navegadores móveis; scanner ainda depende de BarcodeDetector.
-- Se desejado, integrar vendas e preços com TOTVS. A implementação atual registra os valores/referências informados pelo operador, sem comunicação automática com o ERP.
-- Validar qualidade dos registros legados: informações históricas ausentes são sinalizadas e não podem ser reconstruídas automaticamente.
+Validar contas de operador, precificação, ADM, gerente e administrador; correções e conflitos concorrentes; filas AV/USO e vencidos; equipe multiunidade; câmera e exportações em celulares. A política atual permite uma correção por pessoa autorizada com trilha completa, sem aprovação obrigatória de uma segunda pessoa.

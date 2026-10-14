@@ -41,6 +41,7 @@ button:disabled { opacity: .55; cursor: wait; }
 h1, h2, h3, h4, p { margin: 0; }
 :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .hidden { display: none !important; }
+[hidden] { display: none !important; }
 .app-viewport { width: 100%; height: 100vh; height: 100dvh; display: grid; grid-template: 64px minmax(0,1fr) auto / minmax(0,1fr); }
 .container { min-width: 0; min-height: 0; overflow-y: auto; padding: clamp(16px, 3vw, 40px); scrollbar-gutter: stable; }
 #login-screen { grid-row: 2; width: min(100%,460px); justify-self: center; align-self: center; max-height: 100%; }

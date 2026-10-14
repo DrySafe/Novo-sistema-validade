@@ -60,6 +60,7 @@
 
       <!-- Form Login Padrão -->
       <form id="form-login">
+        <p id="login-alert" class="hidden" role="alert" aria-live="polite"></p>
         <div class="form-group">
           <label for="login-email">E-mail Corporativo</label>
           <input type="email" id="login-email" required="" placeholder="operador@loja.com">
@@ -101,7 +102,7 @@
     <!-- Tela Principal do App -->
     <main id="app-screen" class="container hidden">
       <!-- Visor Informativo do Usuário -->
-      <div class="workspace-header"><div class="workspace-heading"><p>Olá, <strong id="display-user-name">Carregando...</strong></p><h1 id="workspace-title">Acompanhamento</h1><div class="workspace-context"><span id="display-loja-nome">Carregando...</span><span id="display-lote-badge">—</span></div></div><div class="workspace-actions"><button id="btn-open-modal" class="btn btn-primary">+ Novo lançamento</button><details class="report-menu"><summary class="btn btn-secondary">Relatórios <span aria-hidden="true">⌄</span></summary><div class="report-options"><button id="btn-export-excel" class="btn btn-secondary">Exportar Excel</button><button id="btn-export-pdf" class="btn btn-secondary">Exportar PDF</button></div></details></div></div>
+      <div class="workspace-header"><div class="workspace-heading"><p>Olá, <strong id="display-user-name">Carregando...</strong></p><h1 id="workspace-title">Acompanhamento</h1><div class="workspace-context"><span id="display-loja-nome">Carregando...</span><span id="display-lote-badge">—</span></div></div><div class="workspace-actions"><button id="btn-open-modal" class="btn btn-primary">+ Novo lançamento</button><details class="report-menu"><summary class="btn btn-secondary">Relatórios <span aria-hidden="true">⌄</span></summary><div class="report-options"><p class="report-scope">Exporta todos os registros do módulo, incluindo concluídos e transferidos; não acompanha o filtro visual.</p><button id="btn-export-excel" class="btn btn-secondary">Exportar Excel</button><button id="btn-export-pdf" class="btn btn-secondary">Exportar PDF</button></div></details></div></div>
 
       <!-- Barra de Ações / Exportação de Relatórios -->
       
@@ -162,6 +163,7 @@
       <form id="form-entry">
         <input type="hidden" id="entry-sector" value="validade">
         <input type="hidden" id="entry-image-url">
+        <p id="entry-context" class="entry-context">O nome e a foto serão registrados nesta entrada, sem alterar outros itens do catálogo.</p>
 
         <div class="visor-produto">
           <div class="visor-header">CÓDIGO DE BARRAS / EAN</div>
@@ -196,8 +198,8 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
           <div class="form-group">
-            <label for="entry-batch">Lote</label>
-            <input type="text" id="entry-batch" required="" placeholder="Ex: L01">
+            <label for="entry-batch">Lote físico / fabricante</label>
+            <input type="text" id="entry-batch" required="" maxlength="100" placeholder="Ex: L01">
           </div>
           <div class="form-group">
             <label for="entry-qty">Quantidade</label>
@@ -205,10 +207,10 @@
           </div>
         </div>
 
-        <div id="field-group-validity" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-          <div class="form-group">
-            <label for="entry-expiration">Vencimento</label>
-            <input type="date" id="entry-expiration">
+        <div id="entry-validity-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div id="entry-expiration-group" class="form-group">
+            <label id="field-group-validity" for="entry-expiration">Vencimento</label>
+            <input type="date" id="entry-expiration" aria-describedby="entry-context">
           </div>
           <div class="form-group">
             <label for="entry-location">Local</label>
@@ -219,6 +221,7 @@
           </div>
         </div>
 
+        <div id="entry-reason-group" class="form-group hidden"><label for="entry-reason">Motivo da entrada na fila</label><textarea id="entry-reason" minlength="10" rows="2" placeholder="Explique por que o produto está nesta fila"></textarea></div>
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Confirmar Lançamento</button>
       </form>
     </div>
@@ -245,6 +248,8 @@
             <option value="precificacao">Setor de Precificação</option>
             <option value="adm">ADM / Auditoria</option>
             <option value="administrador">Administrador</option>
+            <option value="admin">Admin</option>
+            <option value="gestor">Gestor</option>
           </select>
         </div>
         <div class="form-group">
@@ -253,7 +258,7 @@
         </div>
         <div class="form-group">
           <label for="emp-password">Senha Provisória</label>
-          <input type="password" id="emp-password" required="" placeholder="Mínimo 6 caracteres">
+          <input type="password" id="emp-password" required="" minlength="8" placeholder="Mínimo 8 caracteres">
         </div>
         <div class="form-group">
           <label for="emp-avatar">URL da Foto (Opcional)</label>
@@ -285,6 +290,8 @@
             <option value="precificacao">Setor de Precificação</option>
             <option value="adm">ADM / Auditoria</option>
             <option value="administrador">Administrador</option>
+            <option value="admin">Admin</option>
+            <option value="gestor">Gestor</option>
           </select>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Alterações</button>

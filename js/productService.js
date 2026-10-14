@@ -7,6 +7,8 @@ export const productService = {
     return buscarOpenFoodFacts(ean);
   },
   async createEntry(payload) {
+    const snapshot = await lifecycleService.carregar(payload.lojaId);
+    if (snapshot.api_version !== 2) throw new Error('Atualização do servidor necessária antes de novos lançamentos. Contate o administrador.');
     const { data, error } = await supabase.rpc('vs_criar', { p: payload });
     if (error) throw error;
     return data;

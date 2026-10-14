@@ -41,3 +41,20 @@ body.dark .vs-band-7, body.dark .vs-band-VENC { color: #ffb2ba; background: #462
  .vs-actions .btn-primary { flex-basis: 100%; }
  .vs-overview { margin-bottom: 24px; }
 }
+
+.vs-correction { background: var(--primary-light); border-left: 3px solid var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 14px; font-size: 12px; overflow-wrap: anywhere; }
+.vs-correction p { margin-top: 6px; line-height: 1.6; }
+.vs-confirm { display: flex; align-items: center; gap: 12px; margin-block: 18px; font-size: 13px; line-height: 1.6; }
+.vs-confirm input { flex-shrink: 0; }
+.vs-metric span { overflow-wrap: anywhere; }
+.vs-facts dd { word-break: normal; }
+.report-scope, .entry-context { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
+#login-alert { color: var(--danger); margin-bottom: 16px; }
+#product-card-container > select { margin-bottom: 16px; }
+@media(max-width:359px) {
+ .vs-overview { grid-template-columns: 1fr; }
+ .vs-metric { flex-direction: row; align-items: center; justify-content: space-between; }
+ .vs-metric span { max-width: 65%; }
+ .vs-facts { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .vs-facts > div:last-child { grid-column: 1 / -1; }
+}

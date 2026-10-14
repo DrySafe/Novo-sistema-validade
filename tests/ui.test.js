@@ -13,7 +13,7 @@ test('painel mantém lotes antigos, esconde vencidos e abre revisão ou baixa pa
   const { renderPainel, renderItens } = await import('../js/lifecycleUI.js');
   const item = { id: 'i1', tipo: 'VAL', produto_nome: '<img src=x onerror=alert(1)>', origem_codigo: '03VAL0820260001', quantidade: 12, status: 'ativo', pendencias: ['Conferência quinzenal'], faixa: '7', data_vencimento: '2026-10-07', preco_atual: 8, eventos: [] };
   const container = document.getElementById('cards');
-  renderPainel({ rodada: { inicio: '2026-09-30', fim: '2026-10-14' }, itens: [item, { ...item, id: 'i2', vencido_em: '2026-09-30' }] }, container, {}, async () => {});
+  renderPainel({ rodada: { inicio: '2026-09-30', fim: '2026-10-14' }, itens: [item, { ...item, id: 'i2', vencido_em: '2026-09-30' }] }, container, { funcao: 'administrador' }, async () => {});
   assert.equal(container.querySelectorAll('article').length,1);
   assert.equal(container.querySelectorAll('img').length,0);
   assert.match(container.textContent,/03VAL0820260001/);
@@ -21,7 +21,7 @@ test('painel mantém lotes antigos, esconde vencidos e abre revisão ou baixa pa
   let dialog = document.querySelector('dialog');
   assert.ok(dialog); assert.equal(dialog.querySelector('input[type=number]').readOnly,true);
   dialog.close();
-  renderItens([{ ...item, vencido_em: '2026-09-30', faixa: 'VENC', pendencias: [], lote_vencidos: '03VENC300920260001' }], container, {}, async () => {});
+  renderItens([{ ...item, vencido_em: '2026-09-30', faixa: 'VENC', pendencias: [], lote_vencidos: '03VENC300920260001' }], container, { funcao: 'administrador' }, async () => {});
   assert.doesNotMatch(container.textContent,/Revisar saldo/);
   container.querySelector('button').click();
   dialog = document.querySelector('dialog');

@@ -13,6 +13,7 @@ let scannerTrack = null;
 let barcodeDetector = null;
 
 let scannerRodando = false;
+let scannerGeneration = 0;
 let scannerFrame = null;
 
 let ultimoCodigo = "";
@@ -49,11 +50,20 @@ function suportaScanner(){
 async function iniciarScanner(videoId, callback){
     // Se a API nativa não for suportada, ativa a flag no Chrome Mobile ou exibe o alerta
     if(!suportaScanner()){
-        alert("O seu navegador precisa da API BarcodeDetector ativa. No Chrome, acesse chrome://flags e ative 'Experimental Web Platform features'.");
+        alert("A câmera não é compatível com este navegador. Digite o código de barras manualmente ou use um navegador com leitor compatível.");
         throw new Error("Barcode Detection API não suportada neste navegador.");
     }
 
     await pararScanner();
+    const generation = scannerGeneration;
+    try {
+    let formats = SCANNER_CONFIG.formatos;
+    if (BarcodeDetector.getSupportedFormats) {
+        const supported = await BarcodeDetector.getSupportedFormats();
+        formats = formats.filter(format => supported.includes(format));
+        if (!formats.some(format => ['ean_13', 'ean_8'].includes(format))) throw new Error("Formatos de leitura não suportados. Digite o código manualmente.");
+    }
+    if (generation !== scannerGeneration) return;
 
     scannerVideo = document.getElementById(videoId);
     if(!scannerVideo){
@@ -64,7 +74,7 @@ async function iniciarScanner(videoId, callback){
         scannerCanvas = document.createElement("canvas");
     }
 
-    scannerStream = await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
             facingMode: { ideal: "environment" },
@@ -74,18 +84,23 @@ async function iniciarScanner(videoId, callback){
         }
     });
 
+    if (generation !== scannerGeneration) { stream.getTracks().forEach(t => t.stop()); return; }
+    scannerStream = stream;
     scannerVideo.srcObject = scannerStream;
     await scannerVideo.play();
+    if (generation !== scannerGeneration) return;
 
     scannerTrack = scannerStream.getVideoTracks()[0];
     barcodeDetector = new BarcodeDetector({
-        formats: SCANNER_CONFIG.formatos
+        formats
     });
 
     scannerRodando = true;
     scannerLog("Scanner iniciado com recorte de mira central.");
 
+    if (generation !== scannerGeneration) return;
     iniciarLoop(callback);
+    } catch (error) { if (generation === scannerGeneration) await pararScanner(); throw error; }
 }
 
 function iniciarLoop(callback){
@@ -185,6 +200,7 @@ function validarEAN13(codigo) {
 }
 
 async function pararScanner(){
+    scannerGeneration++;
     scannerRodando = false;
 
     if(scannerFrame){

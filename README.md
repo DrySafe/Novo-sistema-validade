@@ -31,11 +31,21 @@ O projeto ControleValidade foi inspecionado pelo conector Supabase em 30/09/2026
 
 Os novos endpoints são vs_criar (entrada atômica), vs_painel (snapshot para telas/relatórios), vs_registrar (revisão ou movimentação) e vs_sincronizar (rodada e vencimentos). Eventos são imutáveis para o cliente. Saldo e versão são conferidos sob bloqueio para rejeitar operações desatualizadas. A rotina de teste antiga e os geradores legados deixam de ser executáveis por clientes.
 
+## Correções e auditoria de quantidade (14/10/2026)
+
+**Corrigir quantidade** é exclusivo de administração, gestão e ADM/auditoria, com justificativa, confirmação do saldo e proteção contra gravações desatualizadas. A entrada original é preservada; o card mostra quem corrigiu, quando, os saldos e o motivo. Operadores registram entradas/saídas; gestão e precificação revisam preços.
+
+Antes de publicar esta versão, aplicar `supabase/migrations/202610140001_auditoria_e_correcao_segura.sql` após as quatro migrações de setembro, sem reaplicar as antigas. A nova migração foi confirmada no projeto real em 14/10/2026: `vs_painel` retorna `api_version: 2`. O frontend atualizado foi validado localmente contra esse projeto; sua publicação ainda está pendente. A interface bloqueia operações sobre API antiga. Consulte [política, alterações e implantação](docs/correcao-quantidade.md).
+
+Lote físico e localização são preservados; nome/foto valem para a entrada. AV/USO aguardam destinação e suas entradas são separadas das saídas nos relatórios. Novos eventos capturam nome/cargo do autor; nomes inferidos em eventos antigos são identificados como nomes atuais. Ativos/concluídos têm filtro explícito.
+
 ## Testes
 
 Requer Node.js 24 e npm. Execute `npm ci` e `npm test`.
 
 Os testes usam PostgreSQL em memória (PGlite) com um esquema de referência e DOM simulado (JSDOM): limites da régua, datas brasileiras, revisões nas duas situações, preservação do lote antigo, vencimento, baixas parciais, conflito de versão, isolamento e relatórios. Isso não confirma as políticas/triggers reais do Supabase nem substitui homologação em navegador e celulares.
+
+A atualização inclui 23 testes aprovados, com todas as migrações, autorização por cargo, correções auditadas, autoria preservada, conflito de versão, equipe multiunidade e encerramento de câmera. O fluxo de correção também foi verificado no Chromium com PGlite migrado.
 
 ## Publicação na Vercel
 

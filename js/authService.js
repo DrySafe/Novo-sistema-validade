@@ -26,7 +26,7 @@ export const authService = {
 
     const { data, error } = await supabase
       .from('perfis')
-      .select('*, lojas(id, nome, numero_loja, cnpj, razao_social, inscricao_estadual, logradouro, numero, bairro, cidade, uf, cep, telefone)')
+      .select('*, lojas!perfis_loja_id_fkey(id, nome, numero_loja, cnpj, razao_social, inscricao_estadual, logradouro, numero, bairro, cidade, uf, cep, telefone)')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -99,11 +99,7 @@ export const authService = {
 
   // 3.1 Lista Todos os Colaboradores Vinculados a uma Loja Específica
   async getTeamMembers(lojaId) {
-    const { data, error } = await supabase
-      .from('perfis')
-      .select('*')
-      .eq('loja_id', lojaId)
-      .order('nome', { ascending: true });
+    const { data, error } = await supabase.rpc('vs_equipe', { p_loja: lojaId });
 
     if (error) throw error;
     return data;
