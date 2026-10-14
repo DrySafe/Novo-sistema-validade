@@ -19,11 +19,11 @@ A equipe e a edição da loja seguem `vs_gestor`: administração, gestão e ADM
 ## Como corrigir
 
 1. Conferir fisicamente o saldo existente, considerando as saídas já registradas.
-2. Um usuário autorizado abre **Corrigir quantidade** no card.
+2. Um usuário autorizado abre o card do lote e usa **Corrigir** na linha do item da tabela.
 3. Informa saldo inteiro, não negativo, diferente do atual, e justificativa de pelo menos 10 caracteres.
 4. Marca a confirmação com **saldo anterior → saldo novo**. Mudar o número desmarca a confirmação.
 5. O servidor verifica cargo, loja, saldo e versão, bloqueia o registro e grava a identidade da sessão.
-6. O card mostra número de correções, último saldo anterior/novo, responsável, data/hora e motivo. Todas ficam no histórico e nas exportações.
+6. O card resume quantos itens foram corrigidos. A tabela identifica o item corrigido e mostra número de correções, último saldo anterior/novo, responsável, data/hora e motivo. Todas ficam no histórico e nas exportações.
 
 Novos eventos preservam nome e cargo mesmo após renomear o perfil. Eventos antigos sem nome capturado usam o nome atual do perfil, explicitamente indicado, ou o ID. Dados históricos ausentes não são inventados.
 

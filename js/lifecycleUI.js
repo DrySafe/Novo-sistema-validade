@@ -31,7 +31,9 @@ function field(form, label, type, value, options) {
 function dialog(title) {
   const modal = node('dialog', undefined, 'vs-dialog');
   const header = node('div', undefined, 'modal-header');
-  header.append(node('h3', title), button('Fechar', () => modal.close()));
+  const heading = node('h3', title); heading.id = 'dialog-' + crypto.randomUUID();
+  modal.setAttribute('aria-labelledby', heading.id);
+  header.append(heading, button('Fechar', () => modal.close()));
   modal.append(header);
   modal.addEventListener('close', () => modal.remove());
   document.body.append(modal); modal.showModal();
@@ -45,7 +47,7 @@ function editar(item, mode, refresh) {
   if (revisar) modal.append(node('p', 'Registre as saídas ou correções antes de confirmar o saldo. O preço informado deve ser o efetivamente praticado; a referência TOTVS não envia a promoção ao ERP.'));
   if (mode === 'MOVIMENTACAO') modal.append(node('p', 'Informe uma saída realmente ocorrida. Para corrigir erro de digitação ou contagem, peça uma correção auditada à gestão; isso não deve ser registrado como venda.'));
   const form = node('form');
-  if (corrigir) modal.append(node('p', 'A entrada original será preservada. Esta correção ficará identificada no card e no histórico, com seu nome, data, saldos e justificativa. Corrija o saldo existente hoje, considerando as saídas já registradas.'));
+  if (corrigir) modal.append(node('p', 'A entrada original será preservada. Esta correção ficará identificada na tabela e no histórico, com seu nome, data, saldos e justificativa. Corrija o saldo existente hoje, considerando as saídas já registradas.'));
   const destino = revisar || corrigir ? null : field(form, 'Tipo de movimentação', null, 'Venda', [
     ...(item.tipo === 'VAL' && !item.vencido_em && item.faixa !== 'VENC' ? [['Venda', 'Venda']] : []),
     ['Descarte', 'Descarte'], ['Troca', 'Troca'], ['Bonificação', 'Bonificação'], ['Uso Loja', 'Uso Loja'], ['Avaria', 'Avaria']
@@ -95,46 +97,154 @@ function historico(item, profile) {
   modal.append(list, button('Excel do histórico', () => reportService.exportLifecycleExcel([item], profile)), button('PDF do histórico', () => reportService.exportLifecyclePDF([item], profile)));
 }
 
-export function renderItens(items, container, profile, refresh) {
-  container.replaceChildren();
-  container.className = 'product-card-list vs-list';
-  if (!items.length) { container.append(node('p', 'Nenhum item nesta seção.')); return; }
-  for (const item of items) {
-    const card = node('article', undefined, 'vs-card');
-    const head = node('div', undefined, 'vs-card-head');
-    head.append(node('h4', item.produto_nome));
-    const band = item.vencido_em ? 'VENC' : item.faixa;
-    const concluded = item.quantidade <= 0 || item.status !== 'ativo';
-    head.append(node('span', concluded ? 'Concluído' : band === 'VENC' ? 'Vencido' : band ? band + ' dias' : 'Sem validade informada', 'vs-badge vs-band-' + band));
-    card.append(head, node('p', `EAN ${item.produtos?.ean || '—'} · Lote físico: ${item.lote_fisico || 'Não registrado'} · Acompanhamento: ${item.origem_codigo} · Local: ${item.localizacao || 'Não informado'}`, 'vs-meta'));
-    const facts = node('dl', undefined, 'vs-facts');
-    for (const [label, value] of [['Saldo', `${item.quantidade} un.`], ['Preço praticado', money(item.preco_atual)], ['Validade', date(item.data_vencimento)]]) {
-      const fact = node('div'); fact.append(node('dt', label), node('dd', value)); facts.append(fact);
-    }
-    card.append(facts);
-    if (item.vencido_em) card.append(node('p', `Lote diário: ${item.lote_vencidos}`));
-    if (item.pendencias.length) card.append(node('strong', 'Pendente: ' + item.pendencias.join(' + '), 'vs-pendente'));
-    const corrections = (item.eventos || []).filter(e => e.tipo === 'Correção');
-    if (corrections.length) {
-      const last = corrections.at(-1);
-      const audit = node('div', undefined, 'vs-correction');
-      audit.append(node('strong', `Quantidade corrigida (${corrections.length} ${corrections.length === 1 ? 'correção' : 'correções'})`),
-        node('p', `${last.saldo_anterior} → ${last.saldo_novo} un. por ${responsible(last)}, em ${formatTimestamp(last.ocorrido_em)}`),
-        node('p', 'Justificativa: ' + last.motivo));
-      card.append(audit);
-    }
-    const permissions = permissionsFor(profile);
-    const actions = node('div', undefined, 'vs-actions');
-    if (item.status === 'ativo' && item.quantidade > 0) {
-      if (permissions.revisao && item.tipo === 'VAL' && item.data_vencimento && !item.vencido_em && item.faixa !== 'VENC') {
-        const review = button('Revisar saldo e preço', () => editar(item, 'REVISAO', refresh)); review.className = 'btn btn-primary'; actions.append(review);
-      }
-      if (permissions.movimentacao) actions.append(button('Movimentar', () => editar(item, 'MOVIMENTACAO', refresh)));
-    }
-    if (permissions.correcao && ['ativo', 'esgotado'].includes(item.status)) actions.append(button('Corrigir quantidade', () => editar(item, 'Correção', refresh)));
-    const history = button('Histórico', () => historico(item, profile)); history.classList.add('btn-quiet');
-    actions.append(history); card.append(actions); container.append(card);
+const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const correctionsOf = item => (item.eventos || []).filter(event => event.tipo === 'Correção');
+const lotCode = (item, options) => (options.groupBy === 'vencidos' ? item.lote_vencidos : item.origem_codigo) || item.origem_codigo || 'Lote não identificado';
+const itemSearch = item => normalize([item.produto_nome, item.produtos?.ean, item.lote_fisico, item.localizacao, item.origem_codigo].join(' '));
+
+function itemActions(item, profile, refresh) {
+  const permissions = permissionsFor(profile);
+  const actions = node('div', undefined, 'vs-row-actions');
+  const action = (short, label, callback, primary = false) => {
+    const el = button(short, callback); el.setAttribute('aria-label', label);
+    if (primary) { el.classList.remove('btn-secondary'); el.classList.add('btn-primary'); }
+    actions.append(el);
+  };
+  if (item.status === 'ativo' && item.quantidade > 0) {
+    if (permissions.revisao && item.tipo === 'VAL' && item.data_vencimento && !item.vencido_em && item.faixa !== 'VENC') action('Revisar', 'Revisar saldo e preço', () => editar(item, 'REVISAO', refresh), true);
+    if (permissions.movimentacao) action('Movimentar', 'Movimentar', () => editar(item, 'MOVIMENTACAO', refresh));
   }
+  if (permissions.correcao && ['ativo', 'esgotado'].includes(item.status)) action('Corrigir', 'Corrigir quantidade', () => editar(item, 'Correção', refresh));
+  action('Histórico', 'Histórico', () => historico(item, profile));
+  return actions;
+}
+
+function openLot(code, initialItems, profile, refresh, options) {
+  const modal = dialog('Lote ' + code);
+  modal.classList.add('vs-lot-dialog');
+  let items = initialItems, page = 1;
+  const summary = node('p', undefined, 'vs-lot-summary');
+  const toolbar = node('div', undefined, 'vs-table-toolbar');
+  const search = node('input'); search.type = 'search'; search.placeholder = 'Produto, EAN ou lote físico'; search.setAttribute('aria-label', 'Buscar itens do lote');
+  const select = (label, values) => {
+    const el = node('select'); el.setAttribute('aria-label', label);
+    for (const [value, text] of values) { const opt = node('option', text); opt.value = value; el.append(opt); }
+    return el;
+  };
+  const band = select('Filtrar faixa de validade', [['todos', 'Todas as faixas'], ...['60+', '60', '45', '30', '15', '7'].map(v => [v, v + ' dias']), ['VENC', 'Vencidos'], ['sem', 'Sem validade']]);
+  const local = select('Filtrar localização', [['', 'Todos os locais']]);
+  const order = select('Ordenar itens', [['validade', 'Validade mais próxima'], ['produto', 'Produto A–Z'], ['saldo', 'Menor saldo']]);
+  const size = select('Itens por página', [['25', '25 por página'], ['50', '50 por página'], ['100', '100 por página']]);
+  const pendingLabel = node('label', undefined, 'vs-pending-filter');
+  const pending = node('input'); pending.type = 'checkbox'; pending.checked = Boolean(options.pendingOnly);
+  pendingLabel.append(pending, node('span', 'Somente pendentes'));
+  toolbar.append(search, band, local, order, size, pendingLabel);
+  const scroll = node('div', undefined, 'vs-table-scroll'); scroll.tabIndex = 0; scroll.setAttribute('aria-label', 'Tabela de itens do lote, com rolagem');
+  const table = node('table', undefined, 'vs-items-table');
+  const caption = node('caption', 'Itens do lote ' + code); caption.className = 'sr-only'; table.append(caption);
+  const head = node('thead'); const header = node('tr');
+  for (const label of ['Produto / EAN', 'Lote físico / local', 'Validade', 'Saldo', 'Preço', 'Situação / auditoria', 'Ações']) { const th = node('th', label); th.scope = 'col'; header.append(th); }
+  head.append(header); table.append(head);
+  const body = node('tbody'); table.append(body); scroll.append(table);
+  const footer = node('div', undefined, 'vs-pagination');
+  const count = node('span'); count.setAttribute('role', 'status'); count.setAttribute('aria-live', 'polite');
+  const previous = button('Anterior', () => { page--; render(); scroll.scrollTop = 0; });
+  const next = button('Próxima', () => { page++; render(); scroll.scrollTop = 0; });
+  footer.append(count, previous, next);
+  const error = node('p'); error.setAttribute('role', 'alert');
+  const hint = node('p', 'Em telas pequenas, deslize a tabela para visualizar as outras colunas.', 'vs-table-hint');
+  modal.append(summary, toolbar, hint, scroll, footer, error);
+
+  const updateLocals = () => {
+    const selected = local.value;
+    local.replaceChildren();
+    for (const value of ['', ...new Set(items.map(i => i.localizacao).filter(Boolean))]) { const opt = node('option', value || 'Todos os locais'); opt.value = value; local.append(opt); }
+    local.value = [...local.options].some(o => o.value === selected) ? selected : '';
+  };
+  const refreshLot = async () => {
+    const snapshot = await refresh();
+    if (!modal.isConnected) return;
+    if (snapshot?.itens) {
+      const source = options.selectItems ? options.selectItems(snapshot.itens) : snapshot.itens;
+      items = source.filter(i => lotCode(i, options) === code);
+      updateLocals();
+    }
+    render();
+  };
+  const render = () => {
+    summary.textContent = `${items.length} itens · ${items.reduce((sum, i) => sum + i.quantidade, 0)} unidades · ${items.filter(i => i.pendencias?.length).length} pendentes · ${items.filter(i => correctionsOf(i).length).length} itens com correção`;
+    const term = normalize(search.value.trim());
+    const selected = items.filter(i => (!term || itemSearch(i).includes(term)) && (band.value === 'todos' || (i.vencido_em ? 'VENC' : i.faixa || 'sem') === band.value) && (!local.value || i.localizacao === local.value) && (!pending.checked || i.pendencias?.length));
+    selected.sort((a, b) => order.value === 'produto' ? a.produto_nome.localeCompare(b.produto_nome, 'pt-BR') : order.value === 'saldo' ? a.quantidade - b.quantidade : String(a.data_vencimento || '9999').localeCompare(String(b.data_vencimento || '9999')) || a.produto_nome.localeCompare(b.produto_nome, 'pt-BR'));
+    const limit = Number(size.value), pages = Math.max(1, Math.ceil(selected.length / limit));
+    page = Math.min(Math.max(1, page), pages);
+    const start = (page - 1) * limit;
+    body.replaceChildren();
+    if (!selected.length) { const row = node('tr'); const cell = node('td', 'Nenhum item corresponde aos filtros.'); cell.colSpan = 7; row.append(cell); body.append(row); }
+    for (const item of selected.slice(start, start + limit)) {
+      const row = node('tr'); row.dataset.itemId = item.id;
+      const product = node('th'); product.scope = 'row'; product.append(node('strong', item.produto_nome), node('small', 'EAN ' + (item.produtos?.ean || '—')));
+      const physical = node('td'); physical.append(node('span', item.lote_fisico || 'Não registrado'), node('small', item.localizacao || 'Local não informado'));
+      if (options.groupBy === 'vencidos') physical.append(node('small', 'Origem: ' + item.origem_codigo));
+      const expiry = node('td'); const bandValue = item.vencido_em ? 'VENC' : item.faixa;
+      expiry.append(node('span', date(item.data_vencimento)), node('span', bandValue === 'VENC' ? 'Vencido' : bandValue ? bandValue + ' dias' : 'Sem validade', 'vs-badge vs-band-' + bandValue));
+      const balance = node('td', String(item.quantidade), 'vs-number');
+      const price = node('td', money(item.preco_atual), 'vs-number');
+      const status = node('td');
+      status.append(node('span', item.status !== 'ativo' || item.quantidade <= 0 ? 'Concluído' : item.pendencias?.length ? 'Pendente' : 'Conferido', item.pendencias?.length ? 'vs-status-pending' : ''));
+      if (item.pendencias?.length) { const reason = node('small', item.pendencias.join(' + ')); status.append(reason); }
+      const corrections = correctionsOf(item);
+      if (corrections.length) {
+        const last = corrections.at(-1), audit = node('details', undefined, 'vs-row-audit');
+        audit.append(node('summary', `Corrigido (${corrections.length}) · ${responsible(last)}`), node('p', `${last.saldo_anterior} → ${last.saldo_novo} un. · ${formatTimestamp(last.ocorrido_em)} · ${last.motivo}`)); status.append(audit);
+      }
+      const actions = node('td'); actions.append(itemActions(item, profile, refreshLot));
+      row.append(product, physical, expiry, balance, price, status, actions); body.append(row);
+    }
+    count.textContent = `${selected.length ? start + 1 : 0}–${Math.min(start + limit, selected.length)} de ${selected.length} itens · Página ${page} de ${pages}`;
+    previous.disabled = page === 1; next.disabled = page === pages;
+  };
+  search.addEventListener('input', () => { page = 1; render(); scroll.scrollTop = 0; });
+  for (const el of [band, local, order, size, pending]) el.addEventListener('change', () => { page = 1; render(); scroll.scrollTop = 0; });
+  updateLocals(); render();
+}
+
+export function renderItens(items, container, profile, refresh, options = {}) {
+  container.replaceChildren(); container.className = 'vs-lots';
+  if (!items.length) { container.append(node('p', 'Nenhum lote nesta seleção.')); return; }
+  const groups = new Map();
+  for (const item of items) { const code = lotCode(item, options); if (!groups.has(code)) groups.set(code, []); groups.get(code).push(item); }
+  const search = node('input'); search.type = 'search'; search.placeholder = 'Buscar lote, produto ou EAN'; search.setAttribute('aria-label', 'Buscar lotes');
+  const list = node('div', undefined, 'vs-lot-grid');
+  const footer = node('div', undefined, 'vs-pagination');
+  let page = 1;
+  const count = node('span'); count.setAttribute('role', 'status');
+  const previous = button('Anterior', () => { page--; render(); });
+  const next = button('Próxima', () => { page++; render(); });
+  footer.append(count, previous, next); container.append(search, list, footer);
+  const render = () => {
+    const term = normalize(search.value.trim());
+    const selected = [...groups].filter(([code, lot]) => !term || normalize(code).includes(term) || lot.some(i => itemSearch(i).includes(term)));
+    const pages = Math.max(1, Math.ceil(selected.length / 12)); page = Math.min(Math.max(1, page), pages);
+    list.replaceChildren();
+    for (const [code, lot] of selected.slice((page - 1) * 12, page * 12)) {
+      const card = node('article', undefined, 'vs-card vs-lot-card');
+      const open = node('button', undefined, 'vs-lot-open'); open.type = 'button'; open.setAttribute('aria-label', 'Abrir lote ' + code);
+      open.append(node('h3', code));
+      const pending = lot.filter(i => i.pendencias?.length).length;
+      const corrected = lot.filter(i => correctionsOf(i).length).length;
+      open.append(node('p', `${lot.length} itens · ${lot.reduce((sum, i) => sum + i.quantidade, 0)} unidades`, 'vs-lot-totals'));
+      open.append(node('span', pending ? `${pending} revisões pendentes` : 'Sem revisão pendente', pending ? 'vs-pendente' : 'vs-meta'));
+      if (corrected) open.append(node('span', `${corrected} ${corrected === 1 ? 'item com quantidade corrigida' : 'itens com quantidade corrigida'}`, 'vs-lot-corrected'));
+      open.append(node('span', 'Abrir tabela de itens →', 'vs-lot-link'));
+      open.onclick = () => openLot(code, lot, profile, refresh, options);
+      card.append(open); list.append(card);
+    }
+    if (!selected.length) list.append(node('p', 'Nenhum lote corresponde à busca.'));
+    count.textContent = `${selected.length} lotes · Página ${page} de ${pages}`;
+    previous.disabled = page === 1; next.disabled = page === pages; footer.hidden = pages === 1;
+  };
+  search.addEventListener('input', () => { page = 1; render(); }); render();
 }
 
 export function renderPainel(snapshot, container, profile, refresh) {
@@ -157,13 +267,12 @@ export function renderPainel(snapshot, container, profile, refresh) {
   const render = () => {
     list.replaceChildren();
     const selected = filter.value === 'pendentes' ? active.filter(i => i.pendencias.length) : active;
-    const groups = new Map();
-    for (const i of selected) { if (!groups.has(i.origem_codigo)) groups.set(i.origem_codigo, []); groups.get(i.origem_codigo).push(i); }
-    if (!groups.size) list.append(node('p', 'Nenhuma revisão pendente nesta seleção.'));
-    for (const [codigo, itens] of groups) {
-      const section = node('section', undefined, 'vs-lot-section'); section.append(node('h3', 'Lote ' + codigo));
-      const cards = node('div'); section.append(cards); renderItens(itens, cards, profile, refresh); list.append(section);
-    }
+    const codes = new Set(selected.map(i => i.origem_codigo));
+    const lotItems = active.filter(i => codes.has(i.origem_codigo));
+    renderItens(lotItems, list, profile, refresh, {
+      pendingOnly: filter.value === 'pendentes',
+      selectItems: items => items.filter(i => i.tipo === 'VAL' && !i.vencido_em && i.status === 'ativo' && i.quantidade > 0)
+    });
   };
   filter.onchange = () => { panelFilters.set(container, { store, value: filter.value }); render(); }; render();
 }

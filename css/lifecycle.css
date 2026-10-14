@@ -58,3 +58,55 @@ body.dark .vs-band-7, body.dark .vs-band-VENC { color: #ffb2ba; background: #462
  .vs-facts { grid-template-columns: repeat(2,minmax(0,1fr)); }
  .vs-facts > div:last-child { grid-column: 1 / -1; }
 }
+
+/* Lotes resumidos; apenas a página atual de itens é renderizada. */
+.vs-lots > input { width: min(100%, 480px); margin-bottom: 18px; }
+.vs-lot-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,320px),1fr)); gap: 16px; }
+.vs-lot-card { padding: 0; }
+.vs-lot-open { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; height: 100%; padding: 20px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left; }
+.vs-lot-open h3 { font-size: 15px; overflow-wrap: anywhere; }
+.vs-lot-open p, .vs-lot-open .vs-meta, .vs-lot-open .vs-pendente { margin: 0; }
+.vs-lot-totals { font-size: 14px; }
+.vs-lot-corrected { font-size: 12px; color: var(--primary); }
+.vs-lot-link { margin-top: auto; font-size: 13px; font-weight: 650; color: var(--primary); }
+.vs-lot-dialog[open] { display: flex; flex-direction: column; width: min(96vw,1600px); max-width: none; height: min(90dvh,1000px); overflow: hidden; padding: 20px; }
+.vs-lot-dialog > .modal-header { flex-shrink: 0; gap: 12px; }
+.vs-lot-dialog .modal-header h3 { overflow-wrap: anywhere; min-width: 0; }
+.vs-lot-dialog .vs-lot-summary { margin: 10px 0; }
+.vs-table-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex-shrink: 0; }
+.vs-table-toolbar input[type=search] { flex: 1 1 250px; }
+.vs-table-toolbar select { font-size: 13px; }
+.vs-pending-filter { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.vs-pending-filter input[type=checkbox] { min-height: 20px; width: 20px; }
+.vs-table-scroll { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 12px; }
+.vs-items-table { width: 100%; min-width: 1120px; border-collapse: separate; border-spacing: 0; font-size: 12px; text-align: left; }
+.vs-items-table th, .vs-items-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--border); }
+.vs-items-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-panel); font-weight: 650; }
+.vs-items-table tbody th { width: 20%; min-width: 160px; font-weight: 500; }
+.vs-items-table tbody tr:hover { background: var(--surface-panel); }
+.vs-items-table strong, .vs-items-table small, .vs-items-table td > span { display: block; }
+.vs-items-table small { color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+.vs-items-table .vs-badge { display: inline-block; margin-top: 5px; white-space: nowrap; }
+.vs-number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vs-status-pending { color: var(--warning); font-weight: 650; }
+.vs-row-actions { display: grid; grid-template-columns: repeat(2,max-content); gap: 6px; }
+.vs-row-actions .btn { padding: 7px 9px; font-size: 11px; min-height: 32px; }
+.vs-row-audit { color: var(--primary); margin-top: 8px; max-width: 260px; }
+.vs-row-audit summary { cursor: pointer; overflow-wrap: anywhere; }
+.vs-row-audit p { font-size: 12px; margin: 6px 0; }
+.vs-pagination { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex-shrink: 0; margin-top: 12px; }
+.vs-pagination[hidden] { display: none; }
+.vs-pagination > span { flex: 1 1 200px; font-size: 12px; color: var(--text-muted); }
+.vs-pagination .btn { font-size: 12px; padding: 8px 12px; }
+.vs-lot-dialog .vs-table-hint { display: none; }
+.vs-lot-dialog > [role=alert]:empty { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media(max-width: 1199px) { .vs-lot-dialog .vs-table-hint { display: block; font-size: 11px; margin: 8px 0 0; } }
+@media(max-width: 599px) {
+ .vs-lot-dialog[open] { width: calc(100vw - 16px); height: 94dvh; max-height: 94dvh; padding: 12px; border-radius: 12px; }
+ .vs-table-toolbar select { flex: 1 1 130px; }
+ .vs-table-toolbar input[type=search] { flex-basis: 100%; }
+ .vs-pending-filter { min-height: 44px; }
+ .vs-pagination > span { flex-basis: 100%; }
+}
+@media(pointer: coarse) { .vs-row-actions .btn { min-height: 44px; } }

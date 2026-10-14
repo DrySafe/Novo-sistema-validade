@@ -839,6 +839,7 @@ async function loadSectorData() {
     }
     currentCycle = await cycleService.getOrCreateActiveCycle(loja);
     if (version === loadVersion) updateCycleTopbarDisplay();
+    return snapshot;
   } catch (err) {
     if (version === loadVersion) container.textContent = 'Erro ao carregar: ' + err.message;
   } finally { if (version === loadVersion) { refreshing = false; viewport.scrollTop = scrollTop; } }
@@ -899,11 +900,18 @@ function renderSectorItems(items, container, sector, loja) {
   }
   const key = loja + ':' + sector; filter.value = sectorFilters.get(key) || 'ativos';
   const list = document.createElement('div'); container.append(filter, list);
-  const render = () => renderItens(items.filter(i => {
+  const selectItems = source => source.filter(i => {
+    if (sector === 'validade' && i.tipo !== 'VAL') return false;
+    if (sector === 'vencidos' && !i.vencido_em) return false;
+    if (sector === 'avarias' && i.tipo !== 'AV') return false;
+    if (sector === 'uso_loja' && i.tipo !== 'USO') return false;
     const active = i.status === 'ativo' && i.quantidade > 0;
     if (filter.value === 'concluidos') return !active;
     if (filter.value === 'todos') return true;
     return active && (sector !== 'validade' || !i.vencido_em);
-  }), list, currentProfile, loadSectorData);
+  });
+  const render = () => renderItens(selectItems(items), list, currentProfile, loadSectorData, {
+    groupBy: sector === 'vencidos' ? 'vencidos' : 'origem', selectItems
+  });
   filter.onchange = () => { sectorFilters.set(key, filter.value); render(); }; render();
 }

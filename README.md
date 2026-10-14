@@ -6,7 +6,7 @@ Controle de validades e prevenção de perdas por loja. Frontend estático HTML/
 
 ## Interface responsiva
 
-O layout ocupa a janela completa, com cartões em colunas adaptáveis. Desktop usa navegação lateral de 180px; no mobile há três atalhos principais e o menu Mais para Uso da loja, Avarias e Equipe. Relatórios ficam em um menu compacto. A interface tem temas claro/escuro, alvos de toque de 44px, zoom liberado, foco visível e transições que respeitam a preferência por movimento reduzido. Prévia visual verificada em Edge a 320, 390, 768 e 1440px com dados demonstrativos, sem acesso ao Supabase.
+O layout ocupa a janela completa, com um card por lote de acompanhamento em colunas adaptáveis. Ao abrir o lote, uma tabela compacta permite buscar produto/EAN/lote físico, filtrar faixa, localização e pendências, ordenar e escolher 25, 50 ou 100 itens por página. Vencidos são agrupados pelo lote diário VENC. Os cards também têm busca e paginação de 12 lotes. Desktop usa navegação lateral de 180px; no mobile há três atalhos principais e o menu Mais para Uso da loja, Avarias e Equipe. Relatórios ficam em um menu compacto. A interface tem temas claro/escuro, alvos de toque de 44px, zoom liberado, foco visível e transições que respeitam a preferência por movimento reduzido. Prévia visual verificada em Edge a 320, 390, 768 e 1440px com dados demonstrativos, sem acesso ao Supabase.
 
 ## Operação
 
@@ -33,7 +33,7 @@ Os novos endpoints são vs_criar (entrada atômica), vs_painel (snapshot para te
 
 ## Correções e auditoria de quantidade (14/10/2026)
 
-**Corrigir quantidade** é exclusivo de administração, gestão e ADM/auditoria, com justificativa, confirmação do saldo e proteção contra gravações desatualizadas. A entrada original é preservada; o card mostra quem corrigiu, quando, os saldos e o motivo. Operadores registram entradas/saídas; gestão e precificação revisam preços.
+**Corrigir quantidade** é exclusivo de administração, gestão e ADM/auditoria, com justificativa, confirmação do saldo e proteção contra gravações desatualizadas. A entrada original é preservada; o card indica quantos itens tiveram correção; a linha do item na tabela mostra quem corrigiu, quando, os saldos e o motivo. Operadores registram entradas/saídas; gestão e precificação revisam preços.
 
 Antes de publicar esta versão, aplicar `supabase/migrations/202610140001_auditoria_e_correcao_segura.sql` após as quatro migrações de setembro, sem reaplicar as antigas. A nova migração foi confirmada no projeto real em 14/10/2026: `vs_painel` retorna `api_version: 2`. O frontend atualizado foi validado localmente contra esse projeto; sua publicação ainda está pendente. A interface bloqueia operações sobre API antiga. Consulte [política, alterações e implantação](docs/correcao-quantidade.md).
 
@@ -45,7 +45,7 @@ Requer Node.js 24 e npm. Execute `npm ci` e `npm test`.
 
 Os testes usam PostgreSQL em memória (PGlite) com um esquema de referência e DOM simulado (JSDOM): limites da régua, datas brasileiras, revisões nas duas situações, preservação do lote antigo, vencimento, baixas parciais, conflito de versão, isolamento e relatórios. Isso não confirma as políticas/triggers reais do Supabase nem substitui homologação em navegador e celulares.
 
-A atualização inclui 23 testes aprovados, com todas as migrações, autorização por cargo, correções auditadas, autoria preservada, conflito de versão, equipe multiunidade e encerramento de câmera. O fluxo de correção também foi verificado no Chromium com PGlite migrado.
+A atualização inclui 25 testes aprovados, com todas as migrações, autorização por cargo, correções auditadas, autoria preservada, conflito de versão, equipe multiunidade e encerramento de câmera. O fluxo de correção também foi verificado no Chromium com PGlite migrado. O agrupamento foi testado com 2.000 itens em memória, incluindo filtros e atualização da tabela após correção. Login, abertura do lote e histórico foram conferidos no Chromium com o Supabase real; a tabela foi verificada a 320, 390, 768 e 1440px. A paginação limita as linhas renderizadas; o snapshot ainda carrega todos os itens da loja. Esta mudança visual não exige nova migração SQL.
 
 ## Publicação na Vercel
 

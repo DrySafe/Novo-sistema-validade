@@ -18,13 +18,15 @@ test('painel mantém lotes antigos, esconde vencidos e abre revisão ou baixa pa
   assert.equal(container.querySelectorAll('img').length,0);
   assert.match(container.textContent,/03VAL0820260001/);
   container.querySelector('button').click();
-  let dialog = document.querySelector('dialog');
+  document.querySelector('[aria-label="Revisar saldo e preço"]').click();
+  let dialog = document.querySelector('dialog form').closest('dialog');
   assert.ok(dialog); assert.equal(dialog.querySelector('input[type=number]').readOnly,true);
-  dialog.close();
+  dialog.close(); document.querySelector('.vs-lot-dialog').close();
   renderItens([{ ...item, vencido_em: '2026-09-30', faixa: 'VENC', pendencias: [], lote_vencidos: '03VENC300920260001' }], container, { funcao: 'administrador' }, async () => {});
   assert.doesNotMatch(container.textContent,/Revisar saldo/);
   container.querySelector('button').click();
-  dialog = document.querySelector('dialog');
+  document.querySelector('[aria-label="Movimentar"]').click();
+  dialog = document.querySelector('dialog form').closest('dialog');
   const options = [...dialog.querySelectorAll('option')].map(o => o.value);
   assert.ok(options.includes('Descarte')); assert.ok(options.includes('Troca')); assert.ok(options.includes('Bonificação'));
   assert.ok(!options.includes('Venda'));
