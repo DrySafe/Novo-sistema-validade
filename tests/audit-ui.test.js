@@ -72,3 +72,26 @@ test('relatórios distinguem entradas AV de saídas e preservam autor, local e d
  assert.equal(permissionsFor({ funcao: 'adm' }).entrada, false);
  assert.equal(permissionsFor({ funcao: 'precificacao' }).revisao, true);
 });
+
+test('Ciclos explica ausência de pendências e permite consultar lotes com saldo', async () => {
+ const dom = new JSDOM('<div id="cards"></div>', { url: 'https://validasuper.test' });
+ globalThis.window = dom.window; globalThis.document = dom.window.document;
+ window.supabase = { createClient: () => ({}) };
+ const { renderPainel } = await import('../js/lifecycleUI.js');
+ const container = document.getElementById('cards');
+ const profile = { loja_id: 'A' };
+ const item = { id: '1', tipo: 'VAL', status: 'ativo', quantidade: 10, pendencias: [], origem_codigo: 'LOTE-1', produto_nome: 'Café', eventos: [] };
+ const snapshot = { rodada: { inicio: '2026-10-01', fim: '2026-10-15' }, itens: [item] };
+ renderPainel(snapshot, container, profile, async () => {});
+ assert.match(container.textContent, /Nenhuma revisão pendente/);
+ assert.match(container.textContent, /1 item ativo em 1 lote com saldo/);
+ container.querySelector('.vs-panel-empty button').click();
+ assert.equal(container.querySelector('select').value, 'todos');
+ assert.equal(container.querySelectorAll('article').length, 1);
+ renderPainel(snapshot, container, profile, async () => {});
+ assert.equal(container.querySelectorAll('article').length, 1);
+ renderPainel({ ...snapshot, itens: [] }, container, { loja_id: 'B' }, async () => {});
+ assert.match(container.textContent, /Nenhum item VAL ativo com saldo/);
+ assert.equal(container.querySelector('.vs-panel-empty button'), null);
+ dom.window.close();
+});

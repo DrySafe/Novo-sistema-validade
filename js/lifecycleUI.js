@@ -267,6 +267,17 @@ export function renderPainel(snapshot, container, profile, refresh) {
   const render = () => {
     list.replaceChildren();
     const selected = filter.value === 'pendentes' ? active.filter(i => i.pendencias.length) : active;
+    if (!selected.length) {
+      list.className = 'vs-panel-empty';
+      if (active.length) {
+        const totalLots = new Set(active.map(i => lotCode(i, {}))).size;
+        list.append(node('h3', 'Nenhuma revisão pendente nesta quinzena'), node('p', `${active.length} ${active.length === 1 ? 'item ativo' : 'itens ativos'} em ${totalLots} ${totalLots === 1 ? 'lote com saldo. O lote continua disponível para consulta.' : 'lotes com saldo. Os lotes continuam disponíveis para consulta.'}`));
+        list.append(button('Ver todos os lotes com saldo', () => { filter.value = 'todos'; filter.onchange(); }));
+      } else {
+        list.append(node('h3', 'Nenhum item VAL ativo com saldo'), node('p', 'Este painel acompanha revisões de validade. Consulte Vencidos ou os itens concluídos em Validades para visualizar registros que saíram do acompanhamento.'));
+      }
+      return;
+    }
     const codes = new Set(selected.map(i => i.origem_codigo));
     const lotItems = active.filter(i => codes.has(i.origem_codigo));
     renderItens(lotItems, list, profile, refresh, {

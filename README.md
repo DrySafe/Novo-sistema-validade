@@ -11,6 +11,7 @@ O layout ocupa a janela completa, com um card por lote de acompanhamento em colu
 ## Operação
 
 - Uma rodada de conferência começa a cada 15 dias, ancorada na primeira rodada da loja. A rodada abre um lote VAL para novos lançamentos.
+- Ciclos abre com o filtro de revisões pendentes. Sem pendências, explica a situação e oferece **Ver todos os lotes com saldo**; a escolha é mantida nas atualizações da mesma loja.
 - Itens de todos os lotes VAL anteriores com saldo retornam à fila. A mudança de faixa e a mudança de rodada exigem nova revisão; uma revisão atualizada pode atender às duas pendências simultaneamente.
 - Faixas: 60+, 60, 45, 30, 15 e 7 dias. No próprio dia de validade o item é tratado como vencido e deixa a visualização operacional de validade.
 - Cada saída é registrada com destino e justificativa. A revisão confirma o saldo existente e registra o preço praticado, sem presumir que diferenças de contagem foram vendas.
@@ -45,7 +46,7 @@ Requer Node.js 24 e npm. Execute `npm ci` e `npm test`.
 
 Os testes usam PostgreSQL em memória (PGlite) com um esquema de referência e DOM simulado (JSDOM): limites da régua, datas brasileiras, revisões nas duas situações, preservação do lote antigo, vencimento, baixas parciais, conflito de versão, isolamento e relatórios. Isso não confirma as políticas/triggers reais do Supabase nem substitui homologação em navegador e celulares.
 
-A atualização inclui 25 testes aprovados, com todas as migrações, autorização por cargo, correções auditadas, autoria preservada, conflito de versão, equipe multiunidade e encerramento de câmera. O fluxo de correção também foi verificado no Chromium com PGlite migrado. O agrupamento foi testado com 2.000 itens em memória, incluindo filtros e atualização da tabela após correção. Login, abertura do lote e histórico foram conferidos no Chromium com o Supabase real; a tabela foi verificada a 320, 390, 768 e 1440px. A paginação limita as linhas renderizadas; o snapshot ainda carrega todos os itens da loja. Esta mudança visual não exige nova migração SQL.
+A atualização inclui 26 testes aprovados, com todas as migrações, autorização por cargo, correções auditadas, autoria preservada, conflito de versão, equipe multiunidade e encerramento de câmera. O fluxo de correção também foi verificado no Chromium com PGlite migrado. O agrupamento foi testado com 2.000 itens em memória, incluindo filtros e atualização da tabela após correção. Login, abertura do lote e histórico foram conferidos no Chromium com o Supabase real; a tabela foi verificada a 320, 390, 768 e 1440px. A paginação limita as linhas renderizadas; o snapshot ainda carrega todos os itens da loja. Esta mudança visual não exige nova migração SQL.
 
 ## Publicação na Vercel
 

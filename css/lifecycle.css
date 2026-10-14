@@ -61,6 +61,9 @@ body.dark .vs-band-7, body.dark .vs-band-VENC { color: #ffb2ba; background: #462
 
 /* Lotes resumidos; apenas a página atual de itens é renderizada. */
 .vs-lots > input { width: min(100%, 480px); margin-bottom: 18px; }
+.vs-panel-empty { padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.vs-panel-empty h3 { font-size: 16px; }
+.vs-panel-empty p { margin: 12px 0; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
 .vs-lot-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(min(100%,320px),1fr)); gap: 16px; }
 .vs-lot-card { padding: 0; }
 .vs-lot-open { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; height: 100%; padding: 20px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left; }
