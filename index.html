@@ -62,40 +62,15 @@
       <form id="form-login">
         <p id="login-alert" class="hidden" role="alert" aria-live="polite"></p>
         <div class="form-group">
-          <label for="login-email">E-mail Corporativo</label>
-          <input type="email" id="login-email" required="" placeholder="operador@loja.com">
+          <label for="login-email">Login ou e-mail do administrador</label>
+          <input type="text" id="login-email" required="" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Seu login ou e-mail">
         </div>
         <div class="form-group">
           <label for="login-password">Senha</label>
-          <input type="password" id="login-password" required="" placeholder="••••••••">
+          <input type="password" id="login-password" autocomplete="current-password" required="" placeholder="••••••••">
         </div>
         <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
-        <button type="button" id="btn-show-register" class="btn btn-secondary" style="margin-top: 0.75rem;">
-          👤 Criar Minha Conta
-        </button>
-      </form>
-
-      <!-- Form Cadastro de Usuário (Inicia Oculto) -->
-      <form id="form-register-user" class="hidden">
-        <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary);">CRIAR MINHA CONTA</h3>
-        
-        <div class="form-group">
-          <label for="reg-user-name">Nome Completo</label>
-          <input type="text" id="reg-user-name" required="" placeholder="Ex: Carlos Silva">
-        </div>
-        <div class="form-group">
-          <label for="reg-user-email">E-mail Corporativo</label>
-          <input type="email" id="reg-user-email" required="" placeholder="seuemail@loja.com">
-        </div>
-        <div class="form-group">
-          <label for="reg-user-password">Senha de Acesso</label>
-          <input type="password" id="reg-user-password" required="" placeholder="Mínimo 6 caracteres">
-        </div>
-
-        <button type="submit" class="btn btn-primary">Criar Conta</button>
-        <button type="button" id="btn-show-login" class="btn btn-secondary" style="margin-top: 0.75rem;">
-          ← Voltar para o Login
-        </button>
+        <p class="entry-context">Acesso fornecido pelo administrador da sua empresa. Não há cadastro público.</p>
       </form>
     </section>
 
@@ -227,79 +202,6 @@
     </div>
   </div>
 
-  <!-- MODAL 2: CADASTRO DE COLABORADOR (EQUIPE) -->
-  <div id="modal-employee" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-employee-title">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title" id="modal-employee-title">CADASTRAR COLABORADOR</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
-      </div>
-
-      <form id="form-employee">
-        <div class="form-group">
-          <label for="emp-name">Nome Completo</label>
-          <input type="text" id="emp-name" required="" placeholder="Ex: João Souza">
-        </div>
-        <div class="form-group">
-          <label for="emp-role">Função / Perfil</label>
-          <select id="emp-role" required="">
-            <option value="operador">Operador / Repositor</option>
-            <option value="gerente">Gerente de Setor</option>
-            <option value="precificacao">Setor de Precificação</option>
-            <option value="adm">ADM / Auditoria</option>
-            <option value="administrador">Administrador</option>
-            <option value="admin">Admin</option>
-            <option value="gestor">Gestor</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="emp-email">E-mail de Acesso</label>
-          <input type="email" id="emp-email" required="" placeholder="colaborador@loja.com">
-        </div>
-        <div class="form-group">
-          <label for="emp-password">Senha Provisória</label>
-          <input type="password" id="emp-password" required="" minlength="8" placeholder="Mínimo 8 caracteres">
-        </div>
-        <div class="form-group">
-          <label for="emp-avatar">URL da Foto (Opcional)</label>
-          <input type="url" id="emp-avatar" placeholder="https://exemplo.com/foto.jpg">
-        </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Colaborador</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL 3: EDITAR COLABORADOR (EQUIPE) -->
-  <div id="modal-edit-user" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-edit-user-title">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title" id="modal-edit-user-title">EDITAR COLABORADOR</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
-      </div>
-      <form id="form-edit-user">
-        <input type="hidden" id="edit-user-id">
-        <div class="form-group">
-          <label for="edit-user-name">Nome Completo</label>
-          <input type="text" id="edit-user-name" required="">
-        </div>
-        <div class="form-group">
-          <label for="edit-user-role">Função / Cargo</label>
-          <select id="edit-user-role" required="">
-            <option value="operador">Operador / Repositor</option>
-            <option value="gerente">Gerente de Setor</option>
-            <option value="precificacao">Setor de Precificação</option>
-            <option value="adm">ADM / Auditoria</option>
-            <option value="administrador">Administrador</option>
-            <option value="admin">Admin</option>
-            <option value="gestor">Gestor</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar Alterações</button>
-        <button type="button" id="btn-delete-user" class="btn btn-secondary" style="margin-top: 0.5rem; background: #ef4444; color: #fff; border: none;">🗑️ Excluir Colaborador</button>
-      </form>
-    </div>
-  </div>
-
   <!-- MODAL 4: UNIFICADO DE PERFIL E GESTÃO DE LOJAS -->
   <div id="modal-user-profile" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-user-profile-title">
     <div class="modal-content" style="max-width: 480px;">
@@ -314,8 +216,14 @@
         <button type="button" id="tab-btn-nova-loja" class="btn btn-secondary" style="flex:1; font-size:0.8rem;">➕ Nova Loja</button>
       </div>
 
+      <div class="access-profile-actions">
+        <button type="button" id="btn-access-admin" class="btn btn-secondary hidden">Administração</button>
+        <button type="button" id="btn-change-password" class="btn btn-secondary hidden">Alterar senha</button>
+      </div>
+
       <!-- Editar Próprio Usuário -->
       <form id="form-edit-self-profile">
+        <div class="form-group"><label for="self-login">Login (não pode ser alterado)</label><input id="self-login" type="text" readonly></div>
         <div class="form-group">
           <label for="self-name">Nome Completo</label>
           <input type="text" id="self-name" required="">

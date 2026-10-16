@@ -19,7 +19,7 @@ test('migrações atuais: autorização, quantidade auditada, lote físico e iso
  try {
   await db.exec(`create role anon; create role authenticated; create role service_role;
    alter default privileges grant execute on functions to anon,authenticated;
-   create schema auth; create table auth.users(id uuid primary key,raw_user_meta_data jsonb default '{}');
+   create schema auth; create table auth.users(id uuid primary key,email text,phone text,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
    create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
    create function auth.role() returns text language sql stable as $$select current_setting('request.jwt.claim.role',true)$$;
    ${fs.readFileSync(new URL('./fixtures/schema-real.sql', import.meta.url), 'utf8')}
@@ -39,6 +39,7 @@ test('migrações atuais: autorização, quantidade auditada, lote físico e iso
   }
   const migrations = new URL('../supabase/migrations/', import.meta.url);
   for (const name of fs.readdirSync(migrations).sort()) await db.exec(fs.readFileSync(new URL(name, migrations), 'utf8'));
+  await db.exec(`insert into vs_donos values('${ids.admin}'); select vs_provisionar_empresa('${ids.admin}','${ids.admin}','Empresa teste',array['${ids.store}','${ids.other}']::uuid[]);`);
   await db.exec(`create or replace function vs_hoje() returns date language sql stable as $$select '2026-10-14'::date$$`);
   await as('admin');
   const entry = await create(payload); const id = entry.registro.id;
@@ -113,7 +114,7 @@ test('migrações atuais: autorização, quantidade auditada, lote físico e iso
    await as('admin');
    const team = (await q('select vs_equipe($1) t', [ids.other]))[0].t;
    assert.equal(team.length, 2);
-   await q('select vs_editar_perfil($1,$2,$3,$4)', [ids.operator, 'Operador Renomeado', 'operador', ids.other]);
+   await q('select vs_salvar_acessos($1,$2,$3,$4)', [ids.operator, 'Operador Renomeado', [ids.store,ids.other], {entrada:true,movimentacao:true,revisao:false,correcao:false}]);
    assert.equal((await q('select loja_id from perfis where id=$1', [ids.operator]))[0].loja_id, ids.store);
    await as('pricing');
    assert.deepEqual((await q('select vs_equipe($1) t', [ids.store]))[0].t, []);

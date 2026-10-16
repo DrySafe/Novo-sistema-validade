@@ -6,8 +6,10 @@ export const authService = {
      SEÇÃO 1: AUTENTICAÇÃO E SESSÃO (SUPABASE AUTH)
      ============================================================ */
 
-  // 1.1 Login Padrão por E-mail e Senha
-  async login(email, password) {
+  // 1.1 Administradores usam e-mail; funcionários usam seu login fixo.
+  async login(identifier, password) {
+    const value = identifier.trim().toLowerCase();
+    const email = value.includes('@') ? value : `${value}@usuarios.validasuper.invalid`;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
@@ -40,26 +42,44 @@ export const authService = {
       if (errPuro || !perfilPuro) {
         throw new Error(`Perfil não encontrado para o ID: ${user.id}`);
       }
-      return perfilPuro;
+      return { ...perfilPuro, login_display: perfilPuro.login || user.email };
     }
 
-    return data;
+    return { ...data, login_display: data.login || user.email };
   },
 
-  // 1.4 Cadastro de Nova Conta de Usuário (Self-Register)
-  async registerUser({ nome, email, password }) {
-    const { data: authData, error: errorAuth } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { nome }
-      }
-    });
-
-    if (errorAuth) throw new Error("Erro ao criar conta: " + errorAuth.message);
-
-    // Supabase pode exigir confirmação de e-mail; não força login antes dela.
-    return authData;
+  async getAccessContext() {
+    const { data, error } = await supabase.rpc('vs_contexto_acesso');
+    if (error || data?.versao !== 1) throw new Error('Atualização de acessos do servidor necessária. Contate o administrador do aplicativo.');
+    return data;
+  },
+  async provisionAccount(payload) {
+    const { data, error } = await supabase.functions.invoke('gerenciar-equipe', { body: payload });
+    let message = data?.error;
+    if (error?.context && typeof error.context.json === 'function') {
+      try { message = (await error.context.json()).error || message; } catch { /* Mantém a mensagem pública quando a resposta não é JSON. */ }
+    }
+    if (error || data?.error) throw new Error(message || 'Não foi possível cadastrar. Confira seus acessos e tente novamente.');
+    return data;
+  },
+  async getEmployees() {
+    const { data, error } = await supabase.rpc('vs_funcionarios');
+    if (error) throw error;
+    return data;
+  },
+  async saveAccess(usuario, nome, lojas, liberacoes) {
+    const { error } = await supabase.rpc('vs_salvar_acessos', { p_usuario: usuario, p_nome: nome, p_lojas: lojas, p_liberacoes: liberacoes });
+    if (error) throw error;
+  },
+  async changePassword(current, next) {
+    if (next.length < 12) throw new Error('Use uma senha de pelo menos 12 caracteres.');
+    if (new TextEncoder().encode(next).length > 72) throw new Error('Senha longa demais. Reduza o tamanho, especialmente se usar acentos ou emojis.');
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) throw new Error('Sessão inválida. Entre novamente.');
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email: user.email, password: current });
+    if (loginError) throw new Error('Senha atual incorreta.');
+    const { error: updateError } = await supabase.auth.updateUser({ password: next });
+    if (updateError) throw new Error('Não foi possível alterar a senha. Tente novamente.');
   },
 
   /* ============================================================
@@ -105,36 +125,15 @@ export const authService = {
     return data;
   },
 
-  // 3.2 Cadastra Novo Colaborador Gerando Credenciais no Auth
-  async addEmployee({ lojaId, nome, funcao, email, password, avatarUrl }) {
-    const { data, error } = await supabase.functions.invoke('gerenciar-equipe', {
-      body: { lojaId, nome, funcao, email, password, avatarUrl }
-    });
-    if (error || data?.error) throw new Error(data?.error || error.message);
-
-    return data;
-  },
-
   /* ============================================================
      SEÇÃO 4: ADMINISTRAÇÃO E MANUTENÇÃO DE PERFIS
      ============================================================ */
 
-  // 4.1 Atualiza Nome, Cargo ou Loja do Perfil de um Usuário
-  async updateUserProfile(usuarioId, { nome, funcao, lojaId }) {
-    const { data, error } = await supabase.rpc('vs_editar_perfil', {
-      p_usuario: usuarioId, p_nome: nome, p_funcao: funcao, p_loja: lojaId || null
-    });
-
-    if (error) throw new Error("Erro ao atualizar perfil: " + error.message);
-    return data;
-  },
-
-  // 4.2 Exclui o Registro do Colaborador do Banco de Dados
-  async deleteEmployee(usuarioId, lojaId) {
-    const { error } = await supabase.rpc('vs_remover_membro', { p_usuario: usuarioId, p_loja: lojaId });
-
-    if (error) throw new Error("Erro ao excluir usuário: " + error.message);
-    return true;
+  // 4.1 Cada usuário altera apenas o próprio nome. Vínculos ficam em Liberações.
+  async updateUserProfile(usuarioId, { nome }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || usuarioId !== user.id) throw new Error('Use a área de Liberações para gerenciar funcionários.');
+    const { error } = await supabase.rpc('vs_meu_nome', { p_nome: nome });
+    if (error) throw error;
   }
-
 };

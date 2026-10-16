@@ -1,3 +1,4 @@
+import { openAccessAdmin, openPasswordChange, renderCompanyAccess } from './accessAdmin.js';
 import { permissionsFor } from './permissions.js';
 import { configurarBuscaProduto } from './productLookup.js';
 import { lifecycleService } from './lifecycleService.js';
@@ -16,6 +17,7 @@ import { supabase } from './supabaseClient.js';
 const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='%239ca3af'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
 
 let currentProfile = null;
+let accessContext = null;
 let currentSector = 'ciclos';
 let currentData = [];
 let currentCycle = null;
@@ -45,14 +47,33 @@ async function checkSession() {
 
   try {
     currentProfile = await authService.getCurrentProfile();
-    console.log('👤 Perfil retornado do banco:', currentProfile);
+
 
     if (currentProfile) {
-      if (!currentProfile.loja_id && !currentProfile.lojas) {
-        const modalOnboarding = document.getElementById('modal-onboarding');
-        if (modalOnboarding) modalOnboarding.classList.add('active');
+      accessContext = await authService.getAccessContext();
+      currentProfile.accessContext = accessContext;
+      document.getElementById('btn-access-admin').classList.toggle('hidden', !accessContext.dono_app && !accessContext.empresa_admin);
+      document.getElementById('btn-access-admin').textContent = accessContext.dono_app ? 'Administrar aplicativo' : 'Liberações';
+      document.getElementById('btn-change-password').classList.remove('hidden');
+      if (!accessContext.lojas.length) {
+        activeLojaId=null; userLojas=[]; localStorage.removeItem('active_loja_id');
+        document.getElementById('store-selector-container').classList.add('hidden');
+        document.getElementById('store-selector-container').style.display='none';
+        loginScreen.classList.add('hidden'); appScreen.classList.remove('hidden');
+        document.getElementById('bottom-nav').classList.add('hidden');
+        document.querySelector('.workspace-header').classList.add('hidden');
+        document.getElementById('cycle-section-container').classList.add('hidden');
+        const empty = document.getElementById('product-card-container'); empty.classList.remove('hidden');
+        empty.textContent = accessContext.empresa_admin ? 'Nenhuma loja cadastrada. Crie a primeira unidade para começar.' : 'Nenhuma loja liberada para sua conta. Solicite acesso ao administrador.';
+        if (accessContext.empresa_admin) {
+          const create = document.createElement('button'); create.type='button'; create.className='btn btn-primary'; create.textContent='Criar primeira loja';
+          create.onclick=()=>document.getElementById('tab-btn-nova-loja').click(); empty.append(create);
+        }
+        updateActionPermissions();
+        if(accessContext.dono_app) await openAccessAdmin(accessContext, checkSession);
         return;
       }
+      document.querySelector('.workspace-header').classList.remove('hidden');
 
       const elemUser = document.getElementById('display-user-name');
       if (elemUser) elemUser.textContent = currentProfile.nome;
@@ -102,13 +123,14 @@ async function checkSession() {
   } catch (err) {
     console.error('❌ Erro na verificação de sessão:', err);
     showLoginScreen();
+    const message=document.getElementById('login-alert'); if(message){message.textContent=err.message;message.classList.remove('hidden');}
   }
 }
 
 
 // Função updateCycleTopbarDisplay limpa e com o console.log no lugar certo
 function updateCycleTopbarDisplay() {
-  console.log("ESTRUTURA DO PERFIL:", currentProfile);
+
 
   const elLojaNome = document.getElementById('display-loja-nome');
   const elLoteBadge = document.getElementById('display-lote-badge');
@@ -139,18 +161,7 @@ async function setupStoreSelector() {
   try {
     userLojas = [];
 
-    const { data: vinculos } = await supabase
-      .from('usuario_lojas')
-      .select('loja_id, lojas(*)')
-      .eq('usuario_id', currentProfile.id);
-
-    if (vinculos && vinculos.length > 0) {
-      userLojas = vinculos.map(v => v.lojas).filter(Boolean);
-    }
-
-    if (userLojas.length === 0) {
-      if (currentProfile.lojas) userLojas = [currentProfile.lojas];
-    }
+    userLojas = accessContext.lojas;
 
     if (!userLojas.some(l => l.id === activeLojaId)) activeLojaId = userLojas[0]?.id || null;
     if (activeLojaId) currentProfile.lojas = userLojas.find(l => l.id === activeLojaId);
@@ -160,7 +171,7 @@ async function setupStoreSelector() {
     );
 
     if (userLojas.length > 1) {
-      select.innerHTML = userLojas.map(l => `<option value="${l.id}">${l.nome}</option>`).join('');
+      select.replaceChildren(...userLojas.map(l => { const option=document.createElement('option'); option.value=l.id; option.textContent=l.nome; return option; }));
 
       if (activeLojaId && userLojas.some(l => l.id === activeLojaId)) {
         select.value = activeLojaId;
@@ -219,23 +230,6 @@ window.closeAllModals = function() {
   }
 };
 
-window.openEditUserModal = function(id, nome, funcao) {
-  window.closeAllModals();
-
-  setTimeout(() => {
-    const inputId = document.getElementById('edit-user-id');
-    const inputNome = document.getElementById('edit-user-name');
-    const inputFuncao = document.getElementById('edit-user-role');
-    const modal = document.getElementById('modal-edit-user');
-
-    if (inputId) inputId.value = id;
-    if (inputNome) inputNome.value = nome;
-    if (inputFuncao) inputFuncao.value = funcao;
-
-    if (modal) modal.classList.add('active');
-  }, 30);
-};
-
 window.openUserProfileModal = function() {
   window.closeAllModals();
 
@@ -246,6 +240,8 @@ window.openUserProfileModal = function() {
     const inputSelfRole = document.getElementById('self-role');
 
     if (inputSelfName) inputSelfName.value = currentProfile.nome || '';
+    const oldLogin = document.getElementById('self-login');
+    if (oldLogin) oldLogin.value = currentProfile.login_display || currentProfile.login || 'Conta existente';
     if (inputSelfRole) inputSelfRole.value = (currentProfile.funcao || 'Operador').toUpperCase();
 
     const modalProfile = document.getElementById('modal-user-profile');
@@ -409,24 +405,6 @@ function setupEvents() {
     }, 50);
   });
 
-  document.getElementById('btn-delete-user')?.addEventListener('click', async () => {
-    const userId = document.getElementById('edit-user-id').value;
-    const userName = document.getElementById('edit-user-name').value;
-
-    if (!userId) return;
-
-    if (confirm(`⚠️ Tem certeza que deseja excluir o colaborador "${userName}"?`)) {
-      try {
-        await authService.deleteEmployee(userId, activeLojaId || currentProfile.loja_id);
-        alert('Colaborador removido com sucesso!');
-        window.closeAllModals();
-        loadSectorData();
-      } catch (err) {
-        alert('Erro ao excluir colaborador: ' + err.message);
-      }
-    }
-  });
-
   document.getElementById('btn-export-excel')?.addEventListener('click', () => {
     if (currentSector !== 'equipe') lifecycleReports.exportLifecycleExcel(currentData, currentProfile);
     else alert('Selecione um módulo operacional para exportar o acompanhamento.');
@@ -452,40 +430,9 @@ function setupEvents() {
     });
   }
 
-  const btnShowRegister = document.getElementById('btn-show-register');
-  const btnShowLogin = document.getElementById('btn-show-login');
+  document.getElementById('btn-access-admin').onclick = async () => { try { window.closeAllModals(); await openAccessAdmin(await authService.getAccessContext(), checkSession); } catch(err) { alert(err.message); } };
+  document.getElementById('btn-change-password').onclick = () => { window.closeAllModals(); openPasswordChange(); };
   const formLogin = document.getElementById('form-login');
-  const formRegisterUser = document.getElementById('form-register-user');
-
-  if (btnShowRegister && btnShowLogin) {
-    btnShowRegister.addEventListener('click', () => {
-      if (formLogin) formLogin.classList.add('hidden');
-      if (formRegisterUser) formRegisterUser.classList.remove('hidden');
-    });
-
-    btnShowLogin.addEventListener('click', () => {
-      if (formRegisterUser) formRegisterUser.classList.add('hidden');
-      if (formLogin) formLogin.classList.remove('hidden');
-    });
-  }
-
-  if (formRegisterUser) {
-    formRegisterUser.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        const cadastro = await authService.registerUser({
-          nome: document.getElementById('reg-user-name').value,
-          email: document.getElementById('reg-user-email').value,
-          password: document.getElementById('reg-user-password').value
-        });
-
-        alert(cadastro.session ? 'Conta criada com sucesso!' : 'Conta criada. Confirme seu e-mail antes de entrar.');
-        await checkSession();
-      } catch (err) {
-        alert('Erro ao criar conta: ' + err.message);
-      }
-    });
-  }
 
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
@@ -504,7 +451,7 @@ function setupEvents() {
         await checkSession();
       } catch (err) {
         if (alertBox) {
-          alertBox.textContent = err.status === 400 || err.code === 'invalid_credentials' ? 'E-mail ou senha incorretos. Tente novamente.' : 'Não foi possível entrar. Verifique a conexão e tente novamente.';
+          alertBox.textContent = err.status === 400 || err.code === 'invalid_credentials' ? 'Login ou senha incorretos. Tente novamente.' : 'Não foi possível entrar. Verifique a conexão e tente novamente.';
           alertBox.classList.remove('hidden');
         }
       }
@@ -551,7 +498,7 @@ function setupEvents() {
 
     if (currentSector === 'equipe') {
       if (!permissionsFor(currentProfile).equipe) return;
-      if (mEmployee) mEmployee.classList.add('active');
+      openAccessAdmin(accessContext, loadSectorData);
     } else {
       document.getElementById('form-entry').reset();
       buscarProdutoLido();
@@ -572,86 +519,6 @@ function setupEvents() {
       if (mEntry) mEntry.classList.add('active');
     }
   });
-
-  const formEmployee = document.getElementById('form-employee');
-  if (formEmployee) {
-    formEmployee.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        await authService.addEmployee({
-          lojaId: activeLojaId || currentProfile.loja_id,
-          nome: document.getElementById('emp-name').value,
-          funcao: document.getElementById('emp-role').value,
-          email: document.getElementById('emp-email').value,
-          password: document.getElementById('emp-password').value,
-          avatarUrl: document.getElementById('emp-avatar').value
-        });
-
-        alert('Colaborador cadastrado com sucesso!');
-        window.closeAllModals();
-        formEmployee.reset();
-        loadSectorData();
-      } catch (err) {
-        alert('Erro ao cadastrar colaborador: ' + err.message);
-      }
-    });
-  }
-
-  const buscarProdutoLido = configurarBuscaProduto(document, ean => productService.fetchEanExternalApi(ean));
-
-  const btnToggleCamera = document.getElementById('btn-toggle-camera');
-  const cameraContainer = document.getElementById('camera-container');
-
-  if (btnToggleCamera && cameraContainer) {
-    btnToggleCamera.addEventListener('click', async () => {
-      if (!cameraContainer.classList.contains('hidden')) {
-        await window.pararScanner();
-        cameraContainer.classList.add('hidden');
-        return;
-      }
-
-      try {
-        cameraContainer.classList.remove('hidden');
-        await window.iniciarScanner('scanner-video', async (codigoLido) => {
-          const eanInput = document.getElementById('entry-ean');
-          eanInput.value = codigoLido;
-          eanInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-          await window.pararScanner();
-          cameraContainer.classList.add('hidden');
-          await buscarProdutoLido();
-        });
-      } catch (err) {
-        await window.pararScanner();
-        alert("Erro ao acessar a câmera: " + err.message);
-        cameraContainer.classList.add('hidden');
-      }
-    });
-  }
-
-  const formBaixa = document.getElementById('form-baixa');
-  if (formBaixa) {
-    formBaixa.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        await productService.realizarBaixaProduto({
-          itemId: document.getElementById('baixa-item-id').value,
-          produtoId: document.getElementById('baixa-produto-id').value,
-          tipoBaixa: document.getElementById('baixa-destino').value,
-          motivo: document.getElementById('baixa-motivo').value,
-          usuarioId: currentProfile.id,
-          lojaId: activeLojaId || currentProfile.loja_id,
-          qtd: Number(document.getElementById('baixa-qtd-atual').value)
-        });
-
-        alert('Baixa registrada no acompanhamento. A operação no TOTVS deve ser feita separadamente.');
-        window.closeAllModals();
-        loadSectorData();
-      } catch (err) {
-        alert('Erro ao realizar baixa: ' + err.message);
-      }
-    });
-  }
 
   const formEntry = document.getElementById('form-entry');
   if (formEntry) {
@@ -718,25 +585,6 @@ function setupEvents() {
     });
   }
 
-  const formEditUser = document.getElementById('form-edit-user');
-  if (formEditUser) {
-    formEditUser.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      try {
-        await authService.updateUserProfile(document.getElementById('edit-user-id').value, {
-          nome: document.getElementById('edit-user-name').value,
-          funcao: document.getElementById('edit-user-role').value,
-          lojaId: activeLojaId || currentProfile.loja_id
-        });
-        alert('Perfil atualizado com sucesso!');
-        window.closeAllModals();
-        loadSectorData();
-      } catch (err) {
-        alert('Erro ao atualizar usuário: ' + err.message);
-      }
-    });
-  }
-
   const fSelf = document.getElementById('form-edit-self-profile');
   if (fSelf) {
     fSelf.addEventListener('submit', async (e) => {
@@ -799,7 +647,7 @@ async function loadSectorData() {
   const version = ++loadVersion;
   const sector = currentSector;
   const loja = activeLojaId || currentProfile?.loja_id;
-  if (!loja) return;
+  if (!loja || !accessContext?.lojas.length) return;
   const cards = document.getElementById('product-card-container');
   const cycles = document.getElementById('cycle-section-container');
   const container = sector === 'ciclos' ? cycles : cards;
@@ -817,9 +665,9 @@ async function loadSectorData() {
   try {
     updateActionPermissions();
     if (sector === 'equipe') {
-      const team = await authService.getTeamMembers(loja);
+      container.className = '';
       if (version !== loadVersion) return;
-      renderEquipeCards(team, container);
+      await renderCompanyAccess(container, await authService.getAccessContext(), async () => {});
       return;
     }
     const snapshot = await lifecycleService.carregar(loja);
@@ -849,21 +697,10 @@ setInterval(() => {
   if (currentProfile && !refreshing && !document.hidden && !document.querySelector('dialog[open], .modal.active') && currentSector !== 'equipe') loadSectorData();
 }, 60000);
 
-function renderEquipeCards(members, container) {
-  container.replaceChildren();
-  for (const member of members || []) {
-    const card = document.createElement('article');
-    card.className = 'vs-card';
-    const text = document.createElement('p');
-    text.textContent = (member.nome || 'Sem nome') + ' — ' + (member.funcao || 'Operador');
-    const edit = document.createElement('button');
-    edit.type = 'button'; edit.className = 'btn btn-secondary'; edit.textContent = 'Editar';
-    edit.onclick = () => window.openEditUserModal(member.id, member.nome, member.funcao);
-    card.append(text, edit); container.append(card);
-  }
-}
-
 function showLoginScreen() {
+  accessContext = null;
+  document.getElementById('btn-access-admin')?.classList.add('hidden');
+  document.getElementById('btn-change-password')?.classList.add('hidden');
   loginScreen?.classList.remove('hidden');
   appScreen?.classList.add('hidden');
   document.getElementById('bottom-nav')?.classList.add('hidden');
@@ -880,6 +717,7 @@ function showLoginScreen() {
 
 function updateActionPermissions() {
   const p = permissionsFor(currentProfile || {});
+  if (accessContext) { p.equipe = accessContext.empresa_admin; p.criarLoja = accessContext.empresa_admin; p.editarLoja = accessContext.empresa_admin && accessContext.lojas.length > 0; }
   const add = document.getElementById('btn-open-modal');
   add.classList.toggle('hidden', currentSector === 'equipe' ? !p.equipe : !p.entrada);
   add.textContent = currentSector === 'equipe' ? '+ Cadastrar colaborador' : '+ Novo lançamento';
