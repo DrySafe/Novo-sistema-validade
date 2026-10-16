@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="robots" content="noindex,nofollow"><title>Área Administrativa — ValidaSuper</title>
+ <link rel="stylesheet" href="css/main.css"><link rel="stylesheet" href="css/components.css"><link rel="stylesheet" href="css/lifecycle.css">
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="ceo-page">
+ <main class="ceo-shell">
+  <a href="index.html" class="ceo-brand">ValidaSuper</a>
+  <h1>Área Administrativa</h1>
+  <p class="ceo-intro">Acesso exclusivo do CEO para cadastrar administradores. Este painel não acessa contas, lojas ou dados das empresas.</p>
+  <p id="ceo-status" role="status" aria-live="polite"></p>
+  <form id="ceo-login">
+   <div class="form-group"><label for="ceo-email">E-mail CEO</label><input id="ceo-email" type="email" autocomplete="username" required></div>
+   <div class="form-group"><label for="ceo-password">Senha CEO</label><input id="ceo-password" type="password" autocomplete="current-password" required></div>
+   <button class="btn btn-primary" type="submit">Entrar na Área Administrativa</button>
+  </form>
+  <section id="ceo-panel" hidden>
+   <h2>Criar conta ADM</h2>
+   <p class="ceo-intro">O novo administrador cadastra suas próprias lojas e funcionários. Ele deverá definir uma senha pessoal no primeiro acesso.</p>
+   <form id="ceo-create-admin">
+    <div class="form-group"><label for="new-admin-email">E-mail do novo ADM</label><input id="new-admin-email" type="email" autocomplete="off" required></div>
+    <div class="form-group"><label for="new-admin-password">Senha inicial do novo ADM</label><input id="new-admin-password" type="password" autocomplete="new-password" minlength="12" maxlength="72" required></div>
+    <button class="btn btn-primary" type="submit">Criar conta ADM</button>
+   </form>
+   <button id="ceo-logout" class="btn btn-secondary" type="button">Sair da Área Administrativa</button>
+  </section>
+  <footer class="ceo-footer"><a href="index.html">Voltar ao acesso da empresa</a></footer>
+ </main>
+ <script type="module" src="js/ceo.js"></script>
+</body>
+</html>

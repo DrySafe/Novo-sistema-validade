@@ -12,14 +12,17 @@ export function accountHandler(admin) {
    const { data: { user }, error: authError } = await admin.auth.getUser(token);
    if (authError || !user) return response({ error: 'Sessão inválida' }, 401);
    const body = await req.json();
-   const { nome, password, lojas, liberacoes } = body;
-   const empresa = body.acao === 'empresa';
+   const empresa = body.acao === 'administrador';
    if (!empresa && body.acao !== 'funcionario') return response({ error: 'Operação inválida' }, 400);
+   if (empresa && ['nome','lojas','vincularExistente'].some(key=>Object.hasOwn(body,key))) return response({ error: 'O CEO cadastra somente e-mail e senha de um novo ADM' }, 400);
+   const nome = empresa ? 'Administrador da empresa' : body.nome;
+   const lojas = empresa ? [] : body.lojas;
+   const { password, liberacoes } = body;
    if (typeof nome !== 'string' || !nome.trim() || nome.length > 255 || !Array.isArray(lojas) || lojas.some(id => typeof id !== 'string')) return response({ error: 'Informe nome e lojas válidas' }, 400);
    const login = typeof body.login === 'string' ? body.login.trim().toLowerCase() : '';
    const email = empresa ? String(body.email || '').trim().toLowerCase() : `${login}@usuarios.validasuper.invalid`;
    if (empresa ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.endsWith('@usuarios.validasuper.invalid') : !/^[a-z0-9][a-z0-9._-]{2,39}$/.test(login)) return response({ error: 'E-mail ou login inválido' }, 400);
-   if (!(empresa && body.vincularExistente === true)) {
+   {
     if (typeof password !== 'string' || password.length < 12) return response({ error: 'Use uma senha de pelo menos 12 caracteres' }, 400);
     if (new TextEncoder().encode(password).length > 72) return response({ error: 'Senha longa demais. Reduza o tamanho, especialmente se usar acentos ou emojis.' }, 400);
    }
@@ -27,17 +30,9 @@ export function accountHandler(admin) {
    const { data: nonce, error: reserveError } = await admin.rpc('vs_reservar_conta', { p_ator: user.id, p_email: email, p_tipo: empresa ? 'empresa' : 'funcionario' });
    reservation = nonce;
    if (reserveError) return response({ error: 'Conta não autorizada para este cadastro' }, 403);
-   let targetId;
-   if (empresa && body.vincularExistente === true) {
-    const { data, error } = await admin.rpc('vs_conta_email', { p_email: email });
-    if (error || !data) return response({ error: 'Conta existente não encontrada' }, 400);
-    targetId = data;
-   } else {
-
-    const { data, error } = await admin.auth.admin.createUser({ id: nonce, email, password, email_confirm: true, user_metadata: { nome: nome.trim() } });
-    if (error || !data.user) return response({ error: ['email_exists', 'user_already_exists'].includes(error?.code) ? 'O login ou e-mail já está em uso.' : 'Não foi possível criar a conta. Tente novamente.', code: error?.code || 'auth_creation_failed' }, 400);
-    targetId = createdId = data.user.id;
-   }
+   const { data: created, error: createError } = await admin.auth.admin.createUser({ id: nonce, email, password, email_confirm: true, user_metadata: { nome: nome.trim() } });
+   if (createError || !created?.user) return response({ error: ['email_exists', 'user_already_exists'].includes(createError?.code) ? 'O login ou e-mail já está em uso.' : 'Não foi possível criar a conta. Tente novamente.', code: createError?.code || 'auth_creation_failed' }, 400);
+   const targetId = createdId = created.user.id;
    const { data, error } = await admin.rpc(empresa ? 'vs_provisionar_empresa' : 'vs_provisionar_funcionario', empresa ? { p_ator: user.id, p_usuario: targetId, p_nome: nome.trim(), p_lojas: lojas } : { p_ator: user.id, p_usuario: targetId, p_nome: nome.trim(), p_login: login, p_lojas: lojas, p_liberacoes: liberacoes });
    if (error) {
     if (createdId) await admin.auth.admin.deleteUser(createdId);

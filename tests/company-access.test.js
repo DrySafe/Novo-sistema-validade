@@ -17,7 +17,7 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
  await db.exec(`create role anon;create role authenticated;create role service_role;
  alter default privileges grant execute on functions to anon,authenticated;
  create schema auth;
- create table auth.users(id uuid primary key,email text unique,phone text,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
+ create table auth.users(id uuid primary key,email text unique,phone text,encrypted_password text default 'initial',raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create function auth.role() returns text language sql stable as $$select current_setting('request.jwt.claim.role',true)$$;
  ${fs.readFileSync(new URL('./fixtures/schema-real.sql',import.meta.url),'utf8')}
@@ -28,8 +28,8 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
  create function get_user_funcao() returns text language sql as $$select 'operador'$$;
  create function get_user_loja_id() returns uuid language sql as $$select null::uuid$$;
  create function usuario_tem_acesso_loja(uuid) returns boolean language sql as $$select true$$;
- insert into auth.users(id,email) values('${id(1)}','dono@test.example'),('${id(2)}','empresa@test.example'),('${id(3)}','outra@test.example'),('${id(4)}','sem-loja@test.example');
- insert into perfis(id,nome,funcao) values('${id(1)}','Dono','administrador'),('${id(2)}','Empresa','administrador'),('${id(3)}','Outra','administrador'),('${id(4)}','Sem vínculo','operador');
+ insert into auth.users(id,email) values('${id(1)}','dono@test.example'),('${id(4)}','sem-loja@test.example');
+ insert into perfis(id,nome,funcao) values('${id(1)}','Dono','administrador'),('${id(4)}','Sem vínculo','operador');
  `);
  const migrations=new URL('../supabase/migrations/',import.meta.url);
  for(const name of fs.readdirSync(migrations).sort()) await db.exec(fs.readFileSync(new URL(name,migrations),'utf8'));
@@ -37,12 +37,37 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
  await t.test('somente dono provisiona empresa; nova conta sem vínculo não cria primeira loja',async()=>{
   await as(4);await assert.rejects(q(`select vs_salvar_loja('{"nome":"Escalada"}')`),/Somente o administrador/);
   await assert.rejects(q('select vs_reservar_conta($1,$2,$3)',[id(4),'a@b.example','empresa']),/permission denied/);
-  await db.exec('reset role');await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3)',[id(2),id(4),'Escalada']),/Somente o dono/);
-  company=(await q('select vs_provisionar_empresa($1,$2,$3) e',[id(1),id(2),'Empresa A']))[0].e;
-  otherCompany=(await q('select vs_provisionar_empresa($1,$2,$3) e',[id(1),id(3),'Empresa B']))[0].e;
+  await db.exec('reset role');await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3)',[id(2),id(4),'Escalada']),/Somente o CEO/);
+  for(const [number,email] of [[2,'empresa@test.example'],[3,'outra@test.example']]) {
+   const userId=(await q("select vs_reservar_conta($1,$2,'empresa') id",[id(1),email]))[0].id;
+   reservedIds.set(number,userId);
+   await q('insert into auth.users(id,email) values($1,$2)',[userId,email]);
+   await q('select vs_provisionar_empresa($1,$2,$3)',[id(1),userId,'Ignorado']);
+   await as(number);await assert.rejects(q(`select vs_salvar_loja('{"nome":"Antes da senha pessoal"}')`),/senha pessoal/);
+   await db.exec('reset role');await q("update auth.users set encrypted_password='personal' where id=$1",[userId]);
+  }
   await as(2);store=(await q(`select vs_salvar_loja('{"nome":"Loja A"}') s`))[0].s;store2=(await q(`select vs_salvar_loja('{"nome":"Loja A2"}') s`))[0].s;
   await as(3);otherStore=(await q(`select vs_salvar_loja('{"nome":"Loja B"}') s`))[0].s;
   await as(2);await assert.rejects(q('select vs_salvar_loja($1,$2)',[JSON.stringify({nome:'Invadida'}),otherStore.id]),/fora da empresa/);
+ });
+ await t.test('CEO não vê lojas nem empresas, não adota contas e não ganha operação por vínculo antigo',async()=>{
+  await db.exec('reset role');
+  await q('insert into lojas(id,nome) values($1,$2)',[id(900),'Loja legada do CEO']);
+  await q('insert into usuario_lojas(usuario_id,loja_id) values($1,$2)',[id(1),id(900)]);
+  await q('update perfis set loja_id=$1 where id=$2',[id(900),id(1)]);
+  await as(1);
+  const c=(await q('select vs_contexto_acesso() c'))[0].c;
+  assert.equal(c.dono_app,true);assert.equal(c.empresa_admin,false);assert.deepEqual(c.lojas,[]);assert.deepEqual(c.empresas,[]);assert.deepEqual(c.lojas_legadas,[]);
+  assert.deepEqual(await q('select * from lojas'),[]);
+  assert.deepEqual((await q('select id from perfis')).map(p=>p.id),[id(1)]);
+  await assert.rejects(q('select vs_painel($1)',[id(900)]),/não autorizada/);assert.deepEqual(await q('select * from usuario_lojas'),[]);
+  assert.deepEqual((await q('select vs_funcionarios() f'))[0].f,[]);
+  await assert.rejects(q('select vs_painel($1)',[store.id]),/não autorizada/);
+  await assert.rejects(q(`select vs_salvar_loja('{"nome":"CEO não cria"}')`),/Somente o administrador/);
+  await db.exec('reset role');
+  await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3,$4)',[id(1),id(4),'Nome',[store.id]]),/não pode vincular/);
+  await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3)',[id(1),id(4),'Nome']),/Cadastro novo autorizado/);
+  await assert.rejects(q("select vs_reservar_conta($1,$2,'funcionario')",[id(1),'negado@usuarios.validasuper.invalid']),/Somente o administrador/);
  });
  await t.test('cadastro exige UUID reservado; metadados não concedem identidade ou cargo',async()=>{
   await db.exec('reset role');await assert.rejects(q('insert into auth.users(id,email) values($1,$2)',[id(5),'publico@test.example']),/Cadastro público desativado/);
@@ -89,8 +114,8 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
   await db.exec('reset role');const log=(await q("select detalhes from vs_acessos_auditoria where usuario=$1 and acao='Liberações alteradas' order by id desc limit 1",[id(5)]))[0].detalhes;assert.deepEqual(log.lojas_antes,[store2.id]);
  });
  await t.test('identificador Auth não muda; dados de identidade não são graváveis pelo funcionário',async()=>{
-  await db.exec('reset role');await assert.rejects(q('update auth.users set email=$1 where id=$2',['outro@usuarios.validasuper.invalid',id(5)]),/login do funcionário/);
-  await assert.rejects(q('update auth.users set phone=$1 where id=$2',['5511999999999',id(5)]),/login do funcionário/);
+  await db.exec('reset role');await assert.rejects(q('update auth.users set email=$1 where id=$2',['outro@usuarios.validasuper.invalid',id(5)]),/login não pode/);
+  await assert.rejects(q('update auth.users set phone=$1 where id=$2',['5511999999999',id(5)]),/login não pode/);
   await as(5);await assert.rejects(q('update perfis set login=$1 where id=$2',['outro',id(5)]),/permission denied/);
  });
  } finally {await db.close();}

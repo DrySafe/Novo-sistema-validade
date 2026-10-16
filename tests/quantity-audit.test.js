@@ -19,7 +19,7 @@ test('migrações atuais: autorização, quantidade auditada, lote físico e iso
  try {
   await db.exec(`create role anon; create role authenticated; create role service_role;
    alter default privileges grant execute on functions to anon,authenticated;
-   create schema auth; create table auth.users(id uuid primary key,email text,phone text,raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
+   create schema auth; create table auth.users(id uuid primary key,email text,phone text,encrypted_password text default 'initial',raw_user_meta_data jsonb default '{}',raw_app_meta_data jsonb default '{}');
    create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
    create function auth.role() returns text language sql stable as $$select current_setting('request.jwt.claim.role',true)$$;
    ${fs.readFileSync(new URL('./fixtures/schema-real.sql', import.meta.url), 'utf8')}
@@ -39,7 +39,11 @@ test('migrações atuais: autorização, quantidade auditada, lote físico e iso
   }
   const migrations = new URL('../supabase/migrations/', import.meta.url);
   for (const name of fs.readdirSync(migrations).sort()) await db.exec(fs.readFileSync(new URL(name, migrations), 'utf8'));
-  await db.exec(`insert into vs_donos values('${ids.admin}'); select vs_provisionar_empresa('${ids.admin}','${ids.admin}','Empresa teste',array['${ids.store}','${ids.other}']::uuid[]);`);
+  // Dados de empresa pré-existente: o administrador operacional não é o CEO.
+  await db.exec(`insert into vs_empresas(id,nome,administrador_id) values('00000000-0000-0000-0000-000000000099','Empresa teste','${ids.admin}');
+   update lojas set empresa_id='00000000-0000-0000-0000-000000000099';
+   update perfis set empresa_id='00000000-0000-0000-0000-000000000099',tipo_conta=case when id='${ids.admin}' then 'empresa_admin' else 'funcionario' end,
+   liberacoes=jsonb_build_object('entrada',funcao in ('administrador','operador'),'movimentacao',funcao in ('administrador','operador'),'revisao',funcao in ('administrador','precificacao'),'correcao',funcao in ('administrador','adm'));`);
   await db.exec(`create or replace function vs_hoje() returns date language sql stable as $$select '2026-10-14'::date$$`);
   await as('admin');
   const entry = await create(payload); const id = entry.registro.id;

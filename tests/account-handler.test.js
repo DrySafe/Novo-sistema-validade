@@ -14,10 +14,14 @@ test('Edge nega cargo falso antes de criar Auth e compensa somente conta recém-
  const b=stub(), rpc=b.admin.rpc;b.admin.rpc=async(name,args)=>name==='vs_provisionar_funcionario'?{error:{message:'loja indevida'}}:rpc(name,args);
  assert.equal((await accountHandler(b.admin)(request(payload))).status,400);assert.deepEqual(b.calls.find(c=>c[0]==='deleteUser'),['deleteUser','novo']);
 });
-test('vincular administrador existente não redefine sua senha nem apaga conta preexistente',async()=>{
- const {admin,calls}=stub(),rpc=admin.rpc;admin.rpc=async(name,args)=>name==='vs_conta_email'?{data:'existente'}:name==='vs_provisionar_empresa'?{error:{message:'loja inválida'}}:rpc(name,args);
- const response=await accountHandler(admin)(request({acao:'empresa',nome:'Empresa',email:'admin@test.example',lojas:[],vincularExistente:true}));
- assert.equal(response.status,400);assert.ok(!calls.some(c=>['createUser','deleteUser'].includes(c[0])));
+test('CEO envia somente e-mail e senha; vincular conta ou loja é recusado antes de criar Auth',async()=>{
+ for(const forbidden of [{lojas:['loja']},{vincularExistente:true},{nome:'Empresa'}]){
+  const {admin,calls}=stub();const response=await accountHandler(admin)(request({acao:'administrador',email:'admin@test.example',password:'senha-inicial-123',...forbidden}));
+  assert.equal(response.status,400);assert.equal(calls.length,0);
+ }
+ const {admin,calls}=stub();const response=await accountHandler(admin)(request({acao:'administrador',email:'admin@test.example',password:'senha-inicial-123'}));
+ assert.equal(response.status,200);assert.ok(!calls.some(c=>c[0]==='vs_conta_email'));
+ assert.deepEqual(calls.find(c=>c[0]==='vs_provisionar_empresa')[1].p_lojas,[]);
 });
 
 test('senhas acima do limite UTF-8 do Auth são recusadas antes de reservar ou criar conta',async()=>{

@@ -25,7 +25,7 @@ function permissions(form, current={}) {
 }
 export async function renderCompanyAccess(container, context, onSaved=async()=>{}) {
  container.replaceChildren(el('h2','Funcionários e Liberações'));
- if(!context.empresa_admin){container.append(el('p','Somente o administrador da empresa gerencia funcionários.')); return;}
+ if(context.dono_app || !context.empresa_admin){container.append(el('p','Somente o administrador da empresa gerencia funcionários.')); return;}
  container.append(el('p','Cada funcionário consulta apenas as lojas selecionadas. As liberações abaixo autorizam operações. O login é único no aplicativo e não pode ser alterado. Para suspender o acesso às lojas, desmarque todas e salve.'));
  const create=el('details'); create.append(el('summary','Adicionar funcionário'));
  const form=el('form'), name=field(form,'Nome completo'), login=field(form,'Login (sem e-mail)'), password=field(form,'Senha inicial','password');
@@ -52,29 +52,17 @@ export async function renderCompanyAccess(container, context, onSaved=async()=>{
  }catch(err){list.append(el('p',err.message));}
 }
 export async function openAccessAdmin(context, onSaved=async()=>{}) {
- if(!context.dono_app&&!context.empresa_admin)return;
+ if(context.dono_app || !context.empresa_admin)return;
  const modal=el('dialog'); modal.className='vs-dialog access-dialog'; const header=el('div'); header.className='modal-header';
- const heading=el('h2',context.dono_app?'Administração do aplicativo':'Funcionários e Liberações'); heading.id='access-heading-'+crypto.randomUUID(); modal.setAttribute('aria-labelledby',heading.id);
+ const heading=el('h2','Funcionários e Liberações'); heading.id='access-heading-'+crypto.randomUUID(); modal.setAttribute('aria-labelledby',heading.id);
  header.append(heading,button('Fechar',()=>modal.close())); modal.append(header); document.body.append(modal); modal.addEventListener('close',()=>modal.remove()); modal.showModal();
- const content=el('div'); modal.append(content);
- if(context.dono_app){
-  content.append(el('p','Cadastre uma empresa e seu administrador. Só essa conta poderá criar lojas e funcionários da empresa.'));
-  const form=el('form'), name=field(form,'Nome da empresa'), email=field(form,'E-mail do administrador','email'), password=field(form,'Senha inicial do administrador','password');
-  password.minLength=12; password.maxLength=72; password.autocomplete='new-password';
-  const existing=choices(form,'Conta do administrador',[['existente','Vincular conta já existente (preserva a senha atual)']]);
-  form.querySelector('[type=checkbox]').onchange=()=>{password.required=!existing().length; password.disabled=Boolean(existing().length); password.value='';};
-  const stores=choices(form,'Migrar lojas existentes para esta empresa (opcional)',(context.lojas_legadas||[]).map(l=>[l.id,l.nome]));
-  submit(form,'Cadastrar empresa e administrador',()=>authService.provisionAccount({acao:'empresa',nome:name.value,email:email.value,password:password.value,vincularExistente:Boolean(existing().length),lojas:stores()}),async()=>{modal.close(); await onSaved();});
-  content.append(form,el('h3','Empresas cadastradas'));
-  const list=el('ul'); for(const company of context.empresas||[])list.append(el('li',company.nome+' · '+company.administrador)); content.append(list);
- }
- if(context.empresa_admin){const employees=el('section'); content.append(employees); await renderCompanyAccess(employees,context,onSaved);}
+ const content=el('div'); modal.append(content); await renderCompanyAccess(content,context,onSaved);
 }
-export function openPasswordChange() {
+export function openPasswordChange(onSaved=async()=>{}) {
  const modal=el('dialog'); modal.className='vs-dialog'; const title=el('h2','Alterar minha senha'); title.id='password-'+crypto.randomUUID(); modal.setAttribute('aria-labelledby',title.id);
  const header=el('div'); header.className='modal-header'; header.append(title,button('Fechar',()=>modal.close())); modal.append(header);
  const form=el('form'), current=field(form,'Senha atual','password'), next=field(form,'Nova senha','password'), confirm=field(form,'Confirme a nova senha','password');
  current.autocomplete='current-password'; next.autocomplete=confirm.autocomplete='new-password'; next.minLength=confirm.minLength=12; next.maxLength=confirm.maxLength=72;
- submit(form,'Alterar senha',async()=>{if(next.value!==confirm.value)throw new Error('A confirmação da senha não confere.');if(next.value===current.value)throw new Error('Escolha uma senha diferente da atual.');await authService.changePassword(current.value,next.value);},async()=>{form.reset();});
+ submit(form,'Alterar senha',async()=>{if(next.value!==confirm.value)throw new Error('A confirmação da senha não confere.');if(next.value===current.value)throw new Error('Escolha uma senha diferente da atual.');await authService.changePassword(current.value,next.value);},async()=>{form.reset();await onSaved();});
  modal.append(form); document.body.append(modal); modal.addEventListener('close',()=>modal.remove()); modal.showModal();
 }

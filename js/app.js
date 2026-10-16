@@ -52,8 +52,26 @@ async function checkSession() {
     if (currentProfile) {
       accessContext = await authService.getAccessContext();
       currentProfile.accessContext = accessContext;
-      document.getElementById('btn-access-admin').classList.toggle('hidden', !accessContext.dono_app && !accessContext.empresa_admin);
-      document.getElementById('btn-access-admin').textContent = accessContext.dono_app ? 'Administrar aplicativo' : 'Liberações';
+      if (accessContext.dono_app) {
+        await supabase.auth.signOut({ scope: 'local' });
+        activeLojaId=null; localStorage.removeItem('active_loja_id'); currentData=[];
+        showLoginScreen();
+        const message=document.getElementById('login-alert'); message.textContent='Seu acesso CEO fica na Área Administrativa, no rodapé.'; message.classList.remove('hidden');
+        return;
+      }
+      if (accessContext.senha_inicial) {
+        loginScreen.classList.add('hidden'); appScreen.classList.remove('hidden');
+        document.querySelector('.workspace-header').classList.add('hidden'); document.getElementById('bottom-nav').classList.add('hidden');
+        document.getElementById('cycle-section-container').classList.add('hidden');
+        document.getElementById('btn-access-admin').classList.add('hidden'); document.getElementById('btn-change-password').classList.remove('hidden');
+        const gate=document.getElementById('product-card-container'); gate.classList.remove('hidden');
+        gate.textContent='Antes de começar, substitua a senha inicial por uma senha pessoal. Ela não será exibida ao CEO.';
+        const change=document.createElement('button'); change.type='button'; change.className='btn btn-primary'; change.textContent='Definir minha senha pessoal';
+        change.onclick=()=>openPasswordChange(async()=>{window.closeAllModals();await checkSession();}); gate.append(change);
+        return;
+      }
+      document.getElementById('btn-access-admin').classList.toggle('hidden', !accessContext.empresa_admin);
+      document.getElementById('btn-access-admin').textContent = 'Liberações';
       document.getElementById('btn-change-password').classList.remove('hidden');
       if (!accessContext.lojas.length) {
         activeLojaId=null; userLojas=[]; localStorage.removeItem('active_loja_id');
@@ -70,7 +88,6 @@ async function checkSession() {
           create.onclick=()=>document.getElementById('tab-btn-nova-loja').click(); empty.append(create);
         }
         updateActionPermissions();
-        if(accessContext.dono_app) await openAccessAdmin(accessContext, checkSession);
         return;
       }
       document.querySelector('.workspace-header').classList.remove('hidden');
@@ -431,7 +448,7 @@ function setupEvents() {
   }
 
   document.getElementById('btn-access-admin').onclick = async () => { try { window.closeAllModals(); await openAccessAdmin(await authService.getAccessContext(), checkSession); } catch(err) { alert(err.message); } };
-  document.getElementById('btn-change-password').onclick = () => { window.closeAllModals(); openPasswordChange(); };
+  document.getElementById('btn-change-password').onclick = () => { window.closeAllModals(); openPasswordChange(async()=>{window.closeAllModals();await checkSession();}); };
   const formLogin = document.getElementById('form-login');
 
   if (formLogin) {

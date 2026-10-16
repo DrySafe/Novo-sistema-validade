@@ -123,3 +123,16 @@ body.dark .vs-band-7, body.dark .vs-band-VENC { color: #ffb2ba; background: #462
 .access-profile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .vs-dialog .modal-header > h2 { min-width: 0; overflow-wrap: anywhere; font-size: 18px; }
 .access-choices { min-inline-size: 0; }
+.public-footer { grid-row: 3; grid-column: 1 / -1; display: flex; justify-content: center; padding: 16px; font-size: 13px; }
+.public-footer a, .ceo-footer a { color: var(--primary); }
+body:has(#app-screen:not(.hidden)) .public-footer { display: none; }
+.ceo-page { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+.ceo-shell { width: min(100%,480px); padding: clamp(18px,4vw,32px); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.ceo-brand { display: inline-block; color: var(--primary); font-size: 20px; font-weight: 700; margin-bottom: 20px; text-decoration: none; }
+.ceo-shell h1 { font-size: 24px; }
+.ceo-shell h2 { font-size: 20px; margin-bottom: 12px; }
+.ceo-intro, #ceo-status { font-size: 13px; line-height: 1.7; margin: 14px 0 20px; overflow-wrap: anywhere; }
+.ceo-intro { color: var(--text-muted); }
+.ceo-shell .btn { width: 100%; }
+#ceo-logout { margin-top: 18px; }
+.ceo-footer { margin-top: 24px; text-align: center; font-size: 13px; }

@@ -8,11 +8,11 @@ Controle de validades e prevenção de perdas por loja. Frontend estático HTML/
 
 O layout ocupa a janela completa, com um card por lote de acompanhamento em colunas adaptáveis. Ao abrir o lote, uma tabela compacta permite buscar produto/EAN/lote físico, filtrar faixa, localização e pendências, ordenar e escolher 25, 50 ou 100 itens por página. Vencidos são agrupados pelo lote diário VENC. Os cards também têm busca e paginação de 12 lotes. Desktop usa navegação lateral de 180px; no mobile há três atalhos principais e o menu Mais para Uso da loja, Avarias e Equipe. Relatórios ficam em um menu compacto. A interface tem temas claro/escuro, alvos de toque de 44px, zoom liberado, foco visível e transições que respeitam a preferência por movimento reduzido. Prévia visual verificada em Edge a 320, 390, 768 e 1440px com dados demonstrativos, sem acesso ao Supabase.
 
-## Administração do aplicativo (16/10/2026)
+## Área Administrativa do CEO
 
-Cadastro público desativado. O dono do aplicativo cadastra empresas e seus administradores por e-mail; cada administrador cria suas lojas e funcionários com login e senha, sem e-mail de contato. **Liberações** define lojas e operações de cada funcionário. Login é fixo; cada pessoa pode trocar a própria senha após confirmar a atual.
+No rodapé do login, **Área Administrativa** abre uma aba própria. O CEO somente cria novos administradores informando e-mail e senha inicial, sem consultar contas, empresas, lojas ou registros e sem vincular usuários existentes. O novo ADM define uma senha pessoal no primeiro acesso e depois cadastra suas lojas e funcionários. Cada funcionário tem login fixo e liberações para as lojas atribuídas.
 
-**Esta versão exige as migrações `202610160001` e `202610160002`, ativação da conta do dono e publicação da Edge Function antes do frontend.** Consulte a [ordem de implantação e migração das contas existentes](docs/administracao-aplicativo.md). Os acessos administrativos do Supabase não são fornecidos pela chave pública do frontend.
+A separação é aplicada no servidor, inclusive a vínculos legados do CEO. A sessão administrativa não substitui a sessão da empresa. Consulte a [hierarquia e implantação](docs/administracao-aplicativo.md).
 
 ## Operação
 
@@ -42,7 +42,7 @@ Os novos endpoints são vs_criar (entrada atômica), vs_painel (snapshot para te
 
 **Corrigir quantidade** é exclusivo de administração, gestão e ADM/auditoria, com justificativa, confirmação do saldo e proteção contra gravações desatualizadas. A entrada original é preservada; o card indica quantos itens tiveram correção; a linha do item na tabela mostra quem corrigiu, quando, os saldos e o motivo. Operadores registram entradas/saídas; gestão e precificação revisam preços.
 
-Antes de publicar esta versão, aplicar `supabase/migrations/202610140001_auditoria_e_correcao_segura.sql` após as quatro migrações de setembro, sem reaplicar as antigas. A nova migração foi confirmada no projeto real em 14/10/2026: `vs_painel` retorna `api_version: 2`. O frontend e a hierarquia administrativa foram validados contra o projeto real; as migrações de acessos de 16/10 também estão aplicadas, com cadastro público desativado e conta do dono ativada. Consulte o guia de administração para associar as lojas existentes às empresas. A interface bloqueia operações sobre API antiga. Consulte [política, alterações e implantação](docs/correcao-quantidade.md).
+Antes de publicar esta versão, aplicar `supabase/migrations/202610140001_auditoria_e_correcao_segura.sql` após as quatro migrações de setembro, sem reaplicar as antigas. A nova migração foi confirmada no projeto real em 14/10/2026: `vs_painel` retorna `api_version: 2`. O frontend e a hierarquia administrativa foram validados contra o projeto real; as migrações de acessos de 16/10 também estão aplicadas, com cadastro público desativado e conta do dono ativada. A reorganização de registros antigos exige uma tarefa administrativa específica; o painel CEO não associa lojas nem contas existentes. A interface bloqueia operações sobre API antiga. Consulte [política, alterações e implantação](docs/correcao-quantidade.md).
 
 Lote físico e localização são preservados; nome/foto valem para a entrada. AV/USO aguardam destinação e suas entradas são separadas das saídas nos relatórios. Novos eventos capturam nome/cargo do autor; nomes inferidos em eventos antigos são identificados como nomes atuais. Ativos/concluídos têm filtro explícito.
 
