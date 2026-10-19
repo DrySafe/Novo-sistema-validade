@@ -30,7 +30,7 @@ export async function renderCompanyAccess(container, context, onSaved=async()=>{
  const create=el('details'); create.append(el('summary','Adicionar funcionário'));
  const form=el('form'), name=field(form,'Nome completo'), login=field(form,'Login (sem e-mail)'), password=field(form,'Senha inicial','password');
  login.pattern='[a-z0-9][a-z0-9._-]{2,39}'; login.minLength=3; login.maxLength=40; login.autocomplete='off'; login.title='De 3 a 40 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado.'; login.addEventListener('input',()=>{login.value=login.value.toLowerCase();});
- password.minLength=12; password.maxLength=72; password.autocomplete='new-password';
+ password.minLength=6; password.maxLength=72; password.autocomplete='new-password';
  const stores=choices(form,'Lojas permitidas',context.lojas.map(l=>[l.id,l.nome]));
  const allowed=permissions(form);
  submit(form,'Criar funcionário',async()=>{if(!stores().length)throw new Error('Selecione pelo menos uma loja.'); await authService.provisionAccount({acao:'funcionario',nome:name.value,login:login.value,password:password.value,lojas:stores(),liberacoes:allowed()});},async()=>{await renderCompanyAccess(container,context,onSaved); await onSaved();});
@@ -62,7 +62,7 @@ export function openPasswordChange(onSaved=async()=>{}) {
  const modal=el('dialog'); modal.className='vs-dialog'; const title=el('h2','Alterar minha senha'); title.id='password-'+crypto.randomUUID(); modal.setAttribute('aria-labelledby',title.id);
  const header=el('div'); header.className='modal-header'; header.append(title,button('Fechar',()=>modal.close())); modal.append(header);
  const form=el('form'), current=field(form,'Senha atual','password'), next=field(form,'Nova senha','password'), confirm=field(form,'Confirme a nova senha','password');
- current.autocomplete='current-password'; next.autocomplete=confirm.autocomplete='new-password'; next.minLength=confirm.minLength=12; next.maxLength=confirm.maxLength=72;
+ current.autocomplete='current-password'; next.autocomplete=confirm.autocomplete='new-password'; next.minLength=confirm.minLength=6; next.maxLength=confirm.maxLength=72;
  submit(form,'Alterar senha',async()=>{if(next.value!==confirm.value)throw new Error('A confirmação da senha não confere.');if(next.value===current.value)throw new Error('Escolha uma senha diferente da atual.');await authService.changePassword(current.value,next.value);},async()=>{form.reset();await onSaved();});
  modal.append(form); document.body.append(modal); modal.addEventListener('close',()=>modal.remove()); modal.showModal();
 }

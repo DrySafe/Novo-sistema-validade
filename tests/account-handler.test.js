@@ -30,3 +30,22 @@ test('senhas acima do limite UTF-8 do Auth são recusadas antes de reservar ou c
   assert.equal(response.status,400);assert.match((await response.json()).error,/Senha longa demais/);assert.equal(calls.length,0);
  }
 });
+
+test('cadastro aceita seis caracteres para ADM e funcionário e recusa cinco antes do Auth',async()=>{
+ for(const body of [payload,{acao:'administrador',email:'admin@test.example'}]){
+  const valid=stub();assert.equal((await accountHandler(valid.admin)(request({...body,password:'Abc123'}))).status,200);
+  assert.equal(valid.calls.find(c=>c[0]==='createUser')[1].password,'Abc123');
+  const invalid=stub();const response=await accountHandler(invalid.admin)(request({...body,password:'Ab123'}));
+  assert.equal(response.status,400);assert.match((await response.json()).error,/6 caracteres/);assert.equal(invalid.calls.length,0);
+ }
+});
+
+test('duplicidade explica que senha existente não muda; falha interna não se apresenta como dado inválido',async()=>{
+ for(const [code,status] of [['email_exists',409],['unexpected_failure',503],['weak_password',400]]){
+  const {admin,calls}=stub();admin.auth.admin.createUser=async()=>({data:{user:null},error:{code,message:'detalhe privado'}});
+  const response=await accountHandler(admin)(request(payload));const body=await response.json();
+  assert.equal(response.status,status);assert.equal(body.code,code);assert.doesNotMatch(body.error,/detalhe privado/);
+  if(code==='email_exists')assert.match(body.error,/não altera a senha existente/);
+  assert.ok(!calls.some(c=>c[0]==='deleteUser'||c[0]==='vs_provisionar_funcionario'));assert.ok(calls.some(c=>c[0]==='vs_cancelar_reserva'));
+ }
+});

@@ -16,11 +16,11 @@ test('link público abre outra aba; sessão CEO é separada e formulário envia 
  assert.equal(clients.length,1);assert.match(clients[0].auth.storageKey,/^validasuper-ceo-/);assert.equal(clients[0].auth.storage,window.sessionStorage);
  const login=document.getElementById('ceo-login');document.getElementById('ceo-email').value='ceo@test.example';document.getElementById('ceo-password').value='senha-do-ceo';
  await login.onsubmit({preventDefault(){}});assert.equal(document.getElementById('ceo-panel').hidden,false);
- const form=document.getElementById('ceo-create-admin');assert.equal(form.querySelectorAll('input').length,2);assert.equal(form.querySelector('select,fieldset'),null);
- document.getElementById('new-admin-email').value='novo@test.example';document.getElementById('new-admin-password').value='senha-inicial-123';
+ const form=document.getElementById('ceo-create-admin');assert.equal(document.getElementById('new-admin-password').minLength,6);assert.equal(form.querySelectorAll('input').length,2);assert.equal(form.querySelector('select,fieldset'),null);
+ document.getElementById('new-admin-email').value='novo@test.example';document.getElementById('new-admin-password').value='Abc123';
  await form.onsubmit({preventDefault(){},currentTarget:form});
- assert.deepEqual(calls.find(c=>c[0]==='gerenciar-equipe')[1].body,{acao:'administrador',email:'novo@test.example',password:'senha-inicial-123'});
- assert.equal(document.getElementById('new-admin-password').value,'');assert.doesNotMatch(document.body.textContent,/senha-inicial-123/);
+ assert.deepEqual(calls.find(c=>c[0]==='gerenciar-equipe')[1].body,{acao:'administrador',email:'novo@test.example',password:'Abc123'});
+ assert.equal(document.getElementById('new-admin-password').value,'');assert.doesNotMatch(document.body.textContent,/Abc123/);
  await document.getElementById('ceo-logout').onclick();assert.equal(document.getElementById('ceo-panel').hidden,true);assert.deepEqual(calls.at(-1),['signOut',{scope:'local'}]);
  dom.window.close();
 });

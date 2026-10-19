@@ -72,7 +72,7 @@ export const authService = {
     if (error) throw error;
   },
   async changePassword(current, next) {
-    if (next.length < 12) throw new Error('Use uma senha de pelo menos 12 caracteres.');
+    if (next.length < 6) throw new Error('Use uma senha de pelo menos 6 caracteres.');
     if (new TextEncoder().encode(next).length > 72) throw new Error('Senha longa demais. Reduza o tamanho, especialmente se usar acentos ou emojis.');
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) throw new Error('Sessão inválida. Entre novamente.');

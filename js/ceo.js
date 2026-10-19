@@ -20,7 +20,7 @@ document.getElementById('ceo-create-admin').onsubmit=async event=>{
  event.preventDefault();const form=event.currentTarget,save=form.querySelector('[type=submit]');save.disabled=true;status.textContent='Criando administrador…';
  try{
   const password=document.getElementById('new-admin-password').value;
-  if(password.length<12)throw new Error('Use uma senha inicial de pelo menos 12 caracteres.');
+  if(password.length<6)throw new Error('Use uma senha inicial de pelo menos 6 caracteres.');
   if(new TextEncoder().encode(password).length>72)throw new Error('Senha longa demais. Reduza o tamanho, especialmente se usar acentos ou emojis.');
   const {data,error}=await ceoClient.functions.invoke('gerenciar-equipe',{body:{acao:'administrador',email:document.getElementById('new-admin-email').value.trim().toLowerCase(),password}});
   let message=data?.error;

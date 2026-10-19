@@ -15,7 +15,7 @@ A senha inicial é temporária e conhecida por quem a define. Quem possui uma cr
 - O ADM de empresa cria lojas e funcionários no acesso operacional. Cada funcionário consulta somente lojas atribuídas.
 - **Liberações** autoriza entradas, movimentações, revisões e correções de quantidade, sem permitir ao funcionário criar outra empresa ou se tornar ADM.
 - Funcionários novos usam login único de 3 a 40 caracteres (`a-z`, números, ponto, hífen e sublinhado) e senha, sem e-mail de contato. O Auth utiliza internamente `login@usuarios.validasuper.invalid`; não envia mensagens.
-- Login não é editável. Todos podem trocar sua própria senha; senhas têm pelo menos 12 caracteres e até 72 bytes UTF-8, de acordo com o Auth.
+- Login não é editável. Todos podem trocar sua própria senha; senhas têm pelo menos 6 caracteres e até 72 bytes UTF-8, de acordo com o Auth.
 - Retirar todas as lojas de um funcionário suspende seu acesso aos dados e conserva o histórico.
 
 As contas e lojas existentes são preservadas. O CEO perde a consulta operacional inclusive de seus vínculos legados. A Área Administrativa não faz migrações ou transferências de dados para contas novas; qualquer reorganização dos registros antigos exige uma tarefa administrativa específica e identificação explícita do responsável, sem criar cópias nem misturar empresas.
@@ -32,5 +32,11 @@ As migrações anteriores permanecem imutáveis. Para uma instalação que já r
 O cadastro público permanece desativado no Supabase Auth e também protegido por trigger. A reserva de UUID de uso único é criada somente pelo servidor e consumida no INSERT de Auth. A migração atual registra a origem desse cadastro em uma tabela privada; a criação de ADM exige prova de uma conta nova, criada pelo CEO, sem vínculos ou reaproveitamento de usuário existente. Metadados fornecidos pelo usuário não concedem privilégios.
 
 A senha pessoal é reconhecida por trigger quando o Auth efetivamente altera o hash da senha. A alteração do campo de controle no perfil não é permitida ao usuário. Antes disso, as RPCs de operação e criação de lojas/funcionários permanecem bloqueadas.
+
+## Falhas de cadastro
+
+Uma conta existente retorna `409 / email_exists`: a senha enviada na tentativa de cadastro não redefine a senha dessa conta. O CEO não pode reaproveitar, consultar ou redefinir contas por este painel.
+
+Erros internos do Auth retornam `503` e um código de diagnóstico, sem expor detalhes internos ou credenciais. Nos logs de Auth, `unable to find user from email identity for duplicates: User not found` pode indicar uma identidade antiga em `auth.identities` sem o usuário correspondente em `auth.users`. O reparo administrativo exige backup e confirmação da ausência do usuário antes de remover somente a identidade órfã; contas válidas, senhas, perfis e vínculos devem ser preservados. Não executar limpeza automática no endpoint de cadastro.
 
 Use `SUPABASE_ACCESS_TOKEN` somente pela Management API em `api.supabase.com`. As chaves privadas da Edge Function ficam no servidor. Não usar `service_role` ou tokens administrativos em variáveis `VITE_`, no código público, em logs ou em arquivos do repositório.
