@@ -5,6 +5,13 @@
   <!-- Permissão CSP para liberar JS das bibliotecas de relatório sem erro de eval -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';">
   <title>ValidaSuper - Prevenção de Perdas</title>
+  <meta name="theme-color" content="#117b70">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ValidaSuper">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
   <!-- Tipografia Industrial Fluida -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -72,6 +79,7 @@
         <button type="submit" class="btn btn-primary">Entrar no Sistema</button>
         <p class="entry-context">Acesso fornecido pelo administrador da sua empresa. Não há cadastro público.</p>
       </form>
+      <button type="button" class="btn btn-secondary pwa-install-button" data-install-app hidden>Instalar aplicativo</button>
     </section>
 
     <!-- Tela Principal do App -->
@@ -221,6 +229,7 @@
       <div class="access-profile-actions">
         <button type="button" id="btn-access-admin" class="btn btn-secondary hidden">Administração</button>
         <button type="button" id="btn-change-password" class="btn btn-secondary hidden">Alterar senha</button>
+        <button type="button" class="btn btn-secondary" data-install-app hidden>Instalar aplicativo</button>
       </div>
 
       <!-- Editar Próprio Usuário -->
@@ -455,6 +464,7 @@
   </div>
 
   <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/pwa.js"></script>
 
 
 </body></html>

@@ -136,3 +136,8 @@ body:has(#app-screen:not(.hidden)) .public-footer { display: none; }
 .ceo-shell .btn { width: 100%; }
 #ceo-logout { margin-top: 18px; }
 .ceo-footer { margin-top: 24px; text-align: center; font-size: 13px; }
+[data-install-app][hidden] { display: none; }
+.pwa-install-button { width: 100%; margin-top: 12px; }
+.pwa-instructions { max-width: min(440px, calc(100vw - 32px)); }
+.pwa-instructions h2 { font-size: 20px; }
+.pwa-instructions p { margin: 16px 0; line-height: 1.6; }

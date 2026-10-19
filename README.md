@@ -65,3 +65,11 @@ O repositório já tem deploy automático da Vercel no projeto validade_eco. Atu
 ## Validação em 30/09/2026
 
 Nove testes locais e build passaram. No Supabase real, RPCs foram verificadas em transação autenticada: painel, entrada, VENC no próprio dia, baixa parcial e privilégios; tudo foi revertido ao final. A rotina diária está ativa. A função de equipe foi publicada, mas criação real de funcionários e login completo ainda precisam de teste em navegador autenticado. O advisor mantém avisos esperados sobre RPCs SECURITY DEFINER autenticadas e informa proteção de senhas vazadas desabilitada. Scanner e exportações seguem bibliotecas CDN e precisam de teste com dispositivo real.
+
+## Instalar como aplicativo
+
+O ValidaSuper é um PWA: abra o site por HTTPS e use **Instalar aplicativo** na tela de login ou em **Minha Conta**. No Android/Chrome e no computador/Chrome ou Edge, o navegador oferece a instalação. No iPhone/iPad, abra no Safari e escolha **Compartilhar → Adicionar à Tela de Início**. No Safari do Mac, use **Arquivo → Adicionar ao Dock**. A disponibilidade depende do navegador.
+
+O aplicativo instalado abre em janela própria, com ícone na tela inicial. Consultas e registros continuam exigindo internet. O service worker armazena apenas ícones e uma tela pública de ausência de conexão; não coloca páginas autenticadas, respostas do Supabase, relatórios ou credenciais no Cache Storage. O login mantém o armazenamento de sessão já utilizado pelo aplicativo.
+
+O build inclui `manifest.webmanifest`, `sw.js`, `offline.html` e `icons/`. Ao alterar o fallback ou seus ícones, incremente a versão do cache em `sw.js`. O navegador verifica atualizações do service worker sem reutilizar o cache HTTP do script.
