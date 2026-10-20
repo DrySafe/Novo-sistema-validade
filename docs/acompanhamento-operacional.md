@@ -13,7 +13,7 @@ A extensão acrescenta posições opcionais, ações preventivas e indicadores. 
 
 ## Entrada adicional e compatibilidade
 
-O novo formulário usa `vs_criar_acomp`: procura estoque ativo com mesmo EAN, lote físico, validade e localização em todas as rodadas. Exibe os registros e oferece consultar o existente ou confirmar uma entrada adicional com justificativa e confirmação física. A entrada adicional continua criando outra linha, sem somar nem corrigir o registro antigo; há evento separado de acompanhamento identificando o motivo e os registros relacionados.
+O novo formulário usa `vs_criar_acomp`: procura estoque ativo com mesmo EAN, lote físico, validade e localização em todas as rodadas. Inclui registros com localização genérica anterior e itens VAL transferidos para Vencidos. Ao iniciar o uso de posições, confira e atribua a posição ao registro antigo antes de lançar as mesmas unidades novamente. Exibe os registros e oferece consultar o existente ou confirmar uma entrada adicional com justificativa e confirmação física. A entrada adicional continua criando outra linha, sem somar nem corrigir o registro antigo; há evento separado de acompanhamento identificando o motivo e os registros relacionados.
 
 A RPC original `vs_criar` foi preservada para compatibilidade com clientes anteriores. Portanto, essa extensão não constitui uma proibição global de duplicidades em integrações antigas; o aviso e o registro da entrada adicional pertencem ao novo formulário/endpoint. Os controles de permissão de lançamento existentes continuam no servidor. Não há como comprovar fisicamente um recebimento apenas pelo software.
 
@@ -29,6 +29,6 @@ Excel e PDF incluem indicadores, ações por prazo/conclusão no período e audi
 
 ## Implantação e validação
 
-Aplicar `supabase/migrations/202610200001_acompanhamento_operacional.sql` e, em seguida, `202610200002_indices_acompanhamento.sql` antes de publicar o frontend. A migração é transacional e adiciona tabelas com RLS, RPCs autorizadas, coluna opcional de posição e trigger de captura de custo em eventos futuros. Escrita direta e adulteração da auditoria são negadas; CEO e usuários de outra loja não acessam os novos dados. Nenhum segredo é enviado ao frontend.
+Aplicar `supabase/migrations/202610200001_acompanhamento_operacional.sql` e, em seguida, `202610200002_indices_acompanhamento.sql` e `202610200003_aviso_estoque_legado.sql` antes de publicar o frontend. A migração é transacional e adiciona tabelas com RLS, RPCs autorizadas, coluna opcional de posição e trigger de captura de custo em eventos futuros. Escrita direta e adulteração da auditoria são negadas; CEO e usuários de outra loja não acessam os novos dados. Nenhum segredo é enviado ao frontend.
 
 `npm test` executa regressões de mercado e testes da extensão, incluindo versões, isolamento, conclusões sem efeitos no estoque, custo histórico e fronteiras de data em São Paulo. A publicação deve ser validada com contas/lojas temporárias e limpeza posterior. Não executar scripts de volume em dados reais.

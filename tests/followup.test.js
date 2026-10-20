@@ -26,6 +26,7 @@ test('acompanhamento adicional preserva estoque e aplica isolamento, autoria e v
   });
   await t.test('aviso adicional encontra estoque entre rodadas sem alterar a RPC original',async()=>{
    const legacy=await create({...p,ean:'7899000000102'});await advance('2026-11-04');const r=await rpc('vs_criar_acomp',[{...p,ean:'7899000000102',quantidade:3}]);assert.equal(r.isDuplicado,true);assert.equal(r.registroExistente.id,legacy.registro.id);
+   const withPosition=await rpc('vs_criar_acomp',[{...p,ean:'7899000000102',posicao_id:posA}]);assert.equal(withPosition.isDuplicado,true);assert.equal(withPosition.registroExistente.id,legacy.registro.id);
    const add=await rpc('vs_criar_acomp',[{...p,ean:'7899000000102',quantidade:3,motivo_adicional:'Recebimento adicional conferido fisicamente'}]);assert.equal(add.isDuplicado,false);
    const rows=(await panel()).itens.filter(i=>i.produtos.ean==='7899000000102');assert.equal(rows.length,2);assert.equal(rows.reduce((s,i)=>s+i.quantidade,0),13);assert.equal((await data()).eventos.filter(e=>e.acao==='ENTRADA_ADICIONAL').length,1);
   });
@@ -52,6 +53,10 @@ test('acompanhamento adicional preserva estoque e aplica isolamento, autoria e v
   await t.test('configuração complementar não muda a rodada e só a gestão altera',async()=>{
    const before=await panel();await rpc('vs_salvar_rotina',[ids.store,7,2]);const state=await data(),after=await panel();assert.equal(state.config.dias_alerta,7);assert.equal(after.rodadaId,before.rodadaId);assert.equal(after.itens.length,before.itens.length);
    await as('operator');await assert.rejects(rpc('vs_salvar_rotina',[ids.store,10,1]),/gestão/);await as();await assert.rejects(rpc('vs_salvar_rotina',[ids.store,0,1]),/check constraint/);
+  });
+  await t.test('aviso encontra o registro VAL já transferido para vencidos, sem cadastrar novamente',async()=>{
+   const entry=await create({...p,ean:'7899000000103',dataVencimento:'2026-11-05'});await advance('2026-11-05');await panel();
+   const r=await rpc('vs_criar_acomp',[{...p,ean:'7899000000103',setor:'vencidos',dataVencimento:'2026-11-05'}]);assert.equal(r.isDuplicado,true);assert.equal(r.registroExistente.id,entry.registro.id);
   });
  }finally{await db.close();}
 });
