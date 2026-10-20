@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {marketDB} from './helpers/market-db.js';
+import {metricValue} from '../js/followupReports.js';
 import {dailyQueue,followupMetrics,previousPeriod} from '../js/followupRules.js';
 
 test('acompanhamento adicional preserva estoque e aplica isolamento, autoria e versões',async t=>{
@@ -64,8 +65,8 @@ test('acompanhamento adicional preserva estoque e aplica isolamento, autoria e v
 test('indicadores separam risco atual, custo histórico, períodos e conclusão no horário brasileiro',()=>{
  const items=[{id:'i',produto_nome:'Produto',tipo:'VAL',status:'ativo',quantidade:8,data_vencimento:'2026-10-25',eventos:[{id:1,tipo:'Descarte',quantidade:2,ocorrido_em:'2026-10-20T02:00:00Z'},{id:2,tipo:'Descarte',quantidade:1,ocorrido_em:'2026-10-20T15:00:00Z'},{id:3,tipo:'Venda',quantidade:5,ocorrido_em:'2026-10-20T15:00:00Z'}],pendencias:[]}];
  const state={config:{dias_alerta:15,cadencia_dias:1},custos:[{item_id:'i',custo:3}],custos_eventos:[{evento_id:2,custo_unitario:2}],tarefas:[{estado:'concluida',prazo:'2026-10-19',concluido_em:'2026-10-20T02:00:00Z'},{estado:'aberta',prazo:'2026-10-19'}]};
- const m=followupMetrics(items,state,'2026-10-20','2026-10-20','2026-10-20');assert.equal(m.descarte,1);assert.equal(m.custoDescarte,2);assert.equal(m.vendasInformadas,5);assert.equal(m.valorRisco,24);assert.equal(m.concluidas,0);assert.equal(m.atrasadas,1);
- const dayBefore=followupMetrics(items,state,'2026-10-19','2026-10-19','2026-10-20');assert.equal(dayBefore.descarteSemCusto,2);assert.equal(dayBefore.noPrazo,1);assert.deepEqual(previousPeriod('2026-10-01','2026-10-20'),{from:'2026-09-11',to:'2026-09-30'});
+ const m=followupMetrics(items,state,'2026-10-20','2026-10-20','2026-10-20');assert.equal(m.descarte,1);assert.equal(m.custoDescarte,2);assert.equal(m.vendasInformadas,5);assert.equal(m.valorRisco,24);assert.equal(metricValue('valorRisco',m),24);const missing=followupMetrics(items,{...state,custos:[]},'2026-10-20','2026-10-20','2026-10-20');assert.match(metricValue('valorRisco',missing),/Não calculado/);assert.equal(m.concluidas,0);assert.equal(m.atrasadas,1);
+ const dayBefore=followupMetrics(items,state,'2026-10-19','2026-10-19','2026-10-20');assert.equal(dayBefore.descarteSemCusto,2);assert.match(metricValue('custoDescarte',dayBefore),/Não calculado/);assert.equal(dayBefore.noPrazo,1);assert.deepEqual(previousPeriod('2026-10-01','2026-10-20'),{from:'2026-09-11',to:'2026-09-30'});
  const q=dailyQueue(items,state,'2026-10-20');assert.equal(q.length,1);assert.match(q[0].reason,/fila diária/);
  assert.equal(dailyQueue([{...items[0],eventos:[{tipo:'REVISAO',ocorrido_em:'2026-10-20T15:00:00Z'}]}],state,'2026-10-20').length,0);
 });

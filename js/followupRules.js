@@ -12,13 +12,13 @@ export function dailyQueue(items,state,today=hojeBrasil()){
 export function previousPeriod(from,to){const length=Math.round((Date.parse(to)-Date.parse(from))/86400000)+1;const end=new Date(Date.parse(from)-86400000).toISOString().slice(0,10);return {from:new Date(Date.parse(from)-length*86400000).toISOString().slice(0,10),to:end};}
 export function followupMetrics(items,state,from,to,today=hojeBrasil()){
  const costs=new Map((state.custos||[]).map(c=>[c.item_id,Number(c.custo)]));const historic=new Map((state.custos_eventos||[]).map(c=>[String(c.evento_id),Number(c.custo_unitario)]));
- const result={unidadesRisco:0,valorRisco:0,semCustoRisco:0,unidadesVencidas:0,valorVencido:0,descarte:0,custoDescarte:0,descarteSemCusto:0,descarteVencido:0,custoDescarteVencido:0,vencidoSemCustoHistorico:0,vendasInformadas:0,avarias:0,concluidas:0,noPrazo:0,atrasadas:0};
+ const result={unidadesRisco:0,valorRisco:0,semCustoRisco:0,semCustoAVencer:0,semCustoVencidas:0,unidadesVencidas:0,valorVencido:0,descarte:0,custoDescarte:0,descarteSemCusto:0,descarteVencido:0,custoDescarteVencido:0,vencidoSemCustoHistorico:0,vendasInformadas:0,avarias:0,concluidas:0,noPrazo:0,atrasadas:0};
  for(const i of items){
   const days=i.data_vencimento?diasAte(i.data_vencimento,today):null;
   if(i.quantidade>0&&i.status==='ativo'&&['VAL','VENC'].includes(i.tipo)&&days!==null&&days<=(state.config?.dias_alerta??15)){
    if(days<=0){result.unidadesVencidas+=i.quantidade;if(costs.has(i.id))result.valorVencido+=i.quantidade*costs.get(i.id);}
    else{result.unidadesRisco+=i.quantidade;if(costs.has(i.id))result.valorRisco+=i.quantidade*costs.get(i.id);}
-   if(!costs.has(i.id))result.semCustoRisco+=i.quantidade;
+   if(!costs.has(i.id)){result.semCustoRisco+=i.quantidade;if(days<=0)result.semCustoVencidas+=i.quantidade;else result.semCustoAVencer+=i.quantidade;}
   }
   for(const e of i.eventos||[]){if(!inRange(day(e.ocorrido_em),from,to))continue;const qty=Math.max(0,e.quantidade||0);
    if(e.tipo==='Venda')result.vendasInformadas+=qty;if(e.tipo==='Avaria')result.avarias+=qty;
