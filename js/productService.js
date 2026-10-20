@@ -1,6 +1,7 @@
 import { buscarOpenFoodFacts } from './productLookup.js';
 import { supabase } from './supabaseClient.js';
 import { lifecycleService } from './lifecycleService.js';
+import { followupService } from './followupService.js';
 
 export const productService = {
   async fetchEanExternalApi(ean) {
@@ -9,9 +10,7 @@ export const productService = {
   async createEntry(payload) {
     const snapshot = await lifecycleService.carregar(payload.lojaId);
     if (snapshot.api_version !== 2) throw new Error('Atualização do servidor necessária antes de novos lançamentos. Contate o administrador.');
-    const { data, error } = await supabase.rpc('vs_criar', { p: payload });
-    if (error) throw error;
-    return data;
+    return followupService.create(payload);
   },
   async realizarBaixaProduto({ itemId, tipoBaixa, lojaId, qtd, motivo }) {
     const snapshot = await lifecycleService.carregar(lojaId);

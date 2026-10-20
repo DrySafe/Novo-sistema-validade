@@ -141,3 +141,17 @@ body:has(#app-screen:not(.hidden)) .public-footer { display: none; }
 .pwa-instructions { max-width: min(440px, calc(100vw - 32px)); }
 .pwa-instructions h2 { font-size: 20px; }
 .pwa-instructions p { margin: 16px 0; line-height: 1.6; }
+.follow-toolbar { display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between; }
+.follow-section { margin:20px 0;padding:18px;border:1px solid var(--border);border-radius:14px;background:var(--surface); }
+.follow-card { padding:14px;margin:10px 0;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow-wrap:anywhere; }
+.follow-card p { font-size:13px;line-height:1.6;margin:8px 0;color:var(--text-muted); }
+.follow-card .btn { margin:4px 6px 0 0; }
+.follow-metrics { display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px; }
+.follow-metrics .follow-card { display:flex;flex-direction:column;gap:8px;margin:0; }
+.follow-metrics strong { font-size:22px; }
+.follow-section details { overflow-x:auto; }
+.follow-table { width:100%;border-collapse:collapse;font-size:12px; }
+.follow-table th,.follow-table td { padding:10px;text-align:left;border-bottom:1px solid var(--border); }
+.follow-dialog form { padding-top:12px;border-top:1px solid var(--border); }
+.follow-dialog ol { font-size:12px;line-height:1.6; }
+.follow-toolbar .form-group { min-width:140px;flex:1; }

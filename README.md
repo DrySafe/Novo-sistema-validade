@@ -73,3 +73,9 @@ O ValidaSuper é um PWA: abra o site por HTTPS e use **Instalar aplicativo** na 
 O aplicativo instalado abre em janela própria, com ícone na tela inicial. Consultas e registros continuam exigindo internet. O service worker armazena apenas ícones e uma tela pública de ausência de conexão; não coloca páginas autenticadas, respostas do Supabase, relatórios ou credenciais no Cache Storage. O login mantém o armazenamento de sessão já utilizado pelo aplicativo.
 
 O build inclui `manifest.webmanifest`, `sw.js`, `offline.html` e `icons/`. Ao alterar o fallback ou seus ícones, incremente a versão do cache em `sw.js`. O navegador verifica atualizações do service worker sem reutilizar o cache HTTP do script.
+
+## Ações e resultados
+
+A extensão de acompanhamento mantém os saldos, ciclos e movimentações existentes. A nova aba **Ações e resultados** permite planejar ações com responsável/prazo, acompanhar resultados, consultar a fila diária e exportar indicadores em Excel/PDF. A gestão cadastra posições da loja e informa custos opcionais. Na tabela de cada lote, **Acompanhar** abre as opções do registro.
+
+O novo formulário alerta sobre estoque semelhante em outras rodadas; confirmar unidades adicionais exige justificativa e registra uma entrada separada auditada. Custos financeiros sem histórico não são reconstruídos. Consulte [o guia de acompanhamento](docs/acompanhamento-operacional.md) para permissões, limites e implantação.

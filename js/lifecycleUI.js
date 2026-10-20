@@ -1,6 +1,7 @@
 import { lifecycleService } from './lifecycleService.js';
 import * as reportService from './lifecycleReports.js';
 import { permissionsFor } from './permissions.js';
+import { openItemFollow } from './followupUI.js';
 import { formatDate as date, formatTimestamp, responsible, roundLabel } from './lifecycleRules.js';
 
 function node(tag, text, cls) {
@@ -116,6 +117,7 @@ function itemActions(item, profile, refresh) {
   }
   if (permissions.correcao && ['ativo', 'esgotado'].includes(item.status)) action('Corrigir', 'Corrigir quantidade', () => editar(item, 'Correção', refresh));
   action('Histórico', 'Histórico', () => historico(item, profile));
+  action('Acompanhar', 'Acompanhar ações e posição', () => openItemFollow(item, profile, refresh));
   return actions;
 }
 

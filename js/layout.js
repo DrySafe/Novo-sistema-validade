@@ -1,8 +1,9 @@
 export function initializeLayout(doc = document) {
   const toggle = doc.getElementById('nav-more-toggle');
   const secondary = doc.getElementById('nav-secondary');
-  const titles = { ciclos: 'Acompanhamento', validade: 'Validades', vencidos: 'Vencidos', uso_loja: 'Uso da loja', avarias: 'Avarias', equipe: 'Equipe' };
+  const titles = { ciclos: 'Acompanhamento', acompanhamento: 'Ações e resultados', validade: 'Validades', vencidos: 'Vencidos', uso_loja: 'Uso da loja', avarias: 'Avarias', equipe: 'Equipe' };
   const paths = {
+    acompanhamento: '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="m8 11 2 2 5-5M8 17h8"/>',
     ciclos: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>',
     validade: '<rect x="4" y="5" width="16" height="16" rx="3"/><path d="M8 3v4m8-4v4M4 10h16m-12 4h3m-3 3h6"/>',
     vencidos: '<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',

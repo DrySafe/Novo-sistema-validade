@@ -1,0 +1,18 @@
+import {hojeBrasil} from './lifecycleRules.js';
+import {followupMetrics,previousPeriod,actionRows,auditLabel,auditDetails} from './followupRules.js';
+export const metricLabels={unidadesRisco:'Unidades a vencer na janela atual',valorRisco:'Valor parcial a vencer (R$, custo informado)',semCustoRisco:'Unidades em risco/vencidas sem custo informado',unidadesVencidas:'Unidades vencidas com saldo',valorVencido:'Valor parcial vencido (R$, custo informado)',descarte:'Unidades de descarte registradas no período',custoDescarte:'Custo de descarte (R$, histórico informado)',descarteSemCusto:'Unidades descartadas sem custo histórico',descarteVencido:'Unidades descartadas já vencidas',custoDescarteVencido:'Custo de descarte de itens já vencidos (R$, histórico informado)',vencidoSemCustoHistorico:'Unidades descartadas já vencidas sem custo histórico',vendasInformadas:'Unidades de vendas informadas',avarias:'Unidades de saídas por avaria',concluidas:'Ações concluídas no período',noPrazo:'Ações concluídas no prazo',atrasadas:'Ações abertas atrasadas hoje',percentualPrazo:'Percentual de conclusão no prazo'};
+const moneyKeys=new Set(['valorRisco','valorVencido','custoDescarte','custoDescarteVencido']);
+export function reportRows(items,state,from,to){const curr=followupMetrics(items,state,from,to);const prev=previousPeriod(from,to);const before=followupMetrics(items,state,prev.from,prev.to);return Object.entries(metricLabels).filter(([k])=>state.gestor||!moneyKeys.has(k)).map(([k,label])=>({'Indicador':label,'Atual':curr[k]??'Sem base','Anterior':k.includes('Risco')||['unidadesVencidas','valorVencido','atrasadas'].includes(k)?'Posição atual; sem série histórica':before[k]??'Sem base'}));}
+export function exportFollowup(items,state,from,to,format){
+ const metrics=reportRows(items,state,from,to);const tasks=actionRows(state,items).filter(r=>r['Prazo']>=from&&r['Prazo']<=to||r['Concluída em']&&hojeBrasil(new Date(r['Concluída em']))>=from&&hojeBrasil(new Date(r['Concluída em']))<=to);
+ const events=(state.eventos||[]).filter(e=>hojeBrasil(new Date(e.ocorrido_em))>=from&&hojeBrasil(new Date(e.ocorrido_em))<=to).map(e=>({'Data':new Date(e.ocorrido_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}),'Ação':auditLabel(e.acao),'Responsável':e.usuario_nome,'Item ID':e.item_id||'','Tarefa ID':e.tarefa_id||'','Motivo':e.motivo,'Detalhes':auditDetails(e,state)}));
+ const identification=[{'Período':from+' a '+to,'Comparação':'Período anterior de mesma duração','Nota':'Risco é posição atual. Tarefas por prazo ou conclusão no período. Valores parciais; custo atual para risco e custo capturado no evento para descarte. Sem custo não significa zero. Vendas são informadas, não perdas evitadas. Concluir ação não movimenta saldo nem aplica preço.'}];
+ const sections=[['Indicadores',metrics],['Ações',tasks],['Auditoria',events],['Identificação',identification]];
+ if(format==='pdf'){
+  if(!window.jspdf?.jsPDF)throw new Error('Biblioteca PDF indisponível. Recarregue a página.');
+  const doc=new window.jspdf.jsPDF({orientation:'landscape'});sections.forEach(([title,rows],n)=>{if(n)doc.addPage();doc.setFontSize(12);doc.text('ValidaSuper — '+title+' — '+from+' a '+to,14,14);const keys=Object.keys(rows[0]||{'Informação':''});doc.autoTable({startY:22,head:[keys],body:rows.map(r=>keys.map(k=>String(r[k]??''))),styles:{fontSize:8,overflow:'linebreak'}});});doc.save('Acompanhamento_'+from+'_'+to+'.pdf');
+ }else{
+  if(!window.XLSX)throw new Error('Biblioteca Excel indisponível. Recarregue a página.');
+  const wb=window.XLSX.utils.book_new();for(const [title,rows]of sections)window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.json_to_sheet(rows),title);window.XLSX.writeFile(wb,'Acompanhamento_'+from+'_'+to+'.xlsx');
+ }
+}

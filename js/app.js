@@ -9,6 +9,7 @@ import { authService } from './authService.js';
 import { productService } from './productService.js';
 import { cycleService } from './cycleService.js';
 import { supabase } from './supabaseClient.js';
+import { renderFollowup, fillEntryPositions, confirmAdditional } from './followupUI.js';
 
 /* ============================================================
    SEÇÃO 1: CONFIGURAÇÕES, CONSTANTES E ESTADOS GLOBAIS
@@ -316,6 +317,7 @@ window.openBaixaModal = function(itemId, produtoId, nome, loteOrigem, qtd, imgUr
    ============================================================ */
 
 function setupEvents() {
+  const buscarProdutoLido = configurarBuscaProduto(document, ean => productService.fetchEanExternalApi(ean));
   const formOnboarding = document.getElementById('form-onboarding-store');
 
   if (formOnboarding) {
@@ -518,6 +520,9 @@ function setupEvents() {
       openAccessAdmin(accessContext, loadSectorData);
     } else {
       document.getElementById('form-entry').reset();
+      const entryPosition = document.getElementById('entry-position');
+      entryPosition.dataset.loja = activeLojaId || currentProfile.loja_id;
+      fillEntryPositions(entryPosition.dataset.loja);
       buscarProdutoLido();
       const entrySector = document.getElementById('entry-sector');
       if (entrySector) entrySector.value = currentSector === 'ciclos' ? 'validade' : currentSector;
@@ -558,6 +563,7 @@ function setupEvents() {
         quantidade: Number(document.getElementById('entry-qty').value),
         dataVencimento: document.getElementById('entry-expiration').value,
         localizacao: document.getElementById('entry-location').value,
+        posicao_id: document.getElementById('entry-position').value || null,
         motivo: document.getElementById('entry-reason')?.value || '',
         forcarInsercao: false
       };
@@ -566,25 +572,12 @@ function setupEvents() {
         let result = await productService.createEntry(payload);
 
         if (result.isDuplicado) {
-          const dup = result.registroExistente;
-          const dataHora = new Date(dup.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-          const quemCadastrou = dup.perfis?.nome || 'Outro Operador';
-
-          const confirmar = confirm(
-            `⚠️ ATENÇÃO: PRODUTO JÁ CADASTRADO NESTE LOTE!\n\n` +
-            `• Cadastrado por: ${quemCadastrou}\n` +
-            `• Local: ${dup.localizacao}\n` +
-            `• Data/Hora: ${dataHora}\n` +
-            `• Acompanhamento: ${dup.lote} | Lote físico: ${payload.lote} | Qtd: ${dup.quantidade} un\n\n` +
-            `Deseja adicionar esse produto novamente mesmo assim?`
-          );
-
-          if (confirmar) {
-            payload.forcarInsercao = true;
-            await productService.createEntry(payload);
-          } else {
-            return;
-          }
+          const reason = await confirmAdditional(result, payload.lojaId, currentProfile, loadSectorData);
+          if (!reason) return;
+          payload.motivo_adicional = reason;
+          payload.forcarInsercao = true;
+          result = await productService.createEntry(payload);
+          if (result.isDuplicado) throw new Error('Confira a justificativa da entrada adicional e tente novamente.');
         }
 
         window.closeAllModals();
@@ -691,7 +684,10 @@ async function loadSectorData() {
     if (version !== loadVersion) return;
     currentProfile.permissoes = snapshot.api_version === 2 ? snapshot.permissoes : { entrada: false, movimentacao: false, revisao: false, correcao: false, equipe: false };
     updateActionPermissions();
-    if (sector === 'ciclos') {
+    if (sector === 'acompanhamento') {
+      currentData = snapshot.itens;
+      await renderFollowup(snapshot, container, currentProfile, loadSectorData, loja, () => version === loadVersion);
+    } else if (sector === 'ciclos') {
       currentData = snapshot.itens; // Relatório inclui concluídos e transferidos.
       renderPainel(snapshot, container, currentProfile, loadSectorData);
     } else {
@@ -736,7 +732,7 @@ function updateActionPermissions() {
   const p = permissionsFor(currentProfile || {});
   if (accessContext) { p.equipe = accessContext.empresa_admin; p.criarLoja = accessContext.empresa_admin; p.editarLoja = accessContext.empresa_admin && accessContext.lojas.length > 0; }
   const add = document.getElementById('btn-open-modal');
-  add.classList.toggle('hidden', currentSector === 'equipe' ? !p.equipe : !p.entrada);
+  add.classList.toggle('hidden', currentSector === 'acompanhamento' || (currentSector === 'equipe' ? !p.equipe : !p.entrada));
   add.textContent = currentSector === 'equipe' ? '+ Cadastrar colaborador' : '+ Novo lançamento';
   document.getElementById('nav-item-equipe').classList.toggle('hidden', !p.equipe);
   document.getElementById('tab-btn-gestao-loja').classList.toggle('hidden', !p.editarLoja);
