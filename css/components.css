@@ -37,6 +37,8 @@ body.dark .btn-primary { color: #122a24; }
 .nav-secondary { display: none; position: fixed; right: 12px; bottom: calc(70px + env(safe-area-inset-bottom)); width: 220px; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md); }
 .nav-secondary.is-open { display: grid; gap: 4px; animation: enter .18s ease; }
 .nav-secondary .nav-item { flex-direction: row; justify-content: flex-start; gap: 12px; font-size: 14px; }
+.nav-item > .nav-icon { flex: 0 0 20px; }
+.nav-item > span:last-child { min-width: 0; text-align: left; overflow-wrap: anywhere; }
 .modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgb(17 32 43 / 38%); backdrop-filter: blur(4px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .2s ease, visibility .2s ease; }
 .modal.active { opacity: 1; visibility: visible; pointer-events: auto; }
 .modal-content { width: 100%; max-width: 560px; max-height: calc(100dvh - 40px); overflow-y: auto; padding: clamp(18px,3vw,28px); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-md); transform: translateY(8px); transition: transform .2s ease; }
@@ -49,8 +51,9 @@ body.dark .btn-primary { color: #122a24; }
 @keyframes enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @media(min-width:1000px) {
  .bottom-nav { flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 24px 12px; border-top: 0; border-right: 1px solid var(--border); gap: 6px; }
- .nav-item { flex: 0; flex-direction: row; justify-content: flex-start; gap: 12px; font-size: 13px; padding: 12px; }
+ .bottom-nav .nav-item { flex: 0 0 auto; width: 100%; flex-direction: row; justify-content: flex-start; gap: 12px; font-size: 13px; line-height: 1.4; padding: 12px; }
  .nav-secondary { display: contents; }
+ .nav-secondary.is-open { display: contents; animation: none; }
  .nav-more-toggle { display: none; }
 }
 @media(max-width:599px) {

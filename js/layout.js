@@ -1,7 +1,7 @@
 export function initializeLayout(doc = document) {
   const toggle = doc.getElementById('nav-more-toggle');
   const secondary = doc.getElementById('nav-secondary');
-  const titles = { ciclos: 'Acompanhamento', acompanhamento: 'Ações e resultados', validade: 'Validades', vencidos: 'Vencidos', uso_loja: 'Uso da loja', avarias: 'Avarias', equipe: 'Equipe' };
+  const titles = { ciclos: 'Acompanhamento', acompanhamento: 'Ações e resultados', validade: 'Validades', vencidos: 'Vencidos', uso_loja: 'Uso da loja', avarias: 'Avarias', equipe: 'Colaboradores' };
   const paths = {
     acompanhamento: '<rect x="4" y="4" width="16" height="17" rx="2"/><path d="m8 11 2 2 5-5M8 17h8"/>',
     ciclos: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/>',

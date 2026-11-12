@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
-export async function marketDB(){
+export async function marketDB({adminEmail=null}={}){
  const db=new PGlite();const ids={admin:'00000000-0000-0000-0000-000000000001',operator:'00000000-0000-0000-0000-000000000002',store:'00000000-0000-0000-0000-000000000010',other:'00000000-0000-0000-0000-000000000020',company:'00000000-0000-0000-0000-000000000099'};
  const q=async(sql,args)=>(await db.query(sql,args)).rows;
  await db.exec(`create role anon;create role authenticated;create role service_role;
@@ -20,6 +20,7 @@ export async function marketDB(){
  insert into auth.users(id) values('${ids.admin}'),('${ids.operator}');
  insert into perfis(id,nome,funcao,loja_id) values('${ids.admin}','Gestor teste','administrador','${ids.store}'),('${ids.operator}','Operador teste','operador','${ids.store}');
  insert into usuario_lojas(usuario_id,loja_id) values('${ids.admin}','${ids.store}'),('${ids.operator}','${ids.store}');`);
+ if(adminEmail)await q('update auth.users set email=$1 where id=$2',[adminEmail,ids.admin]);
  const migrations=new URL('../../supabase/migrations/',import.meta.url);
  for(const name of fs.readdirSync(migrations).sort())await db.exec(fs.readFileSync(new URL(name,migrations),'utf8'));
  await db.exec(`insert into vs_empresas(id,nome,administrador_id) values('${ids.company}','Mercado teste','${ids.admin}');update lojas set empresa_id='${ids.company}';

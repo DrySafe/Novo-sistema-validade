@@ -1,10 +1,12 @@
 # Cadastro de colaboradores e câmera
 
-O administrador da empresa encontra **Colaboradores** no topo do app, **Equipe** no menu e **Colaboradores e permissões** no perfil. O cadastro fica aberto e permite informar nome, login fixo, senha inicial, lojas e liberações. A permissão de cadastrar itens vem marcada, mas pode ser removida para dar somente acesso de acompanhamento. Nenhum e-mail pessoal do funcionário é necessário.
+O administrador da empresa encontra **Colaboradores** no topo do app e no menu, além de **Colaboradores e permissões** no perfil. No celular, o item do menu fica em **Mais → Colaboradores**. O cadastro fica aberto e permite informar nome, login fixo, senha inicial, lojas e liberações. A permissão de cadastrar itens vem marcada, mas pode ser removida para dar somente acesso de acompanhamento. Nenhum e-mail pessoal do funcionário é necessário.
 
 Depois de criar a conta, uma janela mostra login e senha inicial, com opção de copiar as credenciais para entrega por um canal privado. Não há envio automático. Ao fechar, a senha é apagada dessa janela e não pode ser consultada na lista de funcionários. O funcionário pode alterar a própria senha pelo perfil. As verificações de empresa/loja e permissões permanecem no servidor.
 
 O CEO continua acessando somente o painel separado de criação de administradores. Para operar uma empresa, é necessária a conta ADM dessa empresa; o botão não concede acesso empresarial ao CEO.
+
+Contas antigas com função `administrador`, mas tipo `legado` e sem empresa vinculada, não são administradores de empresa para as funções de cadastro. A manutenção explícita `supabase/maintenance/regularizar-administrador-legado.sql` permite regularizar uma conta previamente autorizada, informada na configuração da transação. Preserva as lojas, quantidades, histórico e vínculos existentes, adicionando apenas a empresa e seus vínculos. Aborta se houver lojas com empresa, outros usuários não CEO vinculados ou uma conta sem o papel adequado. Não é executada automaticamente no setup ou no login. Fazer backup antes de aplicá-la e conferir o contexto de acesso e a preservação dos dados depois.
 
 No lançamento, o botão de câmera abre o vídeo e solicita permissão. O vídeo usa reprodução silenciosa e inline. Quando BarcodeDetector não oferece EAN-13 e EAN-8, o app carrega o leitor ZXing local. O processamento da imagem ocorre no navegador. A leitura preenche o EAN e usa a mesma consulta de produto da digitação; não salva um lançamento automaticamente.
 
