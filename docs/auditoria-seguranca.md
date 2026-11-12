@@ -60,3 +60,7 @@ Splash do app e da Área Administrativa, animação discreta e indicação textu
 4. Não foi realizado teste físico de câmera em todos os modelos de celular nem pentest exaustivo da infraestrutura dos provedores. O comportamento de navegador e as permissões descritas acima foram testados concretamente.
 
 Migrações desta entrega: `202611120002_seguranca_e_limites.sql` e `202611120003_limite_sincronizacao.sql`. Edge Function publicada com `verify_jwt=true`, versão 8.
+
+## Evolução posterior: Gestores e verificações
+
+A entrega de hierarquia adicionou quatro tabelas com RLS (total atual: 28), índice de CEO único, administradores por loja, aprovação cadastral e notificações com leitura individual. O CEO agora cria Gestores; os antigos administradores de empresa passaram a esse papel, sem mudança de lojas/credenciais. Ver [hierarquia-e-notificacoes.md](hierarquia-e-notificacoes.md). Os números e versões da auditoria acima registram a entrega anterior; a nova Edge Function é a versão 9, ainda com verificação de JWT.

@@ -19,15 +19,15 @@ test('login sem e-mail, sem cadastro público e troca de senha com reautenticaç
 test('Liberações apresenta lojas atribuídas, login fixo e envia somente operações selecionadas',async()=>{
  const dom=new JSDOM('<main></main>',{url:'https://app.test'});globalThis.window=dom.window;globalThis.document=dom.window.document;window.supabase={createClient:()=>({})};
  const {authService}=await import('../js/authService.js');const {renderCompanyAccess}=await import('../js/accessAdmin.js');
- const oldGet=authService.getEmployees,oldSave=authService.saveAccess;
- const saved=[];authService.getEmployees=async()=>[{id:'funcionario',nome:'Maria <img>',login:'maria',lojas:['a'],liberacoes:{revisao:true}}];authService.saveAccess=async(...args)=>saved.push(args);
+ const oldGet=authService.getEmployees,oldSave=authService.savePerson;
+ const saved=[];authService.getEmployees=async()=>[{id:'funcionario',nome:'Maria <img>',login:'maria',lojas:['a'],liberacoes:{revisao:true}}];authService.savePerson=async(...args)=>saved.push(args);
  try{
  const container=document.querySelector('main');await renderCompanyAccess(container,{empresa_admin:true,lojas:[{id:'a',nome:'Centro'},{id:'b',nome:'Norte'}]});
  const edit=container.querySelector('.access-members form');assert.equal(edit.querySelectorAll('input[type=text]')[1].readOnly,true);assert.equal(edit.querySelector('img'),null);
  const stores=edit.querySelectorAll('fieldset')[0];assert.equal(stores.querySelector('[value=a]').checked,true);assert.equal(stores.querySelector('[value=b]').checked,false);
  stores.querySelector('[value=a]').checked=false;stores.querySelector('[value=b]').checked=true;
- await edit.onsubmit(new window.Event('submit',{cancelable:true}));assert.deepEqual(saved[0],['funcionario','Maria <img>',['b'],{entrada:false,movimentacao:false,revisao:true,correcao:false}]);
- }finally{authService.getEmployees=oldGet;authService.saveAccess=oldSave;dom.window.close();}
+ await edit.onsubmit(new window.Event('submit',{cancelable:true}));assert.deepEqual(saved[0],['funcionario','Maria <img>','funcionario',['b'],{entrada:false,movimentacao:false,revisao:true,correcao:false},[]]);
+ }finally{authService.getEmployees=oldGet;authService.savePerson=oldSave;dom.window.close();}
 });
 
 test('ADM cadastra colaborador na empresa e entrega credenciais uma vez; funcionário e CEO não criam',async()=>{

@@ -37,12 +37,15 @@ export function accountHandler(admin) {
    const { data: { user }, error: authError } = await admin.auth.getUser(token);
    if (authError || !user) return response({ error: 'Sessão inválida' }, 401);
    const body = await readBody(req);
-   const empresa = body.acao === 'administrador';
-   if (!empresa && body.acao !== 'funcionario') return response({ error: 'Operação inválida' }, 400);
-   if (empresa && ['nome','lojas','vincularExistente'].some(key=>Object.hasOwn(body,key))) return response({ error: 'O CEO cadastra somente e-mail e senha de um novo ADM' }, 400);
-   const nome = empresa ? 'Administrador da empresa' : body.nome;
+   const empresa = ['gestor','administrador'].includes(body.acao);
+   const papel=empresa?'gestor':body.acao==='administrador_loja'?'loja_admin':'funcionario';
+   if (!empresa && !['funcionario','administrador_loja'].includes(body.acao)) return response({ error: 'Operação inválida' }, 400);
+   if (empresa && ['nome','lojas','vincularExistente'].some(key=>Object.hasOwn(body,key))) return response({ error: 'O CEO cadastra somente e-mail e senha de um novo Gestor' }, 400);
+   const nome = empresa ? 'Gestor da empresa' : body.nome;
    const lojas = empresa ? [] : body.lojas;
    const { password, liberacoes } = body;
+   const edicao=body.edicao_lojas??[];
+   if(!Array.isArray(edicao)||edicao.length>100||edicao.some(id=>typeof id!=='string'||!lojas.includes(id))||new Set(edicao).size!==edicao.length||(papel!=='loja_admin'&&edicao.length))return response({error:'Liberação de edição inválida'},400);
    if (typeof nome !== 'string' || !nome.trim() || nome.length > 255 || !Array.isArray(lojas) || lojas.length>100 || lojas.some(id => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) || new Set(lojas).size!==lojas.length) return response({ error: 'Informe nome e lojas válidas' }, 400);
    if(!empresa && (!lojas.length || !liberacoes || Array.isArray(liberacoes) || Object.keys(liberacoes).length!==4 || !['entrada','movimentacao','revisao','correcao'].every(k=>typeof liberacoes[k]==='boolean')))return response({error:'Selecione lojas e liberações válidas'},400);
    const login = typeof body.login === 'string' ? body.login.trim().toLowerCase() : '';
@@ -53,14 +56,14 @@ export function accountHandler(admin) {
     if (new TextEncoder().encode(password).length > 72) return response({ error: 'Senha longa demais. Reduza o tamanho, especialmente se usar acentos ou emojis.' }, 400);
    }
    // A reserva valida a hierarquia e define um UUID de uso único antes de criar Auth.
-   const { data: nonce, error: reserveError } = await admin.rpc('vs_reservar_conta', { p_ator: user.id, p_email: email, p_tipo: empresa ? 'empresa' : 'funcionario' });
+   const { data: nonce, error: reserveError } = await admin.rpc('vs_preparar_conta', { p_ator:user.id,p_email:email,p_papel:papel,p_lojas:lojas });
    reservation = nonce;
    if (reserveError?.code==='PT429')return new Response(JSON.stringify({error:'Limite de cadastros atingido. Aguarde alguns minutos.'}),{status:429,headers:{...cors,...originHeaders,'Content-Type':'application/json','Retry-After':'600','Cache-Control':'no-store'}});
    if (reserveError) return response({ error: 'Conta não autorizada para este cadastro' }, 403);
    const { data: created, error: createError } = await admin.auth.admin.createUser({ id: nonce, email, password, email_confirm: true, user_metadata: { nome: nome.trim() } });
    if (createError || !created?.user) return creationFailure(createError,response);
    const targetId = createdId = created.user.id;
-   const { data, error } = await admin.rpc(empresa ? 'vs_provisionar_empresa' : 'vs_provisionar_funcionario', empresa ? { p_ator: user.id, p_usuario: targetId, p_nome: nome.trim(), p_lojas: lojas } : { p_ator: user.id, p_usuario: targetId, p_nome: nome.trim(), p_login: login, p_lojas: lojas, p_liberacoes: liberacoes });
+   const { data, error } = await admin.rpc(empresa ? 'vs_provisionar_empresa' : 'vs_provisionar_pessoa', empresa ? { p_ator: user.id, p_usuario: targetId, p_nome: nome.trim(), p_lojas: lojas } : { p_ator: user.id, p_usuario: targetId, p_nome: nome.trim(), p_login: login, p_lojas: lojas, p_liberacoes: liberacoes,p_papel:papel,p_edicao:edicao });
    if (error) {
     if (createdId) await admin.auth.admin.deleteUser(createdId);
     createdId = undefined;

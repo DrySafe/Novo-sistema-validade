@@ -11,7 +11,7 @@
  <main class="ceo-shell">
   <a href="index.html" class="ceo-brand">ValidaSuper</a>
   <div class="workspace-title-row"><h1>Área Administrativa</h1><button type="button" id="btn-menu-help" class="menu-help-button" aria-label="Ajuda sobre Área Administrativa" aria-haspopup="dialog"><span aria-hidden="true">ⓘ</span></button></div>
-  <p class="ceo-intro">Acesso exclusivo do CEO para cadastrar administradores. Este painel não acessa contas, lojas ou dados das empresas.</p>
+  <p class="ceo-intro">Acesso exclusivo do CEO para cadastrar Gestores. Este painel não acessa contas, lojas ou dados das empresas.</p>
   <p id="ceo-status" role="status" aria-live="polite"></p>
   <form id="ceo-login">
    <div class="form-group"><label for="ceo-email">E-mail CEO</label><input id="ceo-email" type="email" autocomplete="username" required></div>
@@ -19,12 +19,12 @@
    <button class="btn btn-primary" type="submit">Entrar na Área Administrativa</button>
   </form>
   <section id="ceo-panel" hidden>
-   <h2>Criar conta ADM</h2>
-   <p class="ceo-intro">O novo administrador cadastra suas próprias lojas e funcionários. Ele deverá definir uma senha pessoal no primeiro acesso. Para adicionar colaboradores a uma empresa existente, entre no app com o administrador dessa empresa e abra Colaboradores.</p>
+   <h2>Criar conta Gestor</h2>
+   <p class="ceo-intro">O novo Gestor cadastra suas próprias lojas e funcionários. Ele deverá definir uma senha pessoal no primeiro acesso. Para adicionar colaboradores a uma empresa existente, entre no app com o Gestor ou administrador autorizado dessa empresa e abra Colaboradores.</p>
    <form id="ceo-create-admin">
-    <div class="form-group"><label for="new-admin-email">E-mail do novo ADM</label><input id="new-admin-email" type="email" autocomplete="off" required></div>
-    <div class="form-group"><label for="new-admin-password">Senha inicial do novo ADM</label><input id="new-admin-password" type="password" autocomplete="new-password" minlength="6" maxlength="72" required></div>
-    <button class="btn btn-primary" type="submit">Criar conta ADM</button>
+    <div class="form-group"><label for="new-admin-email">E-mail do novo Gestor</label><input id="new-admin-email" type="email" autocomplete="off" required></div>
+    <div class="form-group"><label for="new-admin-password">Senha inicial do novo Gestor</label><input id="new-admin-password" type="password" autocomplete="new-password" minlength="6" maxlength="72" required></div>
+    <button class="btn btn-primary" type="submit">Criar conta Gestor</button>
    </form>
    <button id="ceo-logout" class="btn btn-secondary" type="button">Sair da Área Administrativa</button>
   </section>

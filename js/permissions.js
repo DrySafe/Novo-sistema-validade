@@ -1,5 +1,6 @@
 export function permissionsFor(profile = {}) {
   if (profile.permissoes) return profile.permissoes;
+  if(['gestor','loja_admin'].includes(profile.tipo_conta))return {entrada:true,movimentacao:true,revisao:true,correcao:true,equipe:true,editarLoja:profile.tipo_conta==='gestor',criarLoja:profile.tipo_conta==='gestor'};
   if (profile.tipo_conta === 'funcionario') return {
     entrada: profile.liberacoes?.entrada === true,
     movimentacao: profile.liberacoes?.movimentacao === true,

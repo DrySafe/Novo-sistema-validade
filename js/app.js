@@ -1,5 +1,7 @@
+import {renderNotifications,setNotificationCount} from './notificationsUI.js';
+import {notificationService} from './notificationService.js';
 import {beginLoading,finishBoot,showSectionLoading,finishSectionLoading} from './loading.js';
-import { openAccessAdmin, openPasswordChange, renderCompanyAccess } from './accessAdmin.js';
+import { openAccessAdmin, openPasswordChange, renderCompanyAccess, canManagePeople, isCompanyManager } from './accessAdmin.js';
 import { permissionsFor } from './permissions.js';
 import { configurarBuscaProduto } from './productLookup.js';
 import { setupScanner } from './scannerUI.js';
@@ -54,15 +56,18 @@ async function checkSession() {
 
     if (currentProfile) {
       accessContext = await authService.getAccessContext();
+      document.getElementById('display-user-name').textContent=currentProfile.nome;
+      document.getElementById('user-initials').textContent=(currentProfile.nome||'U').trim().split(/\s+/).map(p=>p[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
       currentProfile.accessContext = accessContext;
       if (accessContext.dono_app) {
         await supabase.auth.signOut({ scope: 'local' });
         activeLojaId=null; localStorage.removeItem('active_loja_id'); currentData=[];
         showLoginScreen();
-        const message=document.getElementById('login-alert'); message.textContent='Seu acesso CEO fica na Área Administrativa, no rodapé. Para cadastrar colaboradores, entre no app com a conta de administrador da empresa e abra Colaboradores.'; message.classList.remove('hidden');
+        const message=document.getElementById('login-alert'); message.textContent='Seu acesso CEO fica na Área Administrativa, no rodapé. Para operar a empresa, use uma conta de Gestor, administrador de loja ou colaborador.'; message.classList.remove('hidden');
         return;
       }
       if (accessContext.senha_inicial) {
+        document.getElementById('btn-notifications').classList.add('hidden');
         loginScreen.classList.add('hidden'); appScreen.classList.remove('hidden');
         document.querySelector('.workspace-header').classList.add('hidden'); document.getElementById('bottom-nav').classList.add('hidden');
         document.getElementById('cycle-section-container').classList.add('hidden');
@@ -73,10 +78,12 @@ async function checkSession() {
         change.onclick=()=>openPasswordChange(async()=>{window.closeAllModals();await checkSession();}); gate.append(change);
         return;
       }
-      document.getElementById('btn-access-admin').classList.toggle('hidden', !accessContext.empresa_admin);
+      document.getElementById('btn-access-admin').classList.toggle('hidden', !canManagePeople(accessContext));
       document.getElementById('btn-access-admin').textContent = 'Colaboradores e permissões';
-      document.getElementById('btn-company-team').classList.toggle('hidden', !accessContext.empresa_admin);
+      document.getElementById('btn-company-team').classList.toggle('hidden', !canManagePeople(accessContext));
       document.getElementById('btn-change-password').classList.remove('hidden');
+      document.getElementById('btn-notifications').classList.remove('hidden');
+      refreshNotificationCount();
       if (!accessContext.lojas.length) {
         activeLojaId=null; userLojas=[]; localStorage.removeItem('active_loja_id');
         document.getElementById('store-selector-container').classList.add('hidden');
@@ -86,8 +93,8 @@ async function checkSession() {
         document.querySelector('.workspace-header').classList.add('hidden');
         document.getElementById('cycle-section-container').classList.add('hidden');
         const empty = document.getElementById('product-card-container'); empty.classList.remove('hidden');
-        empty.textContent = accessContext.empresa_admin ? 'Nenhuma loja cadastrada. Crie a primeira unidade para começar.' : 'Nenhuma loja liberada para sua conta. Solicite acesso ao administrador.';
-        if (accessContext.empresa_admin) {
+        empty.textContent = isCompanyManager(accessContext) ? 'Nenhuma loja cadastrada. Crie a primeira unidade para começar.' : 'Nenhuma loja liberada para sua conta. Solicite acesso ao Gestor ou administrador da sua loja.';
+        if (isCompanyManager(accessContext)) {
           const create = document.createElement('button'); create.type='button'; create.className='btn btn-primary'; create.textContent='Criar primeira loja';
           create.onclick=()=>document.getElementById('tab-btn-nova-loja').click(); empty.append(create);
         }
@@ -318,6 +325,7 @@ window.openBaixaModal = function(itemId, produtoId, nome, loteOrigem, qtd, imgUr
 function setupEvents() {
   const buscarProdutoLido = configurarBuscaProduto(document, ean => productService.fetchEanExternalApi(ean));
   stopEntryScanner = setupScanner(document);
+  document.getElementById('btn-notifications').onclick=()=>{window.closeAllModals();document.querySelector('[data-sector=notificacoes]').click();};
   document.getElementById('btn-company-team').onclick = () => { window.closeAllModals(); document.getElementById('nav-item-equipe').click(); };
   document.addEventListener('click',event=>{if(event.target.closest('[data-close-modal]'))window.closeAllModals();if(event.target.closest('[data-open-profile]'))window.openUserProfileModal();});
   const formOnboarding = document.getElementById('form-onboarding-store');
@@ -343,9 +351,10 @@ function setupEvents() {
         usuarioId: currentProfile.id
       };
 
+      const submit=formOnboarding.querySelector('[type=submit]');if(submit.disabled)return;submit.disabled=true;
       try {
         if (storeId) {
-          await authService.updateStore(storeId, {
+          const storeResult=await authService.updateStore(storeId, {
             numero_loja: payloadLoja.numeroLoja,
             nome: payloadLoja.nomeLoja,
             razao_social: payloadLoja.razaoSocial,
@@ -359,7 +368,7 @@ function setupEvents() {
             cep: payloadLoja.cep,
             telefone: payloadLoja.telefone
           });
-          alert('Dados da loja atualizados com sucesso!');
+          alert(storeResult?.pendente?'Alteração enviada. Os dados vigentes permanecem até o Gestor aprovar em Notificações.':'Dados da loja atualizados com sucesso!');
         } else {
           const novaLoja = await authService.createStoreForUser(payloadLoja);
           activeLojaId = novaLoja.id;
@@ -372,7 +381,7 @@ function setupEvents() {
         await checkSession();
       } catch (err) {
         alert('Erro ao salvar loja: ' + err.message);
-      }
+      } finally {submit.disabled=false;}
     });
   }
 
@@ -386,12 +395,13 @@ function setupEvents() {
       .eq('id', lojaAtivaId)
       .maybeSingle();
 
+    if(!accessContext?.lojas.find(l=>l.id===lojaAtivaId)?.pode_editar_cadastro&&!isCompanyManager(accessContext)){alert('O Gestor ainda não liberou o pedido de edição desta loja.');return;}
     const dados = loja || currentProfile.lojas || {};
 
     setTimeout(() => {
-      document.getElementById('modal-store-form-title').textContent = 'EDITAR DADOS DA UNIDADE';
-      document.getElementById('modal-store-form-sub').textContent = 'Altere as informações cadastrais da loja selecionada.';
-      document.getElementById('btn-submit-store-form').textContent = 'Salvar Alterações';
+      document.getElementById('modal-store-form-title').textContent = isCompanyManager(accessContext)?'EDITAR DADOS DA UNIDADE':'SOLICITAR ALTERAÇÃO DA LOJA';
+      document.getElementById('modal-store-form-sub').textContent = isCompanyManager(accessContext)?'Altere as informações cadastrais da loja selecionada.':'Os dados vigentes só mudarão após a aprovação do Gestor.';
+      document.getElementById('btn-submit-store-form').textContent = isCompanyManager(accessContext)?'Salvar Alterações':'Enviar para verificação';
 
       document.getElementById('ob-store-id').value = dados.id || lojaAtivaId;
       if (document.getElementById('ob-store-num')) document.getElementById('ob-store-num').value = dados.numero_loja || '01';
@@ -659,10 +669,11 @@ function setupEvents() {
 let loadVersion = 0;
 let refreshing = false;
 async function loadSectorData() {
+  if(!currentProfile||!accessContext||accessContext.dono_app||accessContext.senha_inicial)return;
   const version = ++loadVersion;
   const sector = currentSector;
   const loja = activeLojaId || currentProfile?.loja_id;
-  if (!loja || !accessContext?.lojas.length) return;
+  if ((!loja || !accessContext?.lojas.length)&&!['notificacoes','equipe'].includes(sector)) return;
   const cards = document.getElementById('product-card-container');
   const cycles = document.getElementById('cycle-section-container');
   const container = sector === 'ciclos' ? cycles : cards;
@@ -671,6 +682,7 @@ async function loadSectorData() {
   const sameView = viewport.dataset.viewKey === viewKey;
   const scrollTop = sameView ? viewport.scrollTop : 0;
   viewport.dataset.viewKey = viewKey;
+  document.querySelector('.workspace-context').classList.toggle('hidden',['notificacoes','equipe'].includes(sector));
   cycles?.classList.toggle('hidden', sector !== 'ciclos');
   cards?.classList.toggle('hidden', sector === 'ciclos');
   if (!container) return;
@@ -679,6 +691,11 @@ async function loadSectorData() {
   refreshing = true;
   try {
     updateActionPermissions();
+    if (sector === 'notificacoes') {
+      document.querySelector('.workspace-header').classList.remove('hidden');
+      await renderNotifications(container,{...accessContext,usuario_id:currentProfile.id,loja_ativa:activeLojaId},checkSession,()=>version===loadVersion);
+      return;
+    }
     if (sector === 'equipe') {
       container.className = '';
       if (version !== loadVersion) return;
@@ -716,7 +733,10 @@ setInterval(() => {
 }, 60000);
 
 function showLoginScreen() {
+  loadVersion++;refreshing=false;currentData=[];currentCycle=null;
   document.getElementById('btn-company-team')?.classList.add('hidden');
+  document.getElementById('btn-notifications')?.classList.add('hidden');
+  setNotificationCount(0);
   accessContext = null;
   document.getElementById('btn-access-admin')?.classList.add('hidden');
   document.getElementById('btn-change-password')?.classList.add('hidden');
@@ -736,12 +756,14 @@ function showLoginScreen() {
 
 function updateActionPermissions() {
   const p = permissionsFor(currentProfile || {});
-  if (accessContext) { p.equipe = accessContext.empresa_admin; p.criarLoja = accessContext.empresa_admin; p.editarLoja = accessContext.empresa_admin && accessContext.lojas.length > 0; }
+  if (accessContext) {p.equipe=canManagePeople(accessContext);p.criarLoja=isCompanyManager(accessContext);p.editarLoja=!!accessContext.lojas.find(l=>l.id===activeLojaId)?.pode_editar_cadastro;}
   const add = document.getElementById('btn-open-modal');
-  add.classList.toggle('hidden', currentSector === 'acompanhamento' || (currentSector === 'equipe' ? !p.equipe : !p.entrada));
+  add.classList.toggle('hidden', ['acompanhamento','notificacoes'].includes(currentSector) || (currentSector === 'equipe' ? !p.equipe : !p.entrada));
   add.textContent = currentSector === 'equipe' ? '+ Cadastrar colaborador' : '+ Novo lançamento';
   document.getElementById('nav-item-equipe').classList.toggle('hidden', !p.equipe);
   document.getElementById('tab-btn-gestao-loja').classList.toggle('hidden', !p.editarLoja);
+  document.getElementById('tab-btn-gestao-loja').textContent=accessContext&&isCompanyManager(accessContext)?'Editar dados da loja':'Solicitar alteração da loja';
+  document.querySelector('.report-menu')?.classList.toggle('hidden',['notificacoes','equipe'].includes(currentSector));
   document.getElementById('tab-btn-nova-loja').classList.toggle('hidden', !p.criarLoja);
   const admin = ['administrador', 'admin'].includes(currentProfile?.funcao);
   for (const option of document.querySelectorAll('#emp-role option, #edit-user-role option')) option.disabled = !admin && option.value !== 'operador';
@@ -772,3 +794,9 @@ function renderSectorItems(items, container, sector, loja) {
   });
   filter.onchange = () => { sectorFilters.set(key, filter.value); render(); }; render();
 }
+
+async function refreshNotificationCount(){
+ if(!currentProfile||!accessContext||accessContext.dono_app||accessContext.senha_inicial)return;
+ const user=currentProfile.id;try{const n=await notificationService.count();if(currentProfile?.id===user&&accessContext&&!accessContext.senha_inicial)setNotificationCount(n);}catch{ /* A caixa permanece acessível para tentar novamente. */ }
+}
+setInterval(()=>{if(!document.hidden)refreshNotificationCount();},60000);

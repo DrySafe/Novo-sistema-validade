@@ -46,6 +46,7 @@
 
       <div class="topbar-actions">
         <div style="display: flex; gap: 0.5rem; align-items: center;">
+<button type="button" id="btn-notifications" class="btn-icon notifications-bell hidden" aria-label="Notificações" title="Notificações"><span aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><span id="notification-count" class="notification-count" hidden>0</span></button>
           <!-- Badge de Iniciais do Usuário (Abre Painel de Gestão) -->
           <button type="button" id="btn-user-avatar-badge" class="avatar-badge" data-open-profile title="Minha Conta &amp; Gestão" aria-label="Minha Conta &amp; Gestão">
             <span id="user-initials">--</span>
@@ -119,7 +120,7 @@
       
       
       
-    <div class="nav-secondary" id="nav-secondary"><button class="nav-item" data-sector="acompanhamento" type="button"><span class="nav-icon">☑</span><span>Ações e resultados</span></button><button class="nav-item" data-sector="uso_loja" type="button">
+    <div class="nav-secondary" id="nav-secondary"><button class="nav-item" data-sector="notificacoes" type="button"><span class="nav-icon">🔔</span><span>Notificações</span></button><button class="nav-item" data-sector="acompanhamento" type="button"><span class="nav-icon">☑</span><span>Ações e resultados</span></button><button class="nav-item" data-sector="uso_loja" type="button">
         <span class="nav-icon">🏪</span>
         <span>Uso Loja</span>
       </button><button class="nav-item" data-sector="avarias" type="button">

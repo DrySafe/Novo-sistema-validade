@@ -1,4 +1,13 @@
 const HELP = {
+ notificacoes: {
+  title:'Notificações',intro:'Central de pedidos, decisões cadastrais, avisos da equipe e ocorrências importantes das lojas autorizadas.',
+  sections:[
+   ['Organize a caixa',['Filtre por loja, perfil de origem, tipo de registro e leitura. O contador do sino reúne as notificações não lidas a que você tem acesso. As leituras são individuais.','A caixa mostra até 50 registros por página. O aplicativo atualiza os alertas a cada minuto enquanto está aberto; não envia e-mails, SMS ou push externo.']],
+   ['Verificação cadastral',['Administradores com liberação podem enviar alterações das suas lojas. Os dados vigentes continuam em uso até o Gestor decidir.','O Gestor abre Verificar alteração, compara cada campo vigente e proposto e aprova ou recusa. A recusa exige justificativa. O solicitante recebe a decisão. Administradores e colaboradores não aprovam pedidos.']],
+   ['Comunicação e alertas',['Use Nova comunicação para avisar sobre uma loja autorizada. Colaboradores enviam à administração ou ao Gestor; administradores também podem avisar a equipe da sua loja.','Correções de quantidade, descartes, avarias, vencimentos e ações atrasadas ou impedidas geram alertas para os responsáveis autorizados. Vencimentos e algumas saídas são resumidos para evitar excesso de mensagens. Entradas e vendas rotineiras não geram uma notificação por item.']],
+   ['Papéis e acesso',['Somente o CEO cria contas de Gestor. O Gestor cria lojas e define seus administradores; cada administrador cadastra colaboradores apenas nas lojas que administra.','Notificações de outras empresas ou lojas sem acesso não ficam disponíveis. A confirmação de leitura de uma pessoa não marca as mensagens dos colegas.']]
+  ]
+ },
  ciclos: {
   title: 'Ciclos e acompanhamento',
   intro: 'Visão geral dos lotes da loja selecionada. Use este painel para localizar pendências e acompanhar o estoque ao longo das rodadas de conferência.',
@@ -60,21 +69,21 @@ const HELP = {
  },
  equipe: {
   title: 'Colaboradores',
-  intro: 'O administrador da empresa cadastra funcionários e define a quais lojas e operações cada um terá acesso. Não é necessário e-mail pessoal para o colaborador.',
+  intro: 'O Gestor gerencia a empresa e define administradores para uma ou mais lojas. Cada administrador cadastra colaboradores somente nas lojas que administra. Não é necessário e-mail pessoal para o colaborador.',
   sections: [
    ['Cadastre o acesso', ['Preencha nome, login e senha inicial de pelo menos 6 caracteres. O login é único no aplicativo e não pode ser alterado depois.', 'Selecione pelo menos uma loja e confira as liberações. Cadastrar itens vem marcado inicialmente; desmarque se o colaborador deve apenas consultar os dados.']],
-   ['Escolha as permissões', ['Cadastrar itens permite novas entradas. Movimentações autoriza saídas; revisão permite conferir saldo e preço; correção de quantidade exige a liberação específica e deixa auditoria.', 'Sem liberações de operação, o colaborador mantém a consulta às lojas selecionadas. Ele não passa a ser administrador nem pode criar empresas ou outros usuários.']],
+   ['Escolha papéis, lojas e permissões', ['Somente o Gestor define o papel Administrador de loja. Ele também libera, por loja, o envio de pedidos de alteração cadastral. As alterações só passam a valer após sua aprovação em Notificações.','Cadastrar itens permite novas entradas. Movimentações autoriza saídas; revisão permite conferir saldo e preço; correção de quantidade exige a liberação específica e deixa auditoria.', 'Sem liberações de operação, o colaborador mantém a consulta às lojas selecionadas. Ele não passa a ser administrador nem pode criar empresas ou outros usuários.']],
    ['Entregue e gerencie', ['Após criar, copie as credenciais e entregue por um canal privado. A senha inicial deixa de ser exibida quando a janela é fechada; não há envio automático.', 'No primeiro acesso, o colaborador deve trocar a senha inicial por uma senha pessoal de pelo menos 6 caracteres; pode usar somente números. Depois pode alterá-la pelo perfil. Acesse o cadastro na lista para ajustar lojas e liberações; desmarcar todas as lojas suspende o acesso aos dados.']],
-   ['Empresa e Área Administrativa', ['Este menu gerencia funcionários da sua empresa. A Área Administrativa do rodapé é separada e exclusiva do CEO para criar novos administradores de empresas.']]
+   ['Empresa e Área Administrativa', ['Este menu gerencia funcionários da sua empresa. A Área Administrativa do rodapé é separada e exclusiva do único CEO para criar novos Gestores. O Gestor opera somente a sua empresa e não é CEO.']]
   ]
  },
  administrativo: {
   title: 'Área Administrativa',
-  intro: 'Área exclusiva do CEO para autorizar novos administradores de empresas no aplicativo.',
+  intro: 'Área exclusiva do único CEO para criar contas de Gestor. O Gestor administra a própria empresa, sem receber acesso CEO.',
   sections: [
-   ['Criação de administrador', ['Entre com a conta CEO. Informe somente e-mail e senha inicial do novo administrador. Ele deverá definir sua senha pessoal no primeiro acesso e cadastrar suas próprias lojas.']],
+   ['Criação de Gestor', ['Entre com a conta CEO. Informe somente e-mail e senha inicial do novo Gestor. Ele deverá definir sua senha pessoal no primeiro acesso e cadastrar suas próprias lojas.']],
    ['Cadastro de funcionários', ['Para adicionar funcionários a uma empresa existente, entre no app com o administrador daquela empresa e abra Colaboradores. Selecione lojas e liberações para cada pessoa.']],
-   ['Separação dos acessos', ['O CEO cria contas ADM, mas não acessa as lojas, dados ou senhas pessoais dessas empresas. Este painel não oferece acesso às contas que foram criadas.']]
+   ['Separação dos acessos', ['O CEO cria contas de Gestor, mas não acessa as lojas, dados ou senhas pessoais dessas empresas. Não há criação de outras contas CEO pelo aplicativo. Este painel não oferece acesso às contas que foram criadas.']]
   ]
  }
 };

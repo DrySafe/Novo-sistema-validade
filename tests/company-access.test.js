@@ -35,7 +35,7 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
  for(const name of fs.readdirSync(migrations).sort()) await db.exec(fs.readFileSync(new URL(name,migrations),'utf8'));
  await db.exec(`create trigger profile after insert on auth.users for each row execute function handle_new_user_profile();insert into vs_donos values('${id(1)}');`);
  await t.test('somente dono provisiona empresa; nova conta sem vínculo não cria primeira loja',async()=>{
-  await as(4);await assert.rejects(q(`select vs_salvar_loja('{"nome":"Escalada"}')`),/Somente o administrador/);
+  await as(4);await assert.rejects(q(`select vs_salvar_loja('{"nome":"Escalada"}')`),/Somente o (Gestor|administrador)|CEO não opera/);
   await assert.rejects(q('select vs_reservar_conta($1,$2,$3)',[id(4),'a@b.example','empresa']),/permission denied/);
   await db.exec('reset role');await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3)',[id(2),id(4),'Escalada']),/Somente o CEO/);
   for(const [number,email] of [[2,'empresa@test.example'],[3,'outra@test.example']]) {
@@ -48,7 +48,7 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
   }
   await as(2);store=(await q(`select vs_salvar_loja('{"nome":"Loja A"}') s`))[0].s;store2=(await q(`select vs_salvar_loja('{"nome":"Loja A2"}') s`))[0].s;
   await as(3);otherStore=(await q(`select vs_salvar_loja('{"nome":"Loja B"}') s`))[0].s;
-  await as(2);await assert.rejects(q('select vs_salvar_loja($1,$2)',[JSON.stringify({nome:'Invadida'}),otherStore.id]),/fora da empresa/);
+  await as(2);await assert.rejects(q('select vs_salvar_loja($1,$2)',[JSON.stringify({nome:'Invadida'}),otherStore.id]),/fora da empresa|não liberada|fora do (seu )?escopo/);
  });
  await t.test('CEO não vê lojas nem empresas, não adota contas e não ganha operação por vínculo antigo',async()=>{
   await db.exec('reset role');
@@ -63,11 +63,11 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
   await assert.rejects(q('select vs_painel($1)',[id(900)]),/não autorizada/);assert.deepEqual(await q('select * from usuario_lojas'),[]);
   assert.deepEqual((await q('select vs_funcionarios() f'))[0].f,[]);
   await assert.rejects(q('select vs_painel($1)',[store.id]),/não autorizada/);
-  await assert.rejects(q(`select vs_salvar_loja('{"nome":"CEO não cria"}')`),/Somente o administrador/);
+  await assert.rejects(q(`select vs_salvar_loja('{"nome":"CEO não cria"}')`),/Somente o (Gestor|administrador)|CEO não opera/);
   await db.exec('reset role');
   await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3,$4)',[id(1),id(4),'Nome',[store.id]]),/não pode vincular/);
   await assert.rejects(q('select vs_provisionar_empresa($1,$2,$3)',[id(1),id(4),'Nome']),/Cadastro novo autorizado/);
-  await assert.rejects(q("select vs_reservar_conta($1,$2,'funcionario')",[id(1),'negado@usuarios.validasuper.invalid']),/Somente o administrador/);
+  await assert.rejects(q("select vs_reservar_conta($1,$2,'funcionario')",[id(1),'negado@usuarios.validasuper.invalid']),/Somente o (Gestor|administrador)|CEO não opera/);
  });
  await t.test('cadastro exige UUID reservado; metadados não concedem identidade ou cargo',async()=>{
   await db.exec('reset role');await assert.rejects(q('insert into auth.users(id,email) values($1,$2)',[id(5),'publico@test.example']),/Cadastro público desativado/);
@@ -103,8 +103,8 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
   const context=(await q('select vs_contexto_acesso() c'))[0].c;assert.deepEqual(context.lojas.map(l=>l.id),[store.id]);assert.equal(context.empresa_admin,false);assert.deepEqual(context.empresas,[]);
   assert.equal((await q("select vs_permitido($1,'ENTRADA') ok",[store.id]))[0].ok,true);
   assert.equal((await q("select vs_permitido($1,'CORRECAO') ok",[store.id]))[0].ok,false);
-  await assert.rejects(q('select vs_salvar_acessos($1,$2,$3,$4)',[id(5),'Escalada',[store2.id],lib]),/fora da empresa/);
-  await assert.rejects(q(`select vs_salvar_loja('{"nome":"Escalada"}')`),/Somente o administrador/);
+  await assert.rejects(q('select vs_salvar_acessos($1,$2,$3,$4)',[id(5),'Escalada',[store2.id],lib]),/fora da empresa|não liberada|fora do (seu )?escopo/);
+  await assert.rejects(q(`select vs_salvar_loja('{"nome":"Escalada"}')`),/Somente o (Gestor|administrador)|CEO não opera/);
   await assert.rejects(q('select vs_reservar_conta($1,$2,$3)',[id(2),'outro@test.example','funcionario']),/permission denied/);
   await assert.rejects(q('select vs_editar_perfil($1,$2,$3,$4)',[id(5),'Operador','administrador',store.id]),/permission denied/);
  });
@@ -117,7 +117,7 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
  });
  await t.test('admin escolhe lojas, pode suspender e não altera outra empresa nem a si próprio',async()=>{
   await as(2);
-  await assert.rejects(q('select vs_salvar_acessos($1,$2,$3,$4)',[id(5),'Pessoa',[otherStore.id],lib]),/fora da empresa/);
+  await assert.rejects(q('select vs_salvar_acessos($1,$2,$3,$4)',[id(5),'Pessoa',[otherStore.id],lib]),/fora da empresa|não liberada|fora do (seu )?escopo/);
   await assert.rejects(q('select vs_salvar_acessos($1,$2,$3,$4)',[id(2),'Admin',[store.id],lib]),/conta protegida/);
   await assert.rejects(q('select vs_salvar_acessos($1,$2,$3,$4)',[id(5),'Pessoa',[store.id],{...lib,equipe:true}]),/inválidas/);
   await q('select vs_salvar_acessos($1,$2,$3,$4)',[id(5),'Operador',[store2.id],{...lib,entrada:false,correcao:true}]);

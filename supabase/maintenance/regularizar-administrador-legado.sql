@@ -12,7 +12,7 @@ begin
  if email_alvo is null then raise exception 'Informe o e-mail autorizado na configuração da transação'; end if;
  select p.* into alvo from perfis p join auth.users u on u.id=p.id where lower(u.email)=lower(email_alvo) for update of p;
  if alvo.id is null or vs_dono(alvo.id) then raise exception 'Conta inexistente ou CEO: operação não permitida'; end if;
- if alvo.tipo_conta='empresa_admin' and exists(select 1 from vs_empresas where administrador_id=alvo.id and id=alvo.empresa_id) then return; end if;
+ if alvo.tipo_conta in ('empresa_admin','gestor') and exists(select 1 from vs_empresas where administrador_id=alvo.id and id=alvo.empresa_id) then return; end if;
  if alvo.tipo_conta<>'legado' or alvo.empresa_id is not null or alvo.funcao not in ('administrador','admin') or alvo.senha_inicial then
   raise exception 'Somente administrador legado com senha pessoal pode ser regularizado';
  end if;
@@ -31,7 +31,7 @@ begin
  end if;
  insert into vs_empresas(nome,administrador_id) values('Empresa',alvo.id) returning id into empresa;
  update lojas set empresa_id=empresa where id=any(lojas_alvo);
- update perfis set empresa_id=empresa,tipo_conta='empresa_admin' where id=alvo.id;
+ update perfis set empresa_id=empresa,tipo_conta='gestor',funcao='gestor' where id=alvo.id;
  insert into vs_acessos_auditoria(ator,usuario,empresa_id,acao,detalhes)
  values(null,alvo.id,empresa,'Regularização autorizada de administrador legado',jsonb_build_object('origem','manutenção administrativa','lojas_preservadas',lojas_alvo));
 end $$;

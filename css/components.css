@@ -50,7 +50,7 @@ body.dark .btn-primary { color: #122a24; }
 #entry-ean { color: var(--primary) !important; }
 @keyframes enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @media(min-width:1000px) {
- .bottom-nav { flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 24px 12px; border-top: 0; border-right: 1px solid var(--border); gap: 6px; }
+ .bottom-nav { min-height:0;overflow-y:auto;flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 24px 12px; border-top: 0; border-right: 1px solid var(--border); gap: 6px; }
  .bottom-nav .nav-item { flex: 0 0 auto; width: 100%; flex-direction: row; justify-content: flex-start; gap: 12px; font-size: 13px; line-height: 1.4; padding: 12px; }
  .nav-secondary { display: contents; }
  .nav-secondary.is-open { display: contents; animation: none; }

@@ -71,6 +71,10 @@ export const authService = {
     const { error } = await supabase.rpc('vs_salvar_acessos', { p_usuario: usuario, p_nome: nome, p_lojas: lojas, p_liberacoes: liberacoes });
     if (error) throw error;
   },
+  async savePerson(usuario,nome,papel,lojas,liberacoes,edicao=[]) {
+    const {error}=await supabase.rpc('vs_salvar_pessoa',{p_usuario:usuario,p_nome:nome,p_papel:papel,p_lojas:lojas,p_liberacoes:liberacoes,p_edicao:edicao});
+    if(error)throw error;
+  },
   async changePassword(current, next) {
     if (next.length < 6) throw new Error('Use uma senha de pelo menos 6 caracteres.');
     if (new TextEncoder().encode(next).length > 72) throw new Error('Senha longa demais. Reduza o tamanho, especialmente se usar acentos ou emojis.');

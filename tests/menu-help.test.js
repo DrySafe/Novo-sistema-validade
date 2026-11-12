@@ -26,12 +26,12 @@ test('ajuda acompanha o menu atual, é somente leitura e devolve o foco ao fecha
   }
   dialog.querySelector('button').click();assert.equal(doc.getElementById('menu-help-dialog'),null);assert.equal(doc.activeElement,help);
  }
- assert.equal(texts.size,7);dom.window.close();
+ assert.equal(texts.size,8);dom.window.close();
 });
 
 test('área do CEO tem orientação própria sem abrir nem enviar cadastro',()=>{
  const dom=new JSDOM(fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8'));const doc=dom.window.document;dialogs(dom);
  initializeMenuHelp(doc,'administrativo');doc.getElementById('btn-menu-help').click();
- const dialog=doc.getElementById('menu-help-dialog');assert.match(dialog.textContent,/exclusiva do CEO/);assert.match(dialog.textContent,/não acessa as lojas/);assert.equal(dialog.querySelector('input'),null);
+ const dialog=doc.getElementById('menu-help-dialog');assert.match(dialog.textContent,/exclusiva do único CEO/);assert.match(dialog.textContent,/não acessa as lojas/);assert.equal(dialog.querySelector('input'),null);
  dialog.close();dom.window.close();
 });
