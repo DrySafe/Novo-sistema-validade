@@ -84,6 +84,10 @@
 
     <!-- Tela Principal do App -->
     <main id="app-screen" class="container hidden">
+      <aside class="pwa-install-banner" data-install-surface hidden aria-label="Instalação do aplicativo">
+        <div><strong>ValidaSuper no seu celular</strong><p>Adicione à tela inicial para abrir como aplicativo.</p></div>
+        <button type="button" class="btn btn-secondary" data-install-app hidden>Instalar app</button>
+      </aside>
       <!-- Visor Informativo do Usuário -->
       <div class="workspace-header"><div class="workspace-heading"><p>Olá, <strong id="display-user-name">Carregando...</strong></p><div class="workspace-title-row"><h1 id="workspace-title">Acompanhamento</h1><button type="button" id="btn-menu-help" class="menu-help-button" aria-label="Ajuda sobre Ciclos e acompanhamento" aria-haspopup="dialog"><span aria-hidden="true">ⓘ</span></button></div><div class="workspace-context"><span id="display-loja-nome">Carregando...</span><span id="display-lote-badge">—</span></div></div><div class="workspace-actions"><button type="button" id="btn-company-team" class="btn btn-secondary hidden">Colaboradores</button><button id="btn-open-modal" class="btn btn-primary">+ Novo lançamento</button><details class="report-menu"><summary class="btn btn-secondary">Relatórios <span aria-hidden="true">⌄</span></summary><div class="report-options"><p class="report-scope">Exporta todos os registros do módulo, incluindo concluídos e transferidos; não acompanha o filtro visual.</p><button id="btn-export-excel" class="btn btn-secondary">Exportar Excel</button><button id="btn-export-pdf" class="btn btn-secondary">Exportar PDF</button></div></details></div></div>
 
