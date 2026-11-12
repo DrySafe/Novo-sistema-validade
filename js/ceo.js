@@ -1,3 +1,4 @@
+import {beginLoading,finishBoot} from './loading.js';
 import { initializeMenuHelp } from './menuHelp.js';
 import { ceoClient } from './ceoClient.js';
 initializeMenuHelp(document, 'administrativo');
@@ -11,12 +12,12 @@ async function authorize(){
  view(true);return true;
 }
 login.onsubmit=async event=>{
- event.preventDefault();const save=login.querySelector('[type=submit]');save.disabled=true;status.textContent='Verificando acesso…';
+ event.preventDefault();const save=login.querySelector('[type=submit]');save.disabled=true;const doneLoading=beginLoading('Verificando acesso administrativo…');status.textContent='Verificando acesso…';
  try{
   const {error}=await ceoClient.auth.signInWithPassword({email:document.getElementById('ceo-email').value.trim().toLowerCase(),password:document.getElementById('ceo-password').value});
   if(error)throw new Error('E-mail ou senha incorretos, ou acesso indisponível.');
   if(await authorize()){status.textContent='Acesso CEO autorizado.';login.reset();}
- }catch(error){view(false);status.textContent=error.message;}finally{document.getElementById('ceo-password').value='';save.disabled=false;}
+ }catch(error){view(false);status.textContent=error.message;}finally{doneLoading();document.getElementById('ceo-password').value='';save.disabled=false;}
 };
 document.getElementById('ceo-create-admin').onsubmit=async event=>{
  event.preventDefault();const form=event.currentTarget,save=form.querySelector('[type=submit]');save.disabled=true;status.textContent='Criando administrador…';
@@ -32,4 +33,4 @@ document.getElementById('ceo-create-admin').onsubmit=async event=>{
  }catch(error){status.textContent=error.message;}finally{document.getElementById('new-admin-password').value='';save.disabled=false;}
 };
 document.getElementById('ceo-logout').onclick=async()=>{await ceoClient.auth.signOut({scope:'local'});view(false);status.textContent='Você saiu da Área Administrativa.';};
-authorize().catch(()=>{view(false);status.textContent='Não foi possível verificar o acesso. Tente entrar novamente.';});
+authorize().catch(()=>{view(false);status.textContent='Não foi possível verificar o acesso. Tente entrar novamente.';}).finally(()=>finishBoot());

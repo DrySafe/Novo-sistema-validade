@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { accountHandler } from '../supabase/functions/gerenciar-equipe/handler.js';
-const payload={acao:'funcionario',nome:'Maria',login:'maria',password:'senha-provisoria-123',lojas:['loja'],liberacoes:{entrada:true,movimentacao:false,revisao:false,correcao:false},ator:'forjado'};
+const payload={acao:'funcionario',nome:'Maria',login:'maria',password:'senha-provisoria-123',lojas:['00000000-0000-0000-0000-000000000010'],liberacoes:{entrada:true,movimentacao:false,revisao:false,correcao:false},ator:'forjado'};
 const request=body=>new Request('https://edge.test',{method:'POST',headers:{Authorization:'Bearer sessao','Content-Type':'application/json'},body:JSON.stringify(body)});
 function stub(){const calls=[];const admin={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='vs_reservar_conta'?'nonce':{id:'novo'},error:null};},auth:{getUser:async()=>({data:{user:{id:'ator-real'}}}),admin:{createUser:async args=>{calls.push(['createUser',args]);return {data:{user:{id:'novo'}}};},deleteUser:async id=>{calls.push(['deleteUser',id]);return {error:null};}}}};return {admin,calls};}
 test('Edge usa ator do JWT, e-mail técnico e UUID reservado de Auth Admin',async()=>{
@@ -15,7 +15,7 @@ test('Edge nega cargo falso antes de criar Auth e compensa somente conta recém-
  assert.equal((await accountHandler(b.admin)(request(payload))).status,400);assert.deepEqual(b.calls.find(c=>c[0]==='deleteUser'),['deleteUser','novo']);
 });
 test('CEO envia somente e-mail e senha; vincular conta ou loja é recusado antes de criar Auth',async()=>{
- for(const forbidden of [{lojas:['loja']},{vincularExistente:true},{nome:'Empresa'}]){
+ for(const forbidden of [{lojas:['00000000-0000-0000-0000-000000000010']},{vincularExistente:true},{nome:'Empresa'}]){
   const {admin,calls}=stub();const response=await accountHandler(admin)(request({acao:'administrador',email:'admin@test.example',password:'senha-inicial-123',...forbidden}));
   assert.equal(response.status,400);assert.equal(calls.length,0);
  }

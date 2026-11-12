@@ -56,7 +56,8 @@ test('migrações atuais: autorização, quantidade auditada, lote físico e iso
    assert.equal(second.isDuplicado, false);
    const saved = await current(second.registro.id);
    assert.equal(saved.nome_entrada, 'Nome corrigido'); assert.equal(saved.imagem_entrada, 'https://example.com/foto.jpg');
-   assert.equal(saved.produtos.nome, payload.produtoNome);
+   assert.equal(saved.produtos.nome, 'Nome corrigido');
+   assert.equal((await q('select nome from produtos where ean=$1',[payload.ean]))[0].nome,payload.produtoNome);
   });
 
   await t.test('operador não corrige quantidade nem altera preço; precificação não movimenta', async () => {

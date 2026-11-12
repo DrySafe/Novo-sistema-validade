@@ -1,3 +1,4 @@
+import {beginLoading,finishBoot,showSectionLoading,finishSectionLoading} from './loading.js';
 import { openAccessAdmin, openPasswordChange, renderCompanyAccess } from './accessAdmin.js';
 import { permissionsFor } from './permissions.js';
 import { configurarBuscaProduto } from './productLookup.js';
@@ -31,14 +32,13 @@ let appScreen = null;
 let stopEntryScanner = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('📌 DOM carregado. Inicializando ValidaSuper...');
   
   loginScreen = document.getElementById('login-screen');
   appScreen = document.getElementById('app-screen');
 
   setupEvents();
   initializeLayout();
-  checkSession();
+  checkSession().finally(()=>finishBoot());
 });
 
 /* ============================================================
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
    ============================================================ */
 
 async function checkSession() {
-  console.log('🔍 Verificando sessão ativa...');
+  const doneLoading=beginLoading('Verificando seu acesso…');
 
   try {
     currentProfile = await authService.getCurrentProfile();
@@ -112,7 +112,6 @@ async function checkSession() {
       try {
         await setupStoreSelector();
       } catch (errStore) {
-        console.warn("Aviso ao carregar seletor:", errStore);
       }
 
       const lojaAlvo = activeLojaId || currentProfile.loja_id;
@@ -120,7 +119,6 @@ async function checkSession() {
       try {
         currentCycle = await cycleService.getOrCreateActiveCycle(lojaAlvo);
       } catch (errCycle) {
-        console.warn("Aviso ao buscar ciclo ativo:", errCycle);
       }
 
       updateCycleTopbarDisplay();
@@ -136,20 +134,18 @@ async function checkSession() {
       if (appScreen) appScreen.classList.remove('hidden');
       document.getElementById('bottom-nav')?.classList.remove('hidden');
 
-      console.log('✅ Login e Ciclo carregados com sucesso!');
       loadSectorData();
     } else {
       showLoginScreen();
     }
   } catch (err) {
-    console.error('❌ Erro na verificação de sessão:', err);
     showLoginScreen();
-    const message=document.getElementById('login-alert'); if(message){message.textContent=err.message;message.classList.remove('hidden');}
-  }
+    const message=document.getElementById('login-alert'); if(message){message.textContent='Não foi possível carregar seu acesso. Entre novamente ou tente mais tarde.';message.classList.remove('hidden');}
+  } finally {doneLoading();}
 }
 
 
-// Função updateCycleTopbarDisplay limpa e com o console.log no lugar certo
+// Atualiza a identificação da loja e do lote no cabeçalho.
 function updateCycleTopbarDisplay() {
 
 
@@ -227,7 +223,6 @@ async function setupStoreSelector() {
       }
     }
   } catch (err) {
-    console.warn('Aviso ao carregar seletor de lojas:', err);
   }
 }
 
@@ -324,6 +319,7 @@ function setupEvents() {
   const buscarProdutoLido = configurarBuscaProduto(document, ean => productService.fetchEanExternalApi(ean));
   stopEntryScanner = setupScanner(document);
   document.getElementById('btn-company-team').onclick = () => { window.closeAllModals(); document.getElementById('nav-item-equipe').click(); };
+  document.addEventListener('click',event=>{if(event.target.closest('[data-close-modal]'))window.closeAllModals();if(event.target.closest('[data-open-profile]'))window.openUserProfileModal();});
   const formOnboarding = document.getElementById('form-onboarding-store');
 
   if (formOnboarding) {
@@ -468,6 +464,9 @@ function setupEvents() {
         alertBox.textContent = '';
       }
 
+      const submit=formLogin.querySelector('[type=submit]');
+      if(submit.disabled)return;submit.disabled=true;
+      const doneLoading=beginLoading('Entrando com segurança…');
       try {
         await authService.login(
           document.getElementById('login-email').value,
@@ -479,7 +478,7 @@ function setupEvents() {
           alertBox.textContent = err.status === 400 || err.code === 'invalid_credentials' ? 'Login ou senha incorretos. Tente novamente.' : 'Não foi possível entrar. Verifique a conexão e tente novamente.';
           alertBox.classList.remove('hidden');
         }
-      }
+      } finally {doneLoading();submit.disabled=false;document.getElementById('login-password').value='';}
     });
   }
 
@@ -676,7 +675,7 @@ async function loadSectorData() {
   cards?.classList.toggle('hidden', sector === 'ciclos');
   if (!container) return;
   currentData = [];
-  container.textContent = 'Carregando acompanhamento...';
+  showSectionLoading(container);
   refreshing = true;
   try {
     updateActionPermissions();
@@ -709,7 +708,7 @@ async function loadSectorData() {
     return snapshot;
   } catch (err) {
     if (version === loadVersion) container.textContent = 'Erro ao carregar: ' + err.message;
-  } finally { if (version === loadVersion) { refreshing = false; viewport.scrollTop = scrollTop; } }
+  } finally { if (version === loadVersion) { refreshing = false; finishSectionLoading(container); viewport.scrollTop = scrollTop; } }
 }
 // Atualiza pendências após mudanças de dia/rodada, sem fechar uma operação em andamento.
 setInterval(() => {

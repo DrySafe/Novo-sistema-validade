@@ -29,15 +29,8 @@ const SCANNER_CONFIG = {
     debug: false
 };
 
-function scannerLog(...msg){
-    if(SCANNER_CONFIG.debug){
-        console.log("[SCANNER]", ...msg);
-    }
-}
-
-function scannerErro(...msg){
-    console.error("[SCANNER]", ...msg);
-}
+function scannerLog() {}
+function scannerErro() {}
 
 let fallbackPromise = null;
 function loadFallback() {

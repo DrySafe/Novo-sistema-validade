@@ -2,8 +2,6 @@
 <html lang="pt-BR"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <!-- Permissão CSP para liberar JS das bibliotecas de relatório sem erro de eval -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';">
   <title>ValidaSuper - Prevenção de Perdas</title>
   <meta name="theme-color" content="#117b70">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,14 +23,15 @@
   <link rel="stylesheet" href="css/lifecycle.css">
 
   <!-- CDNs -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="js/scanner.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script defer src="js/vendor/supabase-2.119.0.min.js"></script>
+  <script defer src="js/vendor/xlsx-0.18.5.min.js"></script>
+  <script defer src="js/scanner.js"></script>
+  <script defer src="js/vendor/jspdf-4.2.1.min.js"></script>
+  <script defer src="js/vendor/autotable-5.0.9.min.js"></script>
 
 </head>
 <body>
+<div id="page-loading" class="page-loading" role="status" aria-live="polite" aria-busy="true"><div class="loading-card"><span class="loading-orbit" aria-hidden="true"><span>✓</span></span><strong>ValidaSuper</strong><p data-loading-message>Preparando seu acesso…</p><button type="button" class="btn btn-secondary" data-loading-retry hidden>Tentar novamente</button></div></div><script src="js/boot.js"></script><noscript><style>.page-loading{display:none}</style><p>Ative o JavaScript no navegador para acessar o aplicativo.</p></noscript>
 
   <div class="app-viewport">
     
@@ -48,7 +47,7 @@
       <div class="topbar-actions">
         <div style="display: flex; gap: 0.5rem; align-items: center;">
           <!-- Badge de Iniciais do Usuário (Abre Painel de Gestão) -->
-          <button type="button" id="btn-user-avatar-badge" class="avatar-badge" onclick="window.openUserProfileModal()" title="Minha Conta &amp; Gestão" aria-label="Minha Conta &amp; Gestão">
+          <button type="button" id="btn-user-avatar-badge" class="avatar-badge" data-open-profile title="Minha Conta &amp; Gestão" aria-label="Minha Conta &amp; Gestão">
             <span id="user-initials">--</span>
           </button>
 
@@ -142,7 +141,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="modal-title" class="modal-title">NOVO LANÇAMENTO</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
+        <button type="button" class="btn-close" data-close-modal aria-label="Fechar janela">×</button>
       </div>
 
       <form id="form-entry">
@@ -220,7 +219,7 @@
     <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
         <h3 class="modal-title" id="modal-user-profile-title">MINHA CONTA &amp; GESTÃO</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
+        <button type="button" class="btn-close" data-close-modal aria-label="Fechar janela">×</button>
       </div>
 
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
@@ -256,7 +255,7 @@
     <div class="modal-content" style="max-width: 580px;">
       <div class="modal-header">
         <h3 id="modal-store-form-title" class="modal-title">CADASTRO DA UNIDADE / LOJA</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
+        <button type="button" class="btn-close" data-close-modal aria-label="Fechar janela">×</button>
       </div>
       <p id="modal-store-form-sub" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
         Preencha os dados empresariais para configurar o ambiente de gestão.
@@ -346,7 +345,7 @@
           <h3 id="cycle-modal-title" class="modal-title">DETALHES DO LOTE</h3>
           <p id="cycle-modal-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Carregando...</p>
         </div>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
+        <button type="button" class="btn-close" data-close-modal aria-label="Fechar janela">×</button>
       </div>
 
       <!-- Filtros Rápidos por Régua no Modal -->
@@ -368,7 +367,7 @@
     <div class="modal-content" style="max-width: 450px;">
       <div class="modal-header">
         <h3 class="modal-title" id="modal-recontagem-title">AJUSTE DE QUANTIDADE</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
+        <button type="button" class="btn-close" data-close-modal aria-label="Fechar janela">×</button>
       </div>
 
       <div style="background: var(--surface-panel); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
@@ -414,7 +413,7 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
-          <button type="button" class="btn btn-secondary" onclick="window.closeAllModals()" style="flex: 1;">Cancelar</button>
+          <button type="button" class="btn btn-secondary" data-close-modal style="flex: 1;">Cancelar</button>
           <button type="submit" class="btn btn-primary" style="flex: 2;">Confirmar Ajuste</button>
         </div>
       </form>
@@ -426,7 +425,7 @@
     <div class="modal-content" style="max-width: 440px;">
       <div class="modal-header">
         <h3 class="modal-title" id="modal-baixa-title">REGISTRAR BAIXA DE PRODUTO</h3>
-        <button type="button" class="btn-close" onclick="window.closeAllModals()" aria-label="Fechar janela">×</button>
+        <button type="button" class="btn-close" data-close-modal aria-label="Fechar janela">×</button>
       </div>
 
       <div style="background: var(--surface-panel); padding: 0.75rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
@@ -459,7 +458,7 @@
         </div>
 
         <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem;">
-          <button type="button" class="btn btn-secondary" onclick="window.closeAllModals()" style="flex: 1;">Cancelar</button>
+          <button type="button" class="btn btn-secondary" data-close-modal style="flex: 1;">Cancelar</button>
           <button type="submit" class="btn btn-primary" style="flex: 2; background: var(--danger);">Confirmar Baixa</button>
         </div>
       </form>

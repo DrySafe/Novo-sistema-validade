@@ -83,3 +83,17 @@ body.dark .btn-primary { color: #122a24; }
 .menu-help-dialog section { margin-top: 20px; }
 .menu-help-dialog h3 { font-size: 15px; line-height: 1.5; }
 .menu-help-dialog p { font-size: 14px; }
+
+.page-loading { position:fixed; inset:0; z-index:300; display:grid; place-items:center; padding:24px; background:color-mix(in srgb,var(--bg-app) 88%,transparent); backdrop-filter:blur(12px); animation:loading-appear .2s ease-out; }
+.loading-card { display:grid; justify-items:center; gap:18px; width:min(100%,360px); padding:32px; text-align:center; border:1px solid var(--border); border-radius:24px; background:var(--surface); box-shadow:var(--shadow-md); }
+.loading-card strong { color:var(--primary); font-size:22px; letter-spacing:-.5px; }
+.loading-card p,.section-loading-label { color:var(--text-muted); font-size:14px; line-height:1.6; }
+.loading-orbit { width:62px; height:62px; position:relative; display:grid; place-items:center; color:var(--primary); font-size:24px; }
+.loading-orbit::before { content:''; position:absolute; inset:0; border-radius:50%; border:3px solid var(--primary-light); border-top-color:var(--primary); animation:loading-spin 1.1s linear infinite; }
+.loading-orbit span { display:grid; place-items:center; width:42px; height:42px; border-radius:14px; background:var(--primary-light); }
+.loading-skeleton { height:160px; margin-block:16px; border:1px solid var(--border); border-radius:16px; background:linear-gradient(100deg,var(--surface-panel) 20%,var(--surface) 45%,var(--surface-panel) 70%); background-size:240% 100%; animation:loading-shimmer 1.5s ease-in-out infinite; }
+.view-enter { animation:loading-appear .2s ease-out; }
+@keyframes loading-spin { to{transform:rotate(360deg)} }
+@keyframes loading-shimmer { from{background-position:100% 0}to{background-position:0 0} }
+@keyframes loading-appear { from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)} }
+@media(prefers-reduced-motion:reduce){.page-loading,.loading-orbit::before,.loading-skeleton,.view-enter{animation:none;}}
