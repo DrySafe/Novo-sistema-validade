@@ -24,7 +24,10 @@ test('migração e fluxo completo com isolamento, concorrência, preços e desti
     `);
     await db.exec(fs.readFileSync(new URL('../supabase/migrations/202609300001_acompanhamento.sql', import.meta.url), 'utf8'));
     await db.exec(`create table test_clock(day date); insert into test_clock values('2026-09-01');
-      create or replace function vs_hoje() returns date language sql stable set search_path=public as $$ select day from test_clock $$;`);
+      create or replace function vs_hoje() returns date language sql stable set search_path=public as $$ select day from test_clock $$;
+      -- Mantém datas criadas em sincronia com o relógio simulado, independente do dia de execução.
+      alter table ciclos_lotes alter column created_at set default ((vs_hoje()+time '12:00') at time zone 'America/Sao_Paulo');
+      alter table lotes_validade alter column created_at set default ((vs_hoje()+time '12:00') at time zone 'America/Sao_Paulo');`);
     const loja = '00000000-0000-0000-0000-000000000010';
     const query = async (sql, params) => (await db.query(sql, params)).rows;
     const payload = { lojaId: loja, ean: '7890000000001', produtoNome: 'Produto teste', quantidade: 100, precoAtual: 10, dataVencimento: '2026-10-31', setor: 'validade', localizacao: 'Gôndola' };

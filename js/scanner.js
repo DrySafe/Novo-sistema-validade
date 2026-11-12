@@ -26,7 +26,7 @@ const SCANNER_CONFIG = {
     largura: 1920,
     altura: 1080,
     fps: 30,
-    debug: true
+    debug: false
 };
 
 function scannerLog(...msg){
@@ -39,30 +39,57 @@ function scannerErro(...msg){
     console.error("[SCANNER]", ...msg);
 }
 
+let fallbackPromise = null;
+function loadFallback() {
+    if (window.ZXing) return Promise.resolve(window.ZXing);
+    if (!fallbackPromise) fallbackPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'js/vendor/zxing-0.21.3.min.js';
+        script.onload = () => window.ZXing ? resolve(window.ZXing) : reject(new Error('Leitor indisponível'));
+        script.onerror = () => { script.remove(); fallbackPromise = null; reject(new Error('Falha ao carregar leitor')); };
+        document.head.append(script);
+    });
+    return fallbackPromise;
+}
+function fallbackDetector(ZXing) {
+    const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8]]]);
+    const reader = new ZXing.MultiFormatReader();
+    reader.setHints(hints);
+    return { async detect(canvas) {
+        const rgba = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+        const luminance = new Uint8ClampedArray(canvas.width * canvas.height);
+        for (let i = 0; i < luminance.length; i++) luminance[i] = (rgba[i*4] + 2*rgba[i*4+1] + rgba[i*4+2]) / 4;
+        try {
+            const source = new ZXing.RGBLuminanceSource(luminance, canvas.width, canvas.height);
+            const result = reader.decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(source)));
+            return [{ rawValue: result.getText() }];
+        } catch (error) {
+            if (error instanceof ZXing.NotFoundException || error instanceof ZXing.ChecksumException || error instanceof ZXing.FormatException) return [];
+            throw error;
+        } finally { reader.reset(); }
+    } };
+}
 function suportaScanner(){
-    return (
-        "BarcodeDetector" in window &&
-        navigator.mediaDevices &&
-        navigator.mediaDevices.getUserMedia
-    );
+    return !!navigator.mediaDevices?.getUserMedia;
 }
 
-async function iniciarScanner(videoId, callback){
-    // Se a API nativa não for suportada, ativa a flag no Chrome Mobile ou exibe o alerta
-    if(!suportaScanner()){
-        alert("A câmera não é compatível com este navegador. Digite o código de barras manualmente ou use um navegador com leitor compatível.");
-        throw new Error("Barcode Detection API não suportada neste navegador.");
+async function iniciarScanner(videoId, callback, onTimeout = () => {}){
+    if (!suportaScanner() || window.isSecureContext === false) {
+        const error = new Error('Câmera requer HTTPS e navegador compatível.');
+        error.name = 'SecurityError';
+        throw error;
     }
-
     await pararScanner();
     const generation = scannerGeneration;
     try {
     let formats = SCANNER_CONFIG.formatos;
-    if (BarcodeDetector.getSupportedFormats) {
-        const supported = await BarcodeDetector.getSupportedFormats();
+    let native = typeof window.BarcodeDetector === "function";
+    if (native && window.BarcodeDetector.getSupportedFormats) {
+        const supported = await window.BarcodeDetector.getSupportedFormats();
         formats = formats.filter(format => supported.includes(format));
-        if (!formats.some(format => ['ean_13', 'ean_8'].includes(format))) throw new Error("Formatos de leitura não suportados. Digite o código manualmente.");
+        native = formats.includes("ean_13") && formats.includes("ean_8");
     }
+    const fallback = native ? null : await loadFallback();
     if (generation !== scannerGeneration) return;
 
     scannerVideo = document.getElementById(videoId);
@@ -86,29 +113,29 @@ async function iniciarScanner(videoId, callback){
 
     if (generation !== scannerGeneration) { stream.getTracks().forEach(t => t.stop()); return; }
     scannerStream = stream;
+    scannerVideo.muted = true;
+    scannerVideo.setAttribute?.("playsinline", "");
     scannerVideo.srcObject = scannerStream;
     await scannerVideo.play();
     if (generation !== scannerGeneration) return;
 
     scannerTrack = scannerStream.getVideoTracks()[0];
-    barcodeDetector = new BarcodeDetector({
-        formats
-    });
+    barcodeDetector = native ? new window.BarcodeDetector({ formats }) : fallbackDetector(fallback);
 
     scannerRodando = true;
     scannerLog("Scanner iniciado com recorte de mira central.");
 
     if (generation !== scannerGeneration) return;
-    iniciarLoop(callback);
+    iniciarLoop(callback, generation, onTimeout);
     } catch (error) { if (generation === scannerGeneration) await pararScanner(); throw error; }
 }
 
-function iniciarLoop(callback){
+function iniciarLoop(callback, generation, onTimeout){
     const inicio = Date.now();
     const ctx = scannerCanvas.getContext("2d", { willReadFrequently: true });
 
     async function loop(){
-        if(!scannerRodando){
+        if(!scannerRodando || generation !== scannerGeneration){
             return;
         }
 
@@ -117,8 +144,8 @@ function iniciarLoop(callback){
                 const vWidth = scannerVideo.videoWidth;
                 const vHeight = scannerVideo.videoHeight;
 
-                const cropWidth = vWidth * 0.70;
-                const cropHeight = vHeight * 0.25;
+                const cropWidth = Math.floor(vWidth * 0.90);
+                const cropHeight = Math.floor(vHeight * 0.55);
                 const cropX = (vWidth - cropWidth) / 2;
                 const cropY = (vHeight - cropHeight) / 2;
 
@@ -133,10 +160,12 @@ function iniciarLoop(callback){
 
                 const resultados = await barcodeDetector.detect(scannerCanvas);
 
+                if (generation !== scannerGeneration) return;
                 if(resultados.length){
                     for (const res of resultados) {
                         if (res.rawValue) {
                             processarCodigo(res.rawValue, callback);
+                            if (generation !== scannerGeneration) return;
                         }
                     }
                 }
@@ -146,9 +175,11 @@ function iniciarLoop(callback){
             scannerErro(e);
         }
 
+        if (!scannerRodando || generation !== scannerGeneration) return;
         if(Date.now() - inicio > SCANNER_CONFIG.timeout){
             scannerLog("Timeout.");
             pararScanner();
+            onTimeout();
             return;
         }
 

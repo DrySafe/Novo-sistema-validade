@@ -25,7 +25,10 @@ export async function marketDB(){
  await db.exec(`insert into vs_empresas(id,nome,administrador_id) values('${ids.company}','Mercado teste','${ids.admin}');update lojas set empresa_id='${ids.company}';
  update perfis set empresa_id='${ids.company}',tipo_conta=case when id='${ids.admin}' then 'empresa_admin' else 'funcionario' end,liberacoes='{"entrada":true,"movimentacao":true,"revisao":false,"correcao":false}';
  create table market_test_clock(day date);insert into market_test_clock values('2026-10-20');
- create or replace function vs_hoje() returns date language sql stable security definer as $$select day from market_test_clock$$;`);
+ create or replace function vs_hoje() returns date language sql stable security definer as $$select day from market_test_clock$$;
+ -- O relógio da fixture também governa a criação dos lotes; NOW real poderia ficar no futuro da simulação.
+ alter table ciclos_lotes alter column created_at set default ((vs_hoje()+time '12:00') at time zone 'America/Sao_Paulo');
+ alter table lotes_validade alter column created_at set default ((vs_hoje()+time '12:00') at time zone 'America/Sao_Paulo');`);
  const as=async(user='admin')=>db.exec(`reset role;select set_config('request.jwt.claim.sub','${ids[user]}',false);select set_config('request.jwt.claim.role','authenticated',false);set role authenticated;`);
  await as();
  const advance=async(day)=>{await db.exec('reset role');await q('update market_test_clock set day=$1',[day]);await as();};

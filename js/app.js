@@ -1,6 +1,7 @@
 import { openAccessAdmin, openPasswordChange, renderCompanyAccess } from './accessAdmin.js';
 import { permissionsFor } from './permissions.js';
 import { configurarBuscaProduto } from './productLookup.js';
+import { setupScanner } from './scannerUI.js';
 import { lifecycleService } from './lifecycleService.js';
 import { initializeLayout } from './layout.js';
 import { renderPainel, renderItens } from './lifecycleUI.js';
@@ -27,6 +28,7 @@ let activeLojaId = localStorage.getItem('active_loja_id') || null;
 
 let loginScreen = null;
 let appScreen = null;
+let stopEntryScanner = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('📌 DOM carregado. Inicializando ValidaSuper...');
@@ -57,7 +59,7 @@ async function checkSession() {
         await supabase.auth.signOut({ scope: 'local' });
         activeLojaId=null; localStorage.removeItem('active_loja_id'); currentData=[];
         showLoginScreen();
-        const message=document.getElementById('login-alert'); message.textContent='Seu acesso CEO fica na Área Administrativa, no rodapé.'; message.classList.remove('hidden');
+        const message=document.getElementById('login-alert'); message.textContent='Seu acesso CEO fica na Área Administrativa, no rodapé. Para cadastrar colaboradores, entre no app com a conta de administrador da empresa e abra Colaboradores.'; message.classList.remove('hidden');
         return;
       }
       if (accessContext.senha_inicial) {
@@ -72,7 +74,8 @@ async function checkSession() {
         return;
       }
       document.getElementById('btn-access-admin').classList.toggle('hidden', !accessContext.empresa_admin);
-      document.getElementById('btn-access-admin').textContent = 'Liberações';
+      document.getElementById('btn-access-admin').textContent = 'Colaboradores e permissões';
+      document.getElementById('btn-company-team').classList.toggle('hidden', !accessContext.empresa_admin);
       document.getElementById('btn-change-password').classList.remove('hidden');
       if (!accessContext.lojas.length) {
         activeLojaId=null; userLojas=[]; localStorage.removeItem('active_loja_id');
@@ -233,6 +236,7 @@ async function setupStoreSelector() {
    ============================================================ */
 
 window.closeAllModals = function() {
+  stopEntryScanner?.();
   document.querySelectorAll('dialog[open]').forEach(d => d.close());
   document.querySelectorAll('.modal').forEach(m => {
     m.classList.remove('active');
@@ -318,6 +322,8 @@ window.openBaixaModal = function(itemId, produtoId, nome, loteOrigem, qtd, imgUr
 
 function setupEvents() {
   const buscarProdutoLido = configurarBuscaProduto(document, ean => productService.fetchEanExternalApi(ean));
+  stopEntryScanner = setupScanner(document);
+  document.getElementById('btn-company-team').onclick = () => { window.closeAllModals(); document.getElementById('nav-item-equipe').click(); };
   const formOnboarding = document.getElementById('form-onboarding-store');
 
   if (formOnboarding) {
@@ -711,6 +717,7 @@ setInterval(() => {
 }, 60000);
 
 function showLoginScreen() {
+  document.getElementById('btn-company-team')?.classList.add('hidden');
   accessContext = null;
   document.getElementById('btn-access-admin')?.classList.add('hidden');
   document.getElementById('btn-change-password')?.classList.add('hidden');

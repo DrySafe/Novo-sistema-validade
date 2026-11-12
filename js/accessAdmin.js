@@ -23,17 +23,44 @@ function permissions(form, current={}) {
  const selected=choices(form,'Liberações',Object.entries(labels),Object.keys(labels).filter(k=>current[k]));
  return ()=>Object.fromEntries(Object.keys(labels).map(k=>[k,selected().includes(k)]));
 }
+function showCredentials(login, password) {
+ const modal=el('dialog'); modal.className='vs-dialog access-dialog';
+ const title=el('h2','Colaborador cadastrado'); title.id='credentials-'+crypto.randomUUID(); modal.setAttribute('aria-labelledby',title.id);
+ modal.append(title,el('p','Entregue estas credenciais diretamente ao colaborador por um canal privado. Ele poderá trocar a própria senha. Esta tela não ficará disponível no cadastro.'));
+ const form=el('div');
+ const user=field(form,'Login','text',login), secret=field(form,'Senha inicial','password',password);
+ user.readOnly=secret.readOnly=true;
+ const status=el('p'); status.setAttribute('role','status');
+ form.append(button('Mostrar / ocultar senha',()=>{secret.type=secret.type==='password'?'text':'password';}),button('Copiar acesso',async()=>{
+  try { await navigator.clipboard.writeText(`Acesso ao ValidaSuper: ${location.origin}/\nLogin: ${user.value}\nSenha inicial: ${secret.value}\nTroque sua senha pelo seu perfil após entrar.`); status.textContent='Credenciais copiadas. Compartilhe por um canal privado.'; }
+  catch { status.textContent='Não foi possível copiar. Selecione o login e mostre a senha para copiá-los manualmente.'; }
+ }));
+ modal.append(form,status,button('Concluir',()=>modal.close()));
+ modal.addEventListener('close',()=>{password='';secret.value='';modal.remove();});
+ document.body.append(modal); modal.showModal();
+}
 export async function renderCompanyAccess(container, context, onSaved=async()=>{}) {
- container.replaceChildren(el('h2','Funcionários e Liberações'));
+ container.replaceChildren(el('h2','Colaboradores e permissões'));
  if(context.dono_app || !context.empresa_admin){container.append(el('p','Somente o administrador da empresa gerencia funcionários.')); return;}
  container.append(el('p','Cada funcionário consulta apenas as lojas selecionadas. As liberações abaixo autorizam operações. O login é único no aplicativo e não pode ser alterado. Para suspender o acesso às lojas, desmarque todas e salve.'));
- const create=el('details'); create.append(el('summary','Adicionar funcionário'));
+ const create=el('details'); create.open=true; create.append(el('summary','Cadastrar colaborador'));
  const form=el('form'), name=field(form,'Nome completo'), login=field(form,'Login (sem e-mail)'), password=field(form,'Senha inicial','password');
  login.pattern='[a-z0-9][a-z0-9._-]{2,39}'; login.minLength=3; login.maxLength=40; login.autocomplete='off'; login.title='De 3 a 40 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado.'; login.addEventListener('input',()=>{login.value=login.value.toLowerCase();});
  password.minLength=6; password.maxLength=72; password.autocomplete='new-password';
  const stores=choices(form,'Lojas permitidas',context.lojas.map(l=>[l.id,l.nome]));
- const allowed=permissions(form);
- submit(form,'Criar funcionário',async()=>{if(!stores().length)throw new Error('Selecione pelo menos uma loja.'); await authService.provisionAccount({acao:'funcionario',nome:name.value,login:login.value,password:password.value,lojas:stores(),liberacoes:allowed()});},async()=>{await renderCompanyAccess(container,context,onSaved); await onSaved();});
+ const allowed=permissions(form,{entrada:true});
+ let credentials=null;
+ submit(form,'Criar colaborador',async()=>{
+  if(!stores().length)throw new Error('Selecione pelo menos uma loja.');
+  await authService.provisionAccount({acao:'funcionario',nome:name.value.trim(),login:login.value.trim(),password:password.value,lojas:stores(),liberacoes:allowed()});
+  credentials={login:login.value.trim(),password:password.value};
+ },async()=>{
+  const created=credentials; credentials=null;
+  await renderCompanyAccess(container,context,onSaved);
+  if(created) showCredentials(created.login,created.password);
+  await onSaved();
+ });
+ form.append(el('p','Não é necessário e-mail. Para acompanhar dados sem cadastrar ou movimentar, desmarque todas as liberações; mantenha as lojas permitidas.'));
  create.append(form); container.append(create);
  const list=el('div'); list.className='access-members'; container.append(list);
  try {

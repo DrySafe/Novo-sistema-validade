@@ -1,0 +1,13 @@
+# Cadastro de colaboradores e câmera
+
+O administrador da empresa encontra **Colaboradores** no topo do app, **Equipe** no menu e **Colaboradores e permissões** no perfil. O cadastro fica aberto e permite informar nome, login fixo, senha inicial, lojas e liberações. A permissão de cadastrar itens vem marcada, mas pode ser removida para dar somente acesso de acompanhamento. Nenhum e-mail pessoal do funcionário é necessário.
+
+Depois de criar a conta, uma janela mostra login e senha inicial, com opção de copiar as credenciais para entrega por um canal privado. Não há envio automático. Ao fechar, a senha é apagada dessa janela e não pode ser consultada na lista de funcionários. O funcionário pode alterar a própria senha pelo perfil. As verificações de empresa/loja e permissões permanecem no servidor.
+
+O CEO continua acessando somente o painel separado de criação de administradores. Para operar uma empresa, é necessária a conta ADM dessa empresa; o botão não concede acesso empresarial ao CEO.
+
+No lançamento, o botão de câmera abre o vídeo e solicita permissão. O vídeo usa reprodução silenciosa e inline. Quando BarcodeDetector não oferece EAN-13 e EAN-8, o app carrega o leitor ZXing local. O processamento da imagem ocorre no navegador. A leitura preenche o EAN e usa a mesma consulta de produto da digitação; não salva um lançamento automaticamente.
+
+A câmera é encerrada ao ler, fechar o modal, tocar novamente no botão, sair da página ou ocultar o app. O leitor encerra após 60 segundos. As mensagens distinguem bloqueio de permissão, câmera ocupada, ausência de câmera e necessidade de HTTPS. A entrada manual continua disponível.
+
+Testes automatizados cobrem reconhecimento de um EAN pelo decoder alternativo, cancelamento durante aquisição, liberação do stream, negação de permissão, criação de colaborador e limpeza das credenciais da interface. Emulação e câmera sintética no navegador não substituem teste final em aparelhos Android/iOS físicos.
