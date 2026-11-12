@@ -2,7 +2,7 @@
 
 O administrador da empresa encontra **Colaboradores** no topo do app e no menu, além de **Colaboradores e permissões** no perfil. No celular, o item do menu fica em **Mais → Colaboradores**. O cadastro fica aberto e permite informar nome, login fixo, senha inicial, lojas e liberações. A permissão de cadastrar itens vem marcada, mas pode ser removida para dar somente acesso de acompanhamento. Nenhum e-mail pessoal do funcionário é necessário.
 
-Depois de criar a conta, uma janela mostra login e senha inicial, com opção de copiar as credenciais para entrega por um canal privado. Não há envio automático. Ao fechar, a senha é apagada dessa janela e não pode ser consultada na lista de funcionários. O funcionário pode alterar a própria senha pelo perfil. As verificações de empresa/loja e permissões permanecem no servidor.
+Depois de criar a conta, uma janela mostra login e senha inicial, com opção de copiar as credenciais para entrega por um canal privado. Não há envio automático. Ao fechar, a senha é apagada dessa janela e não pode ser consultada na lista de funcionários. No primeiro acesso, o funcionário precisa substituir a senha inicial por outra de pelo menos 6 caracteres, podendo usar somente números. Até a troca efetiva, o servidor bloqueia o acesso às lojas e às operações. Depois ele pode alterar a própria senha pelo perfil. A exigência vale para novos cadastros e não força nova troca das contas que já estão em uso. As verificações de empresa/loja e permissões permanecem no servidor.
 
 O CEO continua acessando somente o painel separado de criação de administradores. Para operar uma empresa, é necessária a conta ADM dessa empresa; o botão não concede acesso empresarial ao CEO.
 

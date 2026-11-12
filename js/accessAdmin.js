@@ -26,13 +26,13 @@ function permissions(form, current={}) {
 function showCredentials(login, password) {
  const modal=el('dialog'); modal.className='vs-dialog access-dialog';
  const title=el('h2','Colaborador cadastrado'); title.id='credentials-'+crypto.randomUUID(); modal.setAttribute('aria-labelledby',title.id);
- modal.append(title,el('p','Entregue estas credenciais diretamente ao colaborador por um canal privado. Ele poderá trocar a própria senha. Esta tela não ficará disponível no cadastro.'));
+ modal.append(title,el('p','Entregue estas credenciais diretamente ao colaborador por um canal privado. Ele deverá trocar a senha no primeiro acesso. Esta tela não ficará disponível no cadastro.'));
  const form=el('div');
  const user=field(form,'Login','text',login), secret=field(form,'Senha inicial','password',password);
  user.readOnly=secret.readOnly=true;
  const status=el('p'); status.setAttribute('role','status');
  form.append(button('Mostrar / ocultar senha',()=>{secret.type=secret.type==='password'?'text':'password';}),button('Copiar acesso',async()=>{
-  try { await navigator.clipboard.writeText(`Acesso ao ValidaSuper: ${location.origin}/\nLogin: ${user.value}\nSenha inicial: ${secret.value}\nTroque sua senha pelo seu perfil após entrar.`); status.textContent='Credenciais copiadas. Compartilhe por um canal privado.'; }
+  try { await navigator.clipboard.writeText(`Acesso ao ValidaSuper: ${location.origin}/\nLogin: ${user.value}\nSenha inicial: ${secret.value}\nNo primeiro acesso, troque a senha inicial por outra com pelo menos 6 caracteres. Pode usar somente números.`); status.textContent='Credenciais copiadas. Compartilhe por um canal privado.'; }
   catch { status.textContent='Não foi possível copiar. Selecione o login e mostre a senha para copiá-los manualmente.'; }
  }));
  modal.append(form,status,button('Concluir',()=>modal.close()));
@@ -47,6 +47,7 @@ export async function renderCompanyAccess(container, context, onSaved=async()=>{
  const form=el('form'), name=field(form,'Nome completo'), login=field(form,'Login (sem e-mail)'), password=field(form,'Senha inicial','password');
  login.pattern='[a-z0-9][a-z0-9._-]{2,39}'; login.minLength=3; login.maxLength=40; login.autocomplete='off'; login.title='De 3 a 40 caracteres: letras minúsculas, números, ponto, hífen ou sublinhado.'; login.addEventListener('input',()=>{login.value=login.value.toLowerCase();});
  password.minLength=6; password.maxLength=72; password.autocomplete='new-password';
+ form.append(el('p','A troca de senha será obrigatória no primeiro acesso. Use pelo menos 6 caracteres; pode usar somente números.'));
  const stores=choices(form,'Lojas permitidas',context.lojas.map(l=>[l.id,l.nome]));
  const allowed=permissions(form,{entrada:true});
  let credentials=null;
@@ -90,6 +91,7 @@ export function openPasswordChange(onSaved=async()=>{}) {
  const header=el('div'); header.className='modal-header'; header.append(title,button('Fechar',()=>modal.close())); modal.append(header);
  const form=el('form'), current=field(form,'Senha atual','password'), next=field(form,'Nova senha','password'), confirm=field(form,'Confirme a nova senha','password');
  current.autocomplete='current-password'; next.autocomplete=confirm.autocomplete='new-password'; next.minLength=confirm.minLength=6; next.maxLength=confirm.maxLength=72;
+ form.append(el('p','A nova senha deve ser diferente da senha atual e ter pelo menos 6 caracteres. Pode conter somente números.'));
  submit(form,'Alterar senha',async()=>{if(next.value!==confirm.value)throw new Error('A confirmação da senha não confere.');if(next.value===current.value)throw new Error('Escolha uma senha diferente da atual.');await authService.changePassword(current.value,next.value);},async()=>{form.reset();await onSaved();});
  modal.append(form); document.body.append(modal); modal.addEventListener('close',()=>modal.remove()); modal.showModal();
 }

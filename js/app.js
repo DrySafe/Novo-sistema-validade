@@ -66,9 +66,9 @@ async function checkSession() {
         loginScreen.classList.add('hidden'); appScreen.classList.remove('hidden');
         document.querySelector('.workspace-header').classList.add('hidden'); document.getElementById('bottom-nav').classList.add('hidden');
         document.getElementById('cycle-section-container').classList.add('hidden');
-        document.getElementById('btn-access-admin').classList.add('hidden'); document.getElementById('btn-change-password').classList.remove('hidden');
+        document.getElementById('btn-access-admin').classList.add('hidden'); document.getElementById('btn-company-team').classList.add('hidden'); document.getElementById('btn-change-password').classList.remove('hidden');
         const gate=document.getElementById('product-card-container'); gate.classList.remove('hidden');
-        gate.textContent='Antes de começar, substitua a senha inicial por uma senha pessoal. Ela não será exibida ao CEO.';
+        gate.textContent='Antes de começar, troque sua senha inicial por uma senha pessoal diferente. Use pelo menos 6 caracteres; pode usar somente números. Sua nova senha não será exibida ao administrador.';
         const change=document.createElement('button'); change.type='button'; change.className='btn btn-primary'; change.textContent='Definir minha senha pessoal';
         change.onclick=()=>openPasswordChange(async()=>{window.closeAllModals();await checkSession();}); gate.append(change);
         return;

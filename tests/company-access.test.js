@@ -79,6 +79,19 @@ test('hierarquia do aplicativo, cadastro fechado, lojas e liberações no servid
   await assert.rejects(q('insert into auth.users(id,email,raw_app_meta_data) values($1,$2,$3)',[id(6),'reuso@test.example',JSON.stringify({vs_provisionamento:nonce})]),/Cadastro público desativado/);
   await q('select vs_provisionar_funcionario($1,$2,$3,$4,$5,$6)',[id(2),id(5),'Operador','operador',[store.id],lib]);
  });
+ await t.test('funcionário precisa trocar a senha antes de consultar ou inserir dados',async()=>{
+  await as(5);
+  const context=(await q('select vs_contexto_acesso() c'))[0].c;assert.equal(context.senha_inicial,true);assert.deepEqual(context.lojas,[]);
+  assert.deepEqual(await q('select id from lojas'),[]);
+  await assert.rejects(q('select vs_painel($1)',[store.id]),/não autorizada/);
+  await assert.rejects(q('update perfis set senha_inicial=false where id=$1',[id(5)]),/permission denied/);
+  await db.exec('reset role');
+  await q("update auth.users set encrypted_password=encrypted_password where id=$1",[id(5)]);
+  assert.equal((await q('select senha_inicial from perfis where id=$1',[id(5)]))[0].senha_inicial,true);
+  // Simula somente a fronteira Auth: hash diferente após a troca efetiva de senha.
+  await q("update auth.users set encrypted_password='personal-employee-hash' where id=$1",[id(5)]);
+  assert.equal((await q('select senha_inicial from perfis where id=$1',[id(5)]))[0].senha_inicial,false);
+ });
  await t.test('funcionário vê somente lojas atribuídas e permissões vencem o cargo',async()=>{
   await as(5);
   assert.equal((await q('select vs_acesso($1) ok',[store.id]))[0].ok,true);

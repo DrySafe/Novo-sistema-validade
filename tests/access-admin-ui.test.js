@@ -12,7 +12,7 @@ test('login sem e-mail, sem cadastro público e troca de senha com reautenticaç
  await authService.login('  Maria  ','senha');assert.equal(calls[0][1].email,'maria@usuarios.validasuper.invalid');
  await assert.rejects(authService.changePassword('errada','nova-senha-forte-123'),/Senha atual incorreta/);assert.equal(calls.filter(c=>c[0]==='update').length,0);
  await assert.rejects(authService.changePassword('correta','Ab123'),/6 caracteres/);
- await authService.changePassword('correta','Abc123');assert.deepEqual(calls.at(-1),['update',{password:'Abc123'}]);
+ await authService.changePassword('correta','123456');assert.deepEqual(calls.at(-1),['update',{password:'123456'}]);
  dom.window.close();
 });
 
