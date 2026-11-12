@@ -72,3 +72,14 @@ body.dark .btn-primary { color: #122a24; }
  .modal { padding: 10px; }
  .modal-content { max-height: calc(100dvh - 20px); border-radius: 16px; }
 }
+
+.workspace-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.workspace-title-row h1 { min-width: 0; overflow-wrap: anywhere; }
+.menu-help-button { flex: 0 0 44px; width: 44px; height: 44px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--primary); }
+.menu-help-button span { font-size: 20px; line-height: 1; }
+.menu-help-button:hover { background: var(--primary-light); }
+.menu-help-dialog .modal-header { position: sticky; top: -1px; background: var(--surface); padding-block: 6px; }
+.menu-help-dialog .modal-header .btn { flex-shrink: 0; }
+.menu-help-dialog section { margin-top: 20px; }
+.menu-help-dialog h3 { font-size: 15px; line-height: 1.5; }
+.menu-help-dialog p { font-size: 14px; }

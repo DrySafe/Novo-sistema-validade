@@ -1,4 +1,6 @@
+import { initializeMenuHelp } from './menuHelp.js';
 export function initializeLayout(doc = document) {
+  const updateHelp = initializeMenuHelp(doc);
   const toggle = doc.getElementById('nav-more-toggle');
   const secondary = doc.getElementById('nav-secondary');
   const titles = { ciclos: 'Acompanhamento', acompanhamento: 'Ações e resultados', validade: 'Validades', vencidos: 'Vencidos', uso_loja: 'Uso da loja', avarias: 'Avarias', equipe: 'Colaboradores' };
@@ -27,6 +29,7 @@ export function initializeLayout(doc = document) {
       doc.querySelectorAll('.nav-item').forEach(b => b.removeAttribute('aria-current'));
       button.setAttribute('aria-current', 'page');
       doc.getElementById('workspace-title').textContent = titles[button.dataset.sector];
+      updateHelp(button.dataset.sector);
       toggle.classList.toggle('active', secondary.contains(button));
       toggle.setAttribute('aria-label', secondary.contains(button) ? 'Mais opções — ' + titles[button.dataset.sector] : 'Mais opções');
       doc.querySelectorAll('.report-menu').forEach(e => e.open = false);

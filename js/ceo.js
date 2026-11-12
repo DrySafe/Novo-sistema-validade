@@ -1,4 +1,6 @@
+import { initializeMenuHelp } from './menuHelp.js';
 import { ceoClient } from './ceoClient.js';
+initializeMenuHelp(document, 'administrativo');
 const login=document.getElementById('ceo-login'),panel=document.getElementById('ceo-panel'),status=document.getElementById('ceo-status');
 function view(authorized){login.hidden=authorized;panel.hidden=!authorized;}
 async function authorize(){
