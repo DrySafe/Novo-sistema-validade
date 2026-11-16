@@ -442,7 +442,7 @@ function setupEvents() {
   });
 
   document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
-    if (currentSector !== 'equipe') lifecycleReports.exportLifecyclePDF(currentData, currentProfile);
+    if (currentSector !== 'equipe') lifecycleReports.exportLifecyclePDF(currentData, currentProfile, {groupBy:currentSector === 'vencidos' ? 'vencidos' : 'origem'});
     else alert('Selecione um módulo operacional para exportar o acompanhamento.');
   });
 

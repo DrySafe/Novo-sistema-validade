@@ -95,7 +95,7 @@ function historico(item, profile) {
   if (item.vencido_em) modal.append(node('p', `Vencidos: ${item.lote_vencidos} | Transferência: ${date(item.vencido_em)} | Saldo transferido: ${item.saldo_vencimento}`));
   const list = node('ol');
   for (const e of item.eventos) list.append(node('li', `${new Date(e.ocorrido_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} — ${e.tipo} | Faixa ${e.faixa || 'Não se aplica'} | Rodada ${roundLabel(e)} | Saldo ${e.saldo_anterior} → ${e.saldo_novo} | Preço ${money(e.preco_anterior)} → ${money(e.preco_novo)} | TOTVS: ${e.referencia_totvs || 'Não informado'} | ${e.motivo} | Responsável: ${responsible(e)}`));
-  modal.append(list, button('Excel do histórico', () => reportService.exportLifecycleExcel([item], profile)), button('PDF do histórico', () => reportService.exportLifecyclePDF([item], profile)));
+  modal.append(list, button('Excel do histórico', () => reportService.exportLifecycleExcel([item], profile)), button('PDF resumido do item', () => reportService.exportLifecyclePDF([item], profile)));
 }
 
 const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -124,7 +124,8 @@ function itemActions(item, profile, refresh) {
 function openLot(code, initialItems, profile, refresh, options) {
   const modal = dialog('Lote ' + code);
   modal.classList.add('vs-lot-dialog');
-  let items = initialItems, page = 1;
+  let items = initialItems, page = 1, exportItems = initialItems;
+  const exportPDF = button('PDF deste lote (filtrado)', () => reportService.exportLifecyclePDF(exportItems, profile, options));
   const summary = node('p', undefined, 'vs-lot-summary');
   const toolbar = node('div', undefined, 'vs-table-toolbar');
   const search = node('input'); search.type = 'search'; search.placeholder = 'Produto, EAN ou lote físico'; search.setAttribute('aria-label', 'Buscar itens do lote');
@@ -140,7 +141,7 @@ function openLot(code, initialItems, profile, refresh, options) {
   const pendingLabel = node('label', undefined, 'vs-pending-filter');
   const pending = node('input'); pending.type = 'checkbox'; pending.checked = Boolean(options.pendingOnly);
   pendingLabel.append(pending, node('span', 'Somente pendentes'));
-  toolbar.append(search, band, local, order, size, pendingLabel);
+  toolbar.append(search, band, local, order, size, pendingLabel, exportPDF);
   const scroll = node('div', undefined, 'vs-table-scroll'); scroll.tabIndex = 0; scroll.setAttribute('aria-label', 'Tabela de itens do lote, com rolagem');
   const table = node('table', undefined, 'vs-items-table');
   const caption = node('caption', 'Itens do lote ' + code); caption.className = 'sr-only'; table.append(caption);
@@ -177,6 +178,7 @@ function openLot(code, initialItems, profile, refresh, options) {
     summary.textContent = `${items.length} itens · ${items.reduce((sum, i) => sum + i.quantidade, 0)} unidades · ${items.filter(i => i.pendencias?.length).length} pendentes · ${items.filter(i => correctionsOf(i).length).length} itens com correção`;
     const term = normalize(search.value.trim());
     const selected = items.filter(i => (!term || itemSearch(i).includes(term)) && (band.value === 'todos' || (i.vencido_em ? 'VENC' : i.faixa || 'sem') === band.value) && (!local.value || i.localizacao === local.value) && (!pending.checked || i.pendencias?.length));
+    exportItems = selected; exportPDF.disabled = !selected.length;
     selected.sort((a, b) => order.value === 'produto' ? a.produto_nome.localeCompare(b.produto_nome, 'pt-BR') : order.value === 'saldo' ? a.quantidade - b.quantidade : String(a.data_vencimento || '9999').localeCompare(String(b.data_vencimento || '9999')) || a.produto_nome.localeCompare(b.produto_nome, 'pt-BR'));
     const limit = Number(size.value), pages = Math.max(1, Math.ceil(selected.length / limit));
     page = Math.min(Math.max(1, page), pages);
