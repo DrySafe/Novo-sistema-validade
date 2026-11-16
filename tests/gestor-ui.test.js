@@ -31,3 +31,18 @@ test('notificações escapam HTML, preservam filtros e somente Gestor decide alt
  const filter=container.querySelectorAll('select')[0];filter.value='a';await filter.onchange();assert.equal(calls.at(-1)[1].loja,'a');
  }finally{Object.assign(api,old);dom.window.close();}
 });
+
+test('Gestor cadastra outro Gestor com confirmação e sem limitar lojas; administrador não vê essa opção',async()=>{
+ const dom=setup();const {renderCompanyAccess}=await import('../js/accessAdmin.js');const {authService}=await import('../js/authService.js');const oldGet=authService.getEmployees,oldCreate=authService.provisionAccount;let payload;
+ authService.getEmployees=async()=>[];authService.provisionAccount=async p=>payload=p;
+ try{
+  const context={gestor_empresa:true,pode_gerenciar_usuarios:true,lojas:[{id:'a',nome:'Centro',pode_administrar:true}]};const container=document.querySelector('main');await renderCompanyAccess(container,context);
+  const form=container.querySelector('form');const inputs=form.querySelectorAll('input:not([type=checkbox])');inputs[0].value='Gestor adicional';inputs[1].value='gestor.dois';inputs[2].value='123456';
+  const role=form.querySelector('select');assert.ok([...role.options].some(o=>o.value==='gestor'));role.value='gestor';role.dispatchEvent(new window.Event('change'));
+  assert.equal(form.querySelector('fieldset').hidden,true);assert.match(form.textContent,/lojas atuais e futuras/);
+  await form.onsubmit(new window.Event('submit',{cancelable:true}));assert.equal(payload,undefined);
+  form.querySelector('.vs-confirm input').checked=true;await form.onsubmit(new window.Event('submit',{cancelable:true}));
+  assert.equal(payload.acao,'gestor_empresa');assert.deepEqual(payload.lojas,[]);assert.deepEqual(payload.edicao_lojas,[]);assert.equal(payload.liberacoes.correcao,true);assert.match(document.querySelector('dialog').textContent,/Gestor cadastrado/);document.querySelector('dialog').close();
+  await renderCompanyAccess(container,{...context,gestor_empresa:false,admin_loja:true});assert.equal(container.querySelector('form select'),null);
+ }finally{authService.getEmployees=oldGet;authService.provisionAccount=oldCreate;dom.window.close();}
+});

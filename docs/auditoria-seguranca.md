@@ -64,3 +64,7 @@ Migrações desta entrega: `202611120002_seguranca_e_limites.sql` e `20261112000
 ## Evolução posterior: Gestores e verificações
 
 A entrega de hierarquia adicionou quatro tabelas com RLS (total atual: 28), índice de CEO único, administradores por loja, aprovação cadastral e notificações com leitura individual. O CEO agora cria Gestores; os antigos administradores de empresa passaram a esse papel, sem mudança de lojas/credenciais. Ver [hierarquia-e-notificacoes.md](hierarquia-e-notificacoes.md). Os números e versões da auditoria acima registram a entrega anterior; a nova Edge Function é a versão 9, ainda com verificação de JWT.
+
+## Gestores adicionais na mesma empresa
+
+A migração `202611160001_gestores_adicionais_empresa.sql` permite que Gestor crie/promova outro Gestor exclusivamente na própria empresa. Somente CEO abre nova empresa; CEO continua único e sem acesso operacional. A Edge Function versão 10 valida explicitamente o tipo de criação antes de criar identidade Auth. A nova RPC de reserva é exclusiva de `service_role`. Escrita direta, escopo entre empresas e primeira troca de senha seguem bloqueados. Gestores existentes ficam protegidos contra alteração pelo formulário de colaboradores. Auditoria e avisos registram concessões de autoridade.

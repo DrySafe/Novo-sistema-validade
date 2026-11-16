@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { accountHandler } from '../supabase/functions/gerenciar-equipe/handler.js';
 const payload={acao:'funcionario',nome:'Maria',login:'maria',password:'senha-provisoria-123',lojas:['00000000-0000-0000-0000-000000000010'],liberacoes:{entrada:true,movimentacao:false,revisao:false,correcao:false},ator:'forjado'};
 const request=body=>new Request('https://edge.test',{method:'POST',headers:{Authorization:'Bearer sessao','Content-Type':'application/json'},body:JSON.stringify(body)});
-function stub(){const calls=[];const admin={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='vs_preparar_conta'?'nonce':{id:'novo'},error:null};},auth:{getUser:async()=>({data:{user:{id:'ator-real'}}}),admin:{createUser:async args=>{calls.push(['createUser',args]);return {data:{user:{id:'novo'}}};},deleteUser:async id=>{calls.push(['deleteUser',id]);return {error:null};}}}};return {admin,calls};}
+function stub(){const calls=[];const admin={rpc:async(name,args)=>{calls.push([name,args]);return {data:name==='vs_preparar_conta_equipe'?'nonce':{id:'novo'},error:null};},auth:{getUser:async()=>({data:{user:{id:'ator-real'}}}),admin:{createUser:async args=>{calls.push(['createUser',args]);return {data:{user:{id:'novo'}}};},deleteUser:async id=>{calls.push(['deleteUser',id]);return {error:null};}}}};return {admin,calls};}
 test('Edge usa ator do JWT, e-mail técnico e UUID reservado de Auth Admin',async()=>{
  const {admin,calls}=stub();const response=await accountHandler(admin)(request(payload));assert.equal(response.status,200);
  const create=calls.find(c=>c[0]==='createUser')[1];assert.equal(create.email,'maria@usuarios.validasuper.invalid');assert.equal(create.id,'nonce');assert.equal(create.app_metadata,undefined);
@@ -48,4 +48,11 @@ test('duplicidade explica que senha existente não muda; falha interna não se a
   if(code==='email_exists')assert.match(body.error,/não altera a senha existente/);
   assert.ok(!calls.some(c=>c[0]==='deleteUser'||c[0]==='vs_provisionar_pessoa'));assert.ok(calls.some(c=>c[0]==='vs_cancelar_reserva'));
  }
+});
+
+test('Gestor adicional usa provisionamento na empresa existente e não o cadastro do CEO',async()=>{
+ const {admin,calls}=stub();const response=await accountHandler(admin)(request({...payload,acao:'gestor_empresa',lojas:[]}));
+ assert.equal(response.status,200);const reserve=calls.find(c=>c[0]==='vs_preparar_conta_equipe')[1];assert.equal(reserve.p_papel,'gestor');assert.equal(reserve.p_nova_empresa,false);
+ const person=calls.find(c=>c[0]==='vs_provisionar_pessoa')[1];assert.equal(person.p_papel,'gestor');assert.deepEqual(person.p_lojas,[]);assert.ok(!calls.some(c=>c[0]==='vs_provisionar_empresa'));
+ const denied=stub();assert.equal((await accountHandler(denied.admin)(request({...payload,acao:'gestor_empresa'}))).status,400);assert.equal(denied.calls.length,0);
 });

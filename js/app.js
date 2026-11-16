@@ -759,7 +759,7 @@ function updateActionPermissions() {
   if (accessContext) {p.equipe=canManagePeople(accessContext);p.criarLoja=isCompanyManager(accessContext);p.editarLoja=!!accessContext.lojas.find(l=>l.id===activeLojaId)?.pode_editar_cadastro;}
   const add = document.getElementById('btn-open-modal');
   add.classList.toggle('hidden', ['acompanhamento','notificacoes'].includes(currentSector) || (currentSector === 'equipe' ? !p.equipe : !p.entrada));
-  add.textContent = currentSector === 'equipe' ? '+ Cadastrar colaborador' : '+ Novo lançamento';
+  add.textContent = currentSector === 'equipe' ? '+ Cadastrar usuário' : '+ Novo lançamento';
   document.getElementById('nav-item-equipe').classList.toggle('hidden', !p.equipe);
   document.getElementById('tab-btn-gestao-loja').classList.toggle('hidden', !p.editarLoja);
   document.getElementById('tab-btn-gestao-loja').textContent=accessContext&&isCompanyManager(accessContext)?'Editar dados da loja':'Solicitar alteração da loja';

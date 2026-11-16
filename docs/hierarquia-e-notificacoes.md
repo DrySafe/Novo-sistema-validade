@@ -4,22 +4,24 @@
 
 | Papel | Alcance | Permissões administrativas |
 | --- | --- | --- |
-| CEO | Painel separado do aplicativo | Cria somente contas de Gestor com e-mail e senha inicial. Não acessa lojas, contas ou dados operacionais. Há uma única conta CEO, protegida por índice único. |
-| Gestor | Todas as lojas da sua empresa | Cria lojas; cadastra colaboradores; cria ou promove administradores para uma ou mais lojas; libera pedidos de edição cadastral; aprova ou recusa solicitações. Não acessa outra empresa nem cria Gestor/CEO. |
+| CEO | Painel separado do aplicativo | Cria o primeiro Gestor de cada nova empresa com e-mail e senha inicial. Não acessa lojas, contas ou dados operacionais. Há uma única conta CEO, protegida por índice único. |
+| Gestor | Todas as lojas da sua empresa | Cria lojas, outros Gestores da mesma empresa e colaboradores; cria ou promove administradores para uma ou mais lojas; libera pedidos de edição cadastral; aprova ou recusa solicitações. Não acessa outra empresa, não cria novas empresas e não cria CEO. |
 | Administrador de loja | Somente lojas atribuídas | Gerencia colaboradores dentro desse alcance. Não cria lojas ou administradores. Pode pedir alteração cadastral por loja se o Gestor liberar; não aprova pedidos. |
 | Colaborador | Lojas atribuídas e liberações operacionais | Consulta dados e executa as operações liberadas. Pode enviar comunicação à administração ou ao Gestor da loja. Não administra pessoas/lojas. |
 
-Os atuais administradores de empresa foram migrados para Gestor, preservando IDs, lojas, logins, senhas e dados. A coluna interna `vs_empresas.administrador_id` continua identificando o Gestor para compatibilidade. Novas contas de Gestor só são provisionadas pelo CEO. Não existe promoção pública de colaborador/administrador para Gestor ou CEO.
+Os atuais administradores de empresa foram migrados para Gestor, preservando IDs, lojas, logins, senhas e dados. A coluna interna `vs_empresas.administrador_id` continua identificando o Gestor para compatibilidade. O CEO provisiona o primeiro Gestor de uma nova empresa. Gestores podem criar ou promover usuários a Gestor exclusivamente na própria empresa; não há criação de CEO nem promoção por administradores ou colaboradores.
 
 O trabalho continua compartilhado por loja. Administradores e colaboradores não ficam limitados aos itens que eles mesmos cadastraram. Administradores têm operações de gestão de estoque e acompanhamento nas suas lojas; colaboradores seguem suas liberações.
 
 ## Gestão de pessoas
 
-Em **Colaboradores**, o Gestor escolhe o papel Colaborador ou Administrador de loja, seleciona as lojas e, para administradores, em quais delas libera pedidos de edição cadastral. Também pode alterar o papel de uma conta existente da própria empresa. Ninguém altera o próprio papel ou o login fixo por essa tela.
+Em **Colaboradores**, o Gestor escolhe o papel Colaborador, Administrador de loja ou Gestor, seleciona as lojas e, para administradores, em quais delas libera pedidos de edição cadastral. Também pode alterar o papel de uma conta existente da própria empresa. Ao selecionar Gestor, a seleção de lojas e liberações individuais é substituída por uma confirmação explícita de acesso completo: todas as lojas atuais e futuras, gestão de pessoas e aprovação de alterações cadastrais. O novo Gestor usa login fixo e senha inicial, sem precisar informar e-mail pessoal.
+
+Contas de Gestor aparecem identificadas e protegidas contra rebaixamento ou suspensão pelo formulário de colaboradores; o próprio usuário altera seu nome e senha em Minha conta. Ninguém altera o próprio papel ou o login fixo por essa tela.
 
 O administrador vê somente as lojas sob sua administração. Um colaborador que também atende lojas fora desse alcance aparece somente com as lojas visíveis e com edição bloqueada; a gestão dessa conta fica com o Gestor. Isso impede que uma alteração em liberações globais afete outra loja silenciosamente.
 
-Desmarcar todas as lojas suspende o acesso. Contas sem lojas são reativadas pelo Gestor. Administradores não gerenciam outros administradores nem a conta do Gestor. Novas contas, inclusive administradores e Gestores, devem trocar a senha inicial no primeiro acesso; mínimo de seis caracteres, podendo usar somente números.
+Para colaboradores e administradores de loja, desmarcar todas as lojas suspende o acesso. Essas contas são reativadas pelo Gestor. O papel Gestor tem alcance sobre a empresa inteira e não depende de marcar lojas individualmente. Administradores não gerenciam outros administradores nem contas de Gestor. Novas contas, inclusive administradores e Gestores, devem trocar a senha inicial no primeiro acesso; mínimo de seis caracteres, podendo usar somente números.
 
 ## Verificação do cadastro da loja
 
@@ -64,3 +66,11 @@ A Edge Function verifica o ator pelo JWT e valida o papel e todas as lojas antes
 Os testes cobrem escopo por loja e empresa, único CEO, papéis, compartilhamento protegido, primeira senha, liberação de edição, cadastro vigente preservado, aprovação/recusa, repetição/conflito, autoria, leitura individual, alertas sem duplicação, XSS e escrita direta negada. O fluxo também foi exercitado no navegador com contas temporárias e Supabase real, em telas de 320 a 1366 pixels.
 
 Validação desta entrega: 106 testes passaram; 32 funções do servidor foram comparadas com a migração final. Matriz de privilégios verificada nas 28 tabelas públicas. Testes reais confirmaram recusa de criação de Gestor/administrador por administrador de loja, rejeição de ator forjado, bloqueio de loja fora do escopo, proteção de usuário compartilhado e preservação do cadastro em recusa. Contas, lojas e notificações temporárias foram removidas; hashes de dez tabelas operacionais permaneceram iguais ao início dos testes online.
+
+## Gestores adicionais — atualização
+
+Migração `202611160001_gestores_adicionais_empresa.sql`, Edge Function versão 10. O vínculo de autoridade usa o papel Gestor e a empresa do perfil; `vs_empresas.administrador_id` preserva o fundador como referência, sem limitar a empresa a um único Gestor. Não altera os registros existentes.
+
+A reserva do servidor diferencia criar uma empresa (CEO) de criar uma pessoa na empresa atual (Gestor/administrador), recusando a operação não autorizada antes de criar Auth. Gestor adicional recebe as mesmas verificações de primeira senha, isolamento, notificações, dados e permissões do Gestor inicial. Criar ou promover Gestor gera auditoria e notificação para os Gestores da empresa.
+
+Validação: 120 testes passaram. Navegador e API reais confirmaram criação do segundo Gestor, senha inicial obrigatória, gestão de pessoas, criação de loja e de terceiro Gestor na mesma empresa, acesso dos dois Gestores às lojas futuras, aprovação pelo segundo Gestor e bloqueio de administrador, nova empresa e loja externa. Empresa, lojas e contas temporárias foram removidas. As 27 tabelas verificadas preservaram os mesmos registros e hashes anteriores aos testes (contadores de limite excluídos da comparação).

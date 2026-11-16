@@ -17,8 +17,8 @@ test('Gestor, administradores por loja, verificação e notificações preservam
  try{
   await db.exec('reset role');await q('insert into vs_donos(usuario_id) values($1)',[ids.operator]);await q("update perfis set tipo_conta='gestor',funcao='gestor' where id=$1",[ids.admin]);
   await person('admina','admin',[ids.store],'loja_admin');await person('adminb','admin',[ids.other],'loja_admin');await person('shared','admin',[ids.store,ids.other]);await person('staffa','admina',[ids.store]);
-  await t.test('CEO é único, não opera lojas e só ele cria Gestores',async()=>{
-   await as();await db.exec('reset role');await assert.rejects(q("select vs_preparar_conta($1,'gestor@test.invalid','gestor','{}')",[ids.admin]),/CEO/);
+  await t.test('CEO é único, não opera lojas e só ele cria novas empresas',async()=>{
+   await as();await db.exec('reset role');await assert.rejects(q("select vs_preparar_conta_equipe($1,'gestor@test.invalid','gestor','{}',true)",[ids.admin]),/CEO/);
    await as('operator');assert.deepEqual((await context()).lojas,[]);await assert.rejects(q("select vs_salvar_loja('{\"nome\":\"Proibida\"}')"),/CEO/);
    await db.exec('reset role');await assert.rejects(q('insert into vs_donos(usuario_id) values($1)',[ids.admin]),/unique|duplicate/);
   });
