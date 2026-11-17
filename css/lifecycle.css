@@ -180,3 +180,8 @@ body:has(#app-screen:not(.hidden)) .public-footer { display: none; }
 
 .notification-priority-critico{background:color-mix(in srgb,var(--danger) 14%,var(--surface));color:var(--danger);}
 .notification-priority-atencao{background:color-mix(in srgb,var(--warning) 18%,var(--surface));color:var(--text-main);}
+.vs-items-table tr.vs-expiry-urgent > :first-child { border-left: 4px solid var(--danger); }
+.vs-expiry-count { display:block!important; width:fit-content; font-weight:750; }
+.vs-items-table .vs-expiry-action, .vs-lot-urgent { color:var(--danger); font-weight:700; }
+.vs-lot-urgent { display:block; font-size:12px; line-height:1.5; }
+.vs-expiry-band { color:var(--text-muted); font-size:11px; }

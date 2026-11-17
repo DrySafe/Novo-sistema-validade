@@ -1,8 +1,9 @@
+import { expiryStatus, watchCalendarDay } from './expiryStatus.js';
 import { lifecycleService } from './lifecycleService.js';
 import * as reportService from './lifecycleReports.js';
 import { permissionsFor } from './permissions.js';
 import { openItemFollow } from './followupUI.js';
-import { formatDate as date, formatTimestamp, responsible, roundLabel } from './lifecycleRules.js';
+import { formatDate as date, formatTimestamp, responsible, roundLabel, hojeBrasil } from './lifecycleRules.js';
 
 function node(tag, text, cls) {
   const el = document.createElement(tag);
@@ -134,14 +135,15 @@ function openLot(code, initialItems, profile, refresh, options) {
     for (const [value, text] of values) { const opt = node('option', text); opt.value = value; el.append(opt); }
     return el;
   };
-  const band = select('Filtrar faixa de validade', [['todos', 'Todas as faixas'], ...['60+', '60', '45', '30', '15', '7'].map(v => [v, v + ' dias']), ['VENC', 'Vencidos'], ['sem', 'Sem validade']]);
+  const band = select('Filtrar faixa de validade', [['todos', 'Todas as faixas'], ['60+', 'Faixa: mais de 60 dias'], ...['60', '45', '30', '15', '7'].map(v => [v, 'Faixa: ' + ({'7':'1–7','15':'8–15','30':'16–30','45':'31–45','60':'46–60'})[v] + ' dias']), ['VENC', 'Vencidos'], ['sem', 'Sem validade']]);
+  const urgency = select('Filtrar urgência', [['todos', 'Todos os prazos'], ['3', 'Até 3 dias / vencidos com saldo'], ['7', 'Até 7 dias / vencidos com saldo'], ['vencidos', 'Vencidos com saldo']]);
   const local = select('Filtrar localização', [['', 'Todos os locais']]);
-  const order = select('Ordenar itens', [['validade', 'Validade mais próxima'], ['produto', 'Produto A–Z'], ['saldo', 'Menor saldo']]);
+  const order = select('Ordenar itens', [['urgencia', 'Prioridade: saldo e validade'], ['validade', 'Validade mais próxima'], ['produto', 'Produto A–Z'], ['saldo', 'Menor saldo']]);
   const size = select('Itens por página', [['25', '25 por página'], ['50', '50 por página'], ['100', '100 por página']]);
   const pendingLabel = node('label', undefined, 'vs-pending-filter');
   const pending = node('input'); pending.type = 'checkbox'; pending.checked = Boolean(options.pendingOnly);
   pendingLabel.append(pending, node('span', 'Somente pendentes'));
-  toolbar.append(search, band, local, order, size, pendingLabel, exportPDF);
+  toolbar.append(search, urgency, band, local, order, size, pendingLabel, exportPDF);
   const scroll = node('div', undefined, 'vs-table-scroll'); scroll.tabIndex = 0; scroll.setAttribute('aria-label', 'Tabela de itens do lote, com rolagem');
   const table = node('table', undefined, 'vs-items-table');
   const caption = node('caption', 'Itens do lote ' + code); caption.className = 'sr-only'; table.append(caption);
@@ -155,7 +157,7 @@ function openLot(code, initialItems, profile, refresh, options) {
   const next = button('Próxima', () => { page++; render(); scroll.scrollTop = 0; });
   footer.append(count, previous, next);
   const error = node('p'); error.setAttribute('role', 'alert');
-  const hint = node('p', 'Em telas pequenas, deslize a tabela para visualizar as outras colunas.', 'vs-table-hint');
+  const hint = node('p', 'Dias restantes calculados pela data de hoje em São Paulo. A faixa é um intervalo de revisão. Em telas pequenas, deslize a tabela para ver as demais colunas.', 'vs-table-hint');
   modal.append(summary, toolbar, hint, scroll, footer, error);
 
   const updateLocals = () => {
@@ -175,11 +177,15 @@ function openLot(code, initialItems, profile, refresh, options) {
     render();
   };
   const render = () => {
+    const today = hojeBrasil(), timings = new Map(items.map(i => [i, expiryStatus(i, today)]));
+    const timingOf = i => timings.get(i);
     summary.textContent = `${items.length} itens · ${items.reduce((sum, i) => sum + i.quantidade, 0)} unidades · ${items.filter(i => i.pendencias?.length).length} pendentes · ${items.filter(i => correctionsOf(i).length).length} itens com correção`;
+    const urgentCount = items.filter(i => timingOf(i).urgent).length;
+    if (urgentCount) summary.textContent += ` · ${urgentCount} ${urgentCount === 1 ? 'item urgente' : 'itens urgentes'} com saldo (até 3 dias ou vencidos)`;
     const term = normalize(search.value.trim());
-    const selected = items.filter(i => (!term || itemSearch(i).includes(term)) && (band.value === 'todos' || (i.vencido_em ? 'VENC' : i.faixa || 'sem') === band.value) && (!local.value || i.localizacao === local.value) && (!pending.checked || i.pendencias?.length));
+    const selected = items.filter(i => (!term || itemSearch(i).includes(term)) && (band.value === 'todos' || (timingOf(i).band || 'sem') === band.value) && (urgency.value === 'todos' || (timingOf(i).active && timingOf(i).days != null && timingOf(i).days <= (urgency.value === 'vencidos' ? 0 : Number(urgency.value)))) && (!local.value || i.localizacao === local.value) && (!pending.checked || i.pendencias?.length));
     exportItems = selected; exportPDF.disabled = !selected.length;
-    selected.sort((a, b) => order.value === 'produto' ? a.produto_nome.localeCompare(b.produto_nome, 'pt-BR') : order.value === 'saldo' ? a.quantidade - b.quantidade : String(a.data_vencimento || '9999').localeCompare(String(b.data_vencimento || '9999')) || a.produto_nome.localeCompare(b.produto_nome, 'pt-BR'));
+    selected.sort((a, b) => order.value === 'urgencia' && timingOf(a).active !== timingOf(b).active ? Number(timingOf(b).active) - Number(timingOf(a).active) : order.value === 'produto' ? a.produto_nome.localeCompare(b.produto_nome, 'pt-BR') : order.value === 'saldo' ? a.quantidade - b.quantidade : String(a.data_vencimento || '9999').localeCompare(String(b.data_vencimento || '9999')) || a.produto_nome.localeCompare(b.produto_nome, 'pt-BR'));
     const limit = Number(size.value), pages = Math.max(1, Math.ceil(selected.length / limit));
     page = Math.min(Math.max(1, page), pages);
     const start = (page - 1) * limit;
@@ -187,11 +193,16 @@ function openLot(code, initialItems, profile, refresh, options) {
     if (!selected.length) { const row = node('tr'); const cell = node('td', 'Nenhum item corresponde aos filtros.'); cell.colSpan = 7; row.append(cell); body.append(row); }
     for (const item of selected.slice(start, start + limit)) {
       const row = node('tr'); row.dataset.itemId = item.id;
+      const timing = timingOf(item);
       const product = node('th'); product.scope = 'row'; product.append(node('strong', item.produto_nome), node('small', 'EAN ' + (item.produtos?.ean || '—')));
+      if (timing.urgent) product.append(node('small', timing.text + ' · ' + timing.action, 'vs-expiry-action'));
       const physical = node('td'); physical.append(node('span', item.lote_fisico || 'Não registrado'), node('small', item.localizacao || 'Local não informado'));
       if (options.groupBy === 'vencidos') physical.append(node('small', 'Origem: ' + item.origem_codigo));
-      const expiry = node('td'); const bandValue = item.vencido_em ? 'VENC' : item.faixa;
-      expiry.append(node('span', date(item.data_vencimento)), node('span', bandValue === 'VENC' ? 'Vencido' : bandValue ? bandValue + ' dias' : 'Sem validade', 'vs-badge vs-band-' + bandValue));
+      const expiry = node('td');
+      row.classList.toggle('vs-expiry-urgent', timing.urgent);
+      expiry.append(node('span', date(item.data_vencimento)), node('strong', timing.text, 'vs-badge vs-expiry-count vs-band-' + timing.band));
+      if (timing.action) expiry.append(node('small', timing.action, timing.urgent ? 'vs-expiry-action' : ''));
+      if (timing.bandText) expiry.append(node('small', timing.bandText, 'vs-expiry-band'));
       const balance = node('td', String(item.quantidade), 'vs-number');
       const price = node('td', money(item.preco_atual), 'vs-number');
       const status = node('td');
@@ -209,8 +220,8 @@ function openLot(code, initialItems, profile, refresh, options) {
     previous.disabled = page === 1; next.disabled = page === pages;
   };
   search.addEventListener('input', () => { page = 1; render(); scroll.scrollTop = 0; });
-  for (const el of [band, local, order, size, pending]) el.addEventListener('change', () => { page = 1; render(); scroll.scrollTop = 0; });
-  updateLocals(); render();
+  for (const el of [urgency, band, local, order, size, pending]) el.addEventListener('change', () => { page = 1; render(); scroll.scrollTop = 0; });
+  updateLocals(); render(); watchCalendarDay(modal, render);
 }
 
 export function renderItens(items, container, profile, refresh, options = {}) {
@@ -227,6 +238,7 @@ export function renderItens(items, container, profile, refresh, options = {}) {
   const next = button('Próxima', () => { page++; render(); });
   footer.append(count, previous, next); container.append(search, list, footer);
   const render = () => {
+    const today = hojeBrasil();
     const term = normalize(search.value.trim());
     const selected = [...groups].filter(([code, lot]) => !term || normalize(code).includes(term) || lot.some(i => itemSearch(i).includes(term)));
     const pages = Math.max(1, Math.ceil(selected.length / 12)); page = Math.min(Math.max(1, page), pages);
@@ -239,6 +251,8 @@ export function renderItens(items, container, profile, refresh, options = {}) {
       const corrected = lot.filter(i => correctionsOf(i).length).length;
       open.append(node('p', `${lot.length} itens · ${lot.reduce((sum, i) => sum + i.quantidade, 0)} unidades`, 'vs-lot-totals'));
       open.append(node('span', pending ? `${pending} revisões pendentes` : 'Sem revisão pendente', pending ? 'vs-pendente' : 'vs-meta'));
+      const urgent = lot.filter(i => expiryStatus(i, today).urgent).length;
+      if (urgent) open.append(node('span', `${urgent} ${urgent === 1 ? 'item com saldo: vence' : 'itens com saldo: vencem'} em até 3 dias ou já ${urgent === 1 ? 'venceu' : 'venceram'}`, 'vs-lot-urgent'));
       if (corrected) open.append(node('span', `${corrected} ${corrected === 1 ? 'item com quantidade corrigida' : 'itens com quantidade corrigida'}`, 'vs-lot-corrected'));
       open.append(node('span', 'Abrir tabela de itens →', 'vs-lot-link'));
       open.onclick = () => openLot(code, lot, profile, refresh, options);
@@ -248,7 +262,7 @@ export function renderItens(items, container, profile, refresh, options = {}) {
     count.textContent = `${selected.length} lotes · Página ${page} de ${pages}`;
     previous.disabled = page === 1; next.disabled = page === pages; footer.hidden = pages === 1;
   };
-  search.addEventListener('input', () => { page = 1; render(); }); render();
+  search.addEventListener('input', () => { page = 1; render(); }); render(); watchCalendarDay(container, render);
 }
 
 export function renderPainel(snapshot, container, profile, refresh) {

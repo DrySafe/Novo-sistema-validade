@@ -1,3 +1,4 @@
+import { expiryStatus } from './expiryStatus.js';
 import { formatDate as date, responsible, roundLabel } from './lifecycleRules.js';
 export function linhasHistorico(itens) {
   return itens.flatMap(i => i.eventos.map(e => ({
@@ -19,7 +20,7 @@ export function linhasResumo(itens) {
     'Quantidade entrada em AV': i.tipo === 'AV' ? i.quantidade_inicial ?? 'Não disponível' : 0,
     'Quantidade entrada em USO': i.tipo === 'USO' ? i.quantidade_inicial ?? 'Não disponível' : 0,
     'Preço atual': i.preco_atual ?? 'Não disponível', 'Saldo atual': i.quantidade,
-    'Vencimento': date(i.data_vencimento), 'Transferido em': date(i.vencido_em),
+    'Dias restantes hoje': expiryStatus(i).days ?? 'Não disponível', 'Vencimento': date(i.data_vencimento), 'Transferido em': date(i.vencido_em),
     'Lote diário VENC': i.lote_vencidos || '', 'Saldo ao vencer': i.saldo_vencimento ?? '',
     'Vendas registradas': total(i, 'Venda'), 'Descarte': total(i, 'Descarte'), 'Troca': total(i, 'Troca'),
     'Bonificação': total(i, 'Bonificação'), 'Uso Loja (saídas)': total(i, 'Uso Loja'), 'Avaria (saídas)': total(i, 'Avaria'),
@@ -58,7 +59,7 @@ export function resumoGerencial(itens) {
     const initial = item.quantidade_inicial == null ? null : Number(item.quantidade_inicial);
     const balance = Number(item.quantidade);
     const partial = Boolean(item.legado) || initial == null || initial + adjustment - sales - losses - other !== balance;
-    const status = balance <= 0 ? 'Concluído' : item.vencido_em || item.faixa === 'VENC' ? 'Vencido: destinar' : item.pendencias?.length ? 'Conferência pendente' : 'Em acompanhamento';
+    const status = balance <= 0 ? 'Concluído' : expiryStatus(item).band === 'VENC' ? 'Vencido: destinar' : item.pendencias?.length ? 'Conferência pendente' : 'Em acompanhamento';
     return {item, initial, sales, losses, other, adjustment, balance, partial, status};
   });
   const sum = key => rows.reduce((total, row) => total + (row[key] || 0), 0);
@@ -108,7 +109,7 @@ export function exportLifecyclePDF(itens, profile, options = {}) {
       body:[...rows].sort((a,b)=>String(a.item.data_vencimento||'9999').localeCompare(String(b.item.data_vencimento||'9999')) || String(a.item.produto_nome).localeCompare(String(b.item.produto_nome),'pt-BR')).map(r=>[
         (r.item.produto_nome || 'Não informado') + (r.item.produtos?.ean ? '\n' + r.item.produtos.ean : ''),
         (r.item.lote_fisico || 'Não registrado') + '\n' + (r.item.localizacao || 'Local não informado') + (options.groupBy==='vencidos' ? '\nOrigem: '+r.item.origem_codigo : ''),
-        date(r.item.data_vencimento), quantity(r.initial), number(r.sales), number(r.losses), number(r.other), (r.adjustment>0?'+':'')+number(r.adjustment), number(r.balance), price(r.item.preco_atual), r.status + (r.partial?' *':'') + ((r.item.eventos||[]).some(e=>e.tipo==='Correção')?'\nQuantidade corrigida':'')
+        r.item.data_vencimento ? date(r.item.data_vencimento) + '\n' + expiryStatus(r.item).text : 'Sem validade', quantity(r.initial), number(r.sales), number(r.losses), number(r.other), (r.adjustment>0?'+':'')+number(r.adjustment), number(r.balance), price(r.item.preco_atual), r.status + (r.partial?' *':'') + ((r.item.eventos||[]).some(e=>e.tipo==='Correção')?'\nQuantidade corrigida':'')
       ]),
       styles:{fontSize:8,cellPadding:2,overflow:'linebreak',valign:'middle'},headStyles:{fillColor:[19,121,104]},
       columnStyles:{0:{cellWidth:47},1:{cellWidth:42},2:{cellWidth:21},3:{cellWidth:16,halign:'right'},4:{cellWidth:16,halign:'right'},5:{cellWidth:16,halign:'right'},6:{cellWidth:18,halign:'right'},7:{cellWidth:16,halign:'right'},8:{cellWidth:16,halign:'right'},9:{cellWidth:21,halign:'right'},10:{cellWidth:40}},
