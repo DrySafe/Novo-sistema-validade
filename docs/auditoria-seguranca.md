@@ -68,3 +68,7 @@ A entrega de hierarquia adicionou quatro tabelas com RLS (total atual: 28), índ
 ## Gestores adicionais na mesma empresa
 
 A migração `202611160001_gestores_adicionais_empresa.sql` permite que Gestor crie/promova outro Gestor exclusivamente na própria empresa. Somente CEO abre nova empresa; CEO continua único e sem acesso operacional. A Edge Function versão 10 valida explicitamente o tipo de criação antes de criar identidade Auth. A nova RPC de reserva é exclusiva de `service_role`. Escrita direta, escopo entre empresas e primeira troca de senha seguem bloqueados. Gestores existentes ficam protegidos contra alteração pelo formulário de colaboradores. Auditoria e avisos registram concessões de autoridade.
+
+## Exclusão lógica e códigos internos
+
+A migração `202611240001_codigos_e_exclusao_colaboradores.sql` revalida atividade do usuário nas autorizações de loja, gestão, colaboradores e notificações, além dos RPCs limitados. JWT anterior à exclusão não restabelece acesso. Exclusão não remove autoria e histórico; somente a gestão dentro do escopo pode excluir, protegendo CEO, Gestores e a própria conta. Códigos internos são texto limitado no lançamento da loja, sem gravação no catálogo global e sem escrita direta do cliente. ExcelJS local e sob demanda é usado somente para escrever o Excel formatado; strings não viram fórmulas.

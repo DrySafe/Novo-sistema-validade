@@ -185,3 +185,7 @@ body:has(#app-screen:not(.hidden)) .public-footer { display: none; }
 .vs-items-table .vs-expiry-action, .vs-lot-urgent { color:var(--danger); font-weight:700; }
 .vs-lot-urgent { display:block; font-size:12px; line-height:1.5; }
 .vs-expiry-band { color:var(--text-muted); font-size:11px; }
+.entry-company-codes { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+.access-member-actions { display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 20px; }
+.access-delete-button { color:var(--danger);border-color:var(--danger); }
+@media(max-width:420px){.entry-company-codes{grid-template-columns:1fr;}}

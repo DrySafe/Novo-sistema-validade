@@ -71,6 +71,7 @@ export const authService = {
     const { error } = await supabase.rpc('vs_salvar_acessos', { p_usuario: usuario, p_nome: nome, p_lojas: lojas, p_liberacoes: liberacoes });
     if (error) throw error;
   },
+  async deleteEmployee(usuario,motivo) {const {error}=await supabase.rpc('vs_excluir_colaborador',{p_usuario:usuario,p_motivo:motivo});if(error)throw error;},
   async savePerson(usuario,nome,papel,lojas,liberacoes,edicao=[]) {
     const {error}=await supabase.rpc('vs_salvar_pessoa',{p_usuario:usuario,p_nome:nome,p_papel:papel,p_lojas:lojas,p_liberacoes:liberacoes,p_edicao:edicao});
     if(error)throw error;

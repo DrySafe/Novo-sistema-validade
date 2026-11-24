@@ -59,6 +59,9 @@ async function checkSession() {
       document.getElementById('display-user-name').textContent=currentProfile.nome;
       document.getElementById('user-initials').textContent=(currentProfile.nome||'U').trim().split(/\s+/).map(p=>p[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
       currentProfile.accessContext = accessContext;
+      if (accessContext.conta_desativada) {
+        await supabase.auth.signOut({scope:'local'});showLoginScreen();const message=document.getElementById('login-alert');message.textContent='Esta conta foi excluída da equipe e seu acesso foi bloqueado. Procure o Gestor.';message.classList.remove('hidden');return;
+      }
       if (accessContext.dono_app) {
         await supabase.auth.signOut({ scope: 'local' });
         activeLojaId=null; localStorage.removeItem('active_loja_id'); currentData=[];
@@ -436,8 +439,8 @@ function setupEvents() {
     }, 50);
   });
 
-  document.getElementById('btn-export-excel')?.addEventListener('click', () => {
-    if (currentSector !== 'equipe') lifecycleReports.exportLifecycleExcel(currentData, currentProfile);
+  document.getElementById('btn-export-excel')?.addEventListener('click', async () => {
+    if (currentSector !== 'equipe') {const button=document.getElementById('btn-export-excel'),previous=button.textContent;button.disabled=true;button.textContent='Gerando Excel…';try{await lifecycleReports.exportLifecycleExcel(currentData,currentProfile,{groupBy:currentSector==='vencidos'?'vencidos':'origem'});}catch(e){alert(e.message);}finally{button.disabled=false;button.textContent=previous;}}
     else alert('Selecione um módulo operacional para exportar o acompanhamento.');
   });
 
@@ -571,6 +574,8 @@ function setupEvents() {
         usuarioId: currentProfile.id,
         setor: currentSector === 'ciclos' ? 'validade' : currentSector,
         ean: document.getElementById('entry-ean').value,
+        codigoProdutoEmpresa: document.getElementById('entry-company-product').value.trim(),
+        codigoEmbalagemEmpresa: document.getElementById('entry-company-package').value.trim(),
         produtoNome: document.getElementById('entry-product-name').value,
         precoAtual: parseFloat(document.getElementById('entry-price')?.value || 0),
         imagemUrl: document.getElementById('entry-image-url').value,

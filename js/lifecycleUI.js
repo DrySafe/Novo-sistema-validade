@@ -1,3 +1,4 @@
+import {itemValueCents,formatValue,lotValueLabel,companyCodes} from './stockValue.js';
 import { expiryStatus, watchCalendarDay } from './expiryStatus.js';
 import { lifecycleService } from './lifecycleService.js';
 import * as reportService from './lifecycleReports.js';
@@ -96,13 +97,13 @@ function historico(item, profile) {
   if (item.vencido_em) modal.append(node('p', `Vencidos: ${item.lote_vencidos} | Transferência: ${date(item.vencido_em)} | Saldo transferido: ${item.saldo_vencimento}`));
   const list = node('ol');
   for (const e of item.eventos) list.append(node('li', `${new Date(e.ocorrido_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} — ${e.tipo} | Faixa ${e.faixa || 'Não se aplica'} | Rodada ${roundLabel(e)} | Saldo ${e.saldo_anterior} → ${e.saldo_novo} | Preço ${money(e.preco_anterior)} → ${money(e.preco_novo)} | TOTVS: ${e.referencia_totvs || 'Não informado'} | ${e.motivo} | Responsável: ${responsible(e)}`));
-  modal.append(list, button('Excel do histórico', () => reportService.exportLifecycleExcel([item], profile)), button('PDF resumido do item', () => reportService.exportLifecyclePDF([item], profile)));
+  modal.append(list, button('Excel do histórico', async () => {try{await reportService.exportLifecycleExcel([item],profile);}catch(e){alert(e.message);}}), button('PDF resumido do item', () => reportService.exportLifecyclePDF([item], profile)));
 }
 
 const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const correctionsOf = item => (item.eventos || []).filter(event => event.tipo === 'Correção');
 const lotCode = (item, options) => (options.groupBy === 'vencidos' ? item.lote_vencidos : item.origem_codigo) || item.origem_codigo || 'Lote não identificado';
-const itemSearch = item => normalize([item.produto_nome, item.produtos?.ean, item.lote_fisico, item.localizacao, item.origem_codigo].join(' '));
+const itemSearch = item => normalize([item.produto_nome, item.produtos?.ean, item.lote_fisico, item.localizacao, item.origem_codigo, item.codigo_produto_empresa, item.codigo_embalagem_empresa].join(' '));
 
 function itemActions(item, profile, refresh) {
   const permissions = permissionsFor(profile);
@@ -127,6 +128,7 @@ function openLot(code, initialItems, profile, refresh, options) {
   modal.classList.add('vs-lot-dialog');
   let items = initialItems, page = 1, exportItems = initialItems;
   const exportPDF = button('PDF deste lote (filtrado)', () => reportService.exportLifecyclePDF(exportItems, profile, options));
+  const exportExcel = button('Excel deste lote (filtrado)', async () => {exportExcel.disabled=true;exportExcel.textContent='Gerando Excel…';try{await reportService.exportLifecycleExcel(exportItems,profile,options);}catch(e){alert(e.message);}finally{exportExcel.disabled=!exportItems.length;exportExcel.textContent='Excel deste lote (filtrado)';}});
   const summary = node('p', undefined, 'vs-lot-summary');
   const toolbar = node('div', undefined, 'vs-table-toolbar');
   const search = node('input'); search.type = 'search'; search.placeholder = 'Produto, EAN ou lote físico'; search.setAttribute('aria-label', 'Buscar itens do lote');
@@ -143,12 +145,12 @@ function openLot(code, initialItems, profile, refresh, options) {
   const pendingLabel = node('label', undefined, 'vs-pending-filter');
   const pending = node('input'); pending.type = 'checkbox'; pending.checked = Boolean(options.pendingOnly);
   pendingLabel.append(pending, node('span', 'Somente pendentes'));
-  toolbar.append(search, urgency, band, local, order, size, pendingLabel, exportPDF);
+  toolbar.append(search, urgency, band, local, order, size, pendingLabel, exportPDF, exportExcel);
   const scroll = node('div', undefined, 'vs-table-scroll'); scroll.tabIndex = 0; scroll.setAttribute('aria-label', 'Tabela de itens do lote, com rolagem');
   const table = node('table', undefined, 'vs-items-table');
   const caption = node('caption', 'Itens do lote ' + code); caption.className = 'sr-only'; table.append(caption);
   const head = node('thead'); const header = node('tr');
-  for (const label of ['Produto / EAN', 'Lote físico / local', 'Validade', 'Saldo', 'Preço', 'Situação / auditoria', 'Ações']) { const th = node('th', label); th.scope = 'col'; header.append(th); }
+  for (const label of ['Produto / EAN', 'Lote físico / local', 'Validade', 'Saldo', 'Preço unitário', 'Valor do saldo', 'Situação / auditoria', 'Ações']) { const th = node('th', label); th.scope = 'col'; header.append(th); }
   head.append(header); table.append(head);
   const body = node('tbody'); table.append(body); scroll.append(table);
   const footer = node('div', undefined, 'vs-pagination');
@@ -179,22 +181,23 @@ function openLot(code, initialItems, profile, refresh, options) {
   const render = () => {
     const today = hojeBrasil(), timings = new Map(items.map(i => [i, expiryStatus(i, today)]));
     const timingOf = i => timings.get(i);
-    summary.textContent = `${items.length} itens · ${items.reduce((sum, i) => sum + i.quantidade, 0)} unidades · ${items.filter(i => i.pendencias?.length).length} pendentes · ${items.filter(i => correctionsOf(i).length).length} itens com correção`;
+    summary.textContent = `${items.length} itens · ${items.reduce((sum, i) => sum + i.quantidade, 0)} unidades · Total do lote: ${lotValueLabel(items)} · ${items.filter(i => i.pendencias?.length).length} pendentes · ${items.filter(i => correctionsOf(i).length).length} itens com correção`;
     const urgentCount = items.filter(i => timingOf(i).urgent).length;
     if (urgentCount) summary.textContent += ` · ${urgentCount} ${urgentCount === 1 ? 'item urgente' : 'itens urgentes'} com saldo (até 3 dias ou vencidos)`;
     const term = normalize(search.value.trim());
     const selected = items.filter(i => (!term || itemSearch(i).includes(term)) && (band.value === 'todos' || (timingOf(i).band || 'sem') === band.value) && (urgency.value === 'todos' || (timingOf(i).active && timingOf(i).days != null && timingOf(i).days <= (urgency.value === 'vencidos' ? 0 : Number(urgency.value)))) && (!local.value || i.localizacao === local.value) && (!pending.checked || i.pendencias?.length));
-    exportItems = selected; exportPDF.disabled = !selected.length;
+    exportItems = selected; exportPDF.disabled = exportExcel.disabled = !selected.length;
     selected.sort((a, b) => order.value === 'urgencia' && timingOf(a).active !== timingOf(b).active ? Number(timingOf(b).active) - Number(timingOf(a).active) : order.value === 'produto' ? a.produto_nome.localeCompare(b.produto_nome, 'pt-BR') : order.value === 'saldo' ? a.quantidade - b.quantidade : String(a.data_vencimento || '9999').localeCompare(String(b.data_vencimento || '9999')) || a.produto_nome.localeCompare(b.produto_nome, 'pt-BR'));
     const limit = Number(size.value), pages = Math.max(1, Math.ceil(selected.length / limit));
     page = Math.min(Math.max(1, page), pages);
     const start = (page - 1) * limit;
     body.replaceChildren();
-    if (!selected.length) { const row = node('tr'); const cell = node('td', 'Nenhum item corresponde aos filtros.'); cell.colSpan = 7; row.append(cell); body.append(row); }
+    if (!selected.length) { const row = node('tr'); const cell = node('td', 'Nenhum item corresponde aos filtros.'); cell.colSpan = 8; row.append(cell); body.append(row); }
     for (const item of selected.slice(start, start + limit)) {
       const row = node('tr'); row.dataset.itemId = item.id;
       const timing = timingOf(item);
       const product = node('th'); product.scope = 'row'; product.append(node('strong', item.produto_nome), node('small', 'EAN ' + (item.produtos?.ean || '—')));
+      for (const code of companyCodes(item)) product.append(node('small', code));
       if (timing.urgent) product.append(node('small', timing.text + ' · ' + timing.action, 'vs-expiry-action'));
       const physical = node('td'); physical.append(node('span', item.lote_fisico || 'Não registrado'), node('small', item.localizacao || 'Local não informado'));
       if (options.groupBy === 'vencidos') physical.append(node('small', 'Origem: ' + item.origem_codigo));
@@ -205,6 +208,7 @@ function openLot(code, initialItems, profile, refresh, options) {
       if (timing.bandText) expiry.append(node('small', timing.bandText, 'vs-expiry-band'));
       const balance = node('td', String(item.quantidade), 'vs-number');
       const price = node('td', money(item.preco_atual), 'vs-number');
+      const value = node('td', formatValue(itemValueCents(item)), 'vs-number');
       const status = node('td');
       status.append(node('span', item.status !== 'ativo' || item.quantidade <= 0 ? 'Concluído' : item.pendencias?.length ? 'Pendente' : 'Conferido', item.pendencias?.length ? 'vs-status-pending' : ''));
       if (item.pendencias?.length) { const reason = node('small', item.pendencias.join(' + ')); status.append(reason); }
@@ -214,7 +218,7 @@ function openLot(code, initialItems, profile, refresh, options) {
         audit.append(node('summary', `Corrigido (${corrections.length}) · ${responsible(last)}`), node('p', `${last.saldo_anterior} → ${last.saldo_novo} un. · ${formatTimestamp(last.ocorrido_em)} · ${last.motivo}`)); status.append(audit);
       }
       const actions = node('td'); actions.append(itemActions(item, profile, refreshLot));
-      row.append(product, physical, expiry, balance, price, status, actions); body.append(row);
+      row.append(product, physical, expiry, balance, price, value, status, actions); body.append(row);
     }
     count.textContent = `${selected.length ? start + 1 : 0}–${Math.min(start + limit, selected.length)} de ${selected.length} itens · Página ${page} de ${pages}`;
     previous.disabled = page === 1; next.disabled = page === pages;
@@ -249,7 +253,7 @@ export function renderItens(items, container, profile, refresh, options = {}) {
       open.append(node('h3', code));
       const pending = lot.filter(i => i.pendencias?.length).length;
       const corrected = lot.filter(i => correctionsOf(i).length).length;
-      open.append(node('p', `${lot.length} itens · ${lot.reduce((sum, i) => sum + i.quantidade, 0)} unidades`, 'vs-lot-totals'));
+      open.append(node('p', `${lot.length} itens · ${lot.reduce((sum, i) => sum + i.quantidade, 0)} unidades · ${lotValueLabel(lot)}`, 'vs-lot-totals'));
       open.append(node('span', pending ? `${pending} revisões pendentes` : 'Sem revisão pendente', pending ? 'vs-pendente' : 'vs-meta'));
       const urgent = lot.filter(i => expiryStatus(i, today).urgent).length;
       if (urgent) open.append(node('span', `${urgent} ${urgent === 1 ? 'item com saldo: vence' : 'itens com saldo: vencem'} em até 3 dias ou já ${urgent === 1 ? 'venceu' : 'venceram'}`, 'vs-lot-urgent'));

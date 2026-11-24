@@ -39,6 +39,14 @@ function showCredentials(login, password,papel='funcionario') {
  modal.addEventListener('close',()=>{password='';secret.value='';modal.remove();});
  document.body.append(modal); modal.showModal();
 }
+function deleteEmployee(member,refresh){
+ const modal=el('dialog');modal.className='vs-dialog';const title=el('h2','Excluir colaborador');title.id='delete-'+crypto.randomUUID();modal.setAttribute('aria-labelledby',title.id);
+ modal.append(title,el('p',`${member.nome} · ${member.login||'Conta com e-mail'}`),el('p','O acesso será bloqueado, inclusive nas sessões já abertas. Lançamentos, histórico e autoria serão preservados. Para troca de setor, prefira editar as lojas e liberações.'));
+ const form=el('form'),reason=field(form,'Motivo da exclusão');reason.minLength=10;reason.maxLength=500;
+ const confirmation=el('label'),confirm=el('input');confirm.type='checkbox';confirm.required=true;confirmation.className='vs-confirm';confirmation.append(confirm,el('span','Confirmo a exclusão e o bloqueio de acesso deste colaborador.'));form.append(confirmation);
+ submit(form,'Excluir e bloquear acesso',async()=>{if(!confirm.checked)throw new Error('Confirme a exclusão.');await authService.deleteEmployee(member.id,reason.value.trim());},async()=>{modal.close();await refresh();});
+ modal.append(form,button('Cancelar',()=>modal.close()));modal.addEventListener('close',()=>modal.remove());document.body.append(modal);modal.showModal();
+}
 export const isCompanyManager = context => context.gestor_empresa ?? context.empresa_admin;
 export const canManagePeople = context => !context.dono_app && (context.pode_gerenciar_usuarios ?? context.empresa_admin);
 function roleFields(form,context,stores,allowed,current={}){
@@ -87,18 +95,23 @@ export async function renderCompanyAccess(container, context, onSaved=async()=>{
  });
  form.append(el('p','Colaboradores sem liberações podem consultar as lojas permitidas. Login fixo; nenhum e-mail pessoal é necessário.'));
  create.append(form);container.append(create);
+ const showRemoved=el('label'),toggleRemoved=el('input');toggleRemoved.type='checkbox';showRemoved.append(toggleRemoved,el('span',' Mostrar colaboradores excluídos'));container.append(showRemoved);
  const list=el('div');list.className='access-members';container.append(list);
+ const removedVisibility=()=>list.querySelectorAll('[data-removed]').forEach(n=>n.hidden=!toggleRemoved.checked);toggleRemoved.onchange=removedVisibility;
  try{
   const members=await authService.getEmployees();if(!container.isConnected)return;
   if(!members.length)list.append(el('p','Nenhum usuário cadastrado nesta empresa.'));
   for(const member of members){
-   const detail=el('details');detail.append(el('summary',member.nome+' · '+(member.login||'Conta existente')+' · '+(['gestor','empresa_admin'].includes(member.tipo_conta)?'Gestor':member.tipo_conta==='loja_admin'?'Administrador':'Colaborador')));
-   if(member.gerenciavel===false){detail.append(el('p',['gestor','empresa_admin'].includes(member.tipo_conta)?'Conta de Gestor protegida. Tem acesso a todas as lojas atuais e futuras da empresa; o próprio usuário altera seu nome e senha em Minha conta.':'Esta conta também atende lojas fora do seu alcance. Para preservar os acessos dessas lojas, a edição é feita pelo Gestor.'));list.append(detail);continue;}
+   const row=el('div'),detail=el('details');row.append(detail);
+   if(member.desativado_em){row.dataset.removed='true';row.hidden=!toggleRemoved.checked;detail.append(el('summary',member.nome+' · Excluído'),el('p','Acesso bloqueado. Histórico e autoria preservados.'));list.append(row);continue;}
+   detail.append(el('summary',member.nome+' · '+(member.login||'Conta existente')+' · '+(['gestor','empresa_admin'].includes(member.tipo_conta)?'Gestor':member.tipo_conta==='loja_admin'?'Administrador':'Colaborador')));
+   if(member.gerenciavel===false){detail.append(el('p',['gestor','empresa_admin'].includes(member.tipo_conta)?'Conta de Gestor protegida. Tem acesso a todas as lojas atuais e futuras da empresa; o próprio usuário altera seu nome e senha em Minha conta.':'Esta conta também atende lojas fora do seu alcance. Para preservar os acessos dessas lojas, a edição é feita pelo Gestor.'));list.append(row);continue;}
    const edit=el('form'),memberName=field(edit,'Nome completo','text',member.nome),fixed=field(edit,'Login (não pode ser alterado)','text',member.login||'Conta com e-mail');fixed.readOnly=true;
    const assigned=choices(edit,'Lojas permitidas',context.lojas.map(l=>[l.id,l.nome]),member.lojas||[]),permitted=permissions(edit,member.liberacoes),roleEdit=roleFields(edit,context,assigned,permitted,member);
    submit(edit,'Salvar papel e liberações',()=>{roleEdit.validate();return authService.savePerson(member.id,memberName.value,roleEdit.role(),roleEdit.stores(),roleEdit.permissions(),roleEdit.role()==='loja_admin'?roleEdit.edits():[]);},async()=>{await renderCompanyAccess(container,context,onSaved);await onSaved();});
    edit.append(el('p',isCompanyManager(context)?'Desmarcar todas as lojas suspende o acesso. Alterar um administrador para colaborador remove sua autoridade administrativa.':'Desmarcar todas as lojas suspende o acesso. A reativação de uma conta sem lojas será feita pelo Gestor.'));
-   detail.append(edit);list.append(detail);
+   detail.append(edit);
+   const actions=el('div');actions.className='access-member-actions';actions.append(button('Editar cadastro e acessos',()=>{detail.open=true;memberName.focus();}));const remove=button('Excluir colaborador',()=>deleteEmployee(member,async()=>{await renderCompanyAccess(container,context,onSaved);await onSaved();}));remove.classList.add('access-delete-button');actions.append(remove);row.append(actions);list.append(row);
   }
  }catch(error){list.append(el('p',error.message));}
 }

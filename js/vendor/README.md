@@ -11,3 +11,5 @@ Carregado sob demanda pelo scanner quando o navegador não oferece leitura nativ
 Os scripts do SDK Supabase 2.119.0, jsPDF 4.2.1, AutoTable 5.0.9 e XLSX 0.18.5 são cópias locais dos bundles oficiais publicados em cdn.jsdelivr.net/npm, com licenças ao lado. O frontend não executa JavaScript remoto; a CSP permite scripts somente da própria origem. Versões e hashes estão em `integrity.json`.
 
 XLSX 0.18.5 é usado somente para gerar arquivos, nunca importar planilhas. Há avisos conhecidos para caminhos de leitura de versões antigas. A atualização para a distribuição oficial 0.20.3 ficou pendente porque cdn.sheetjs.com está bloqueado na política do ambiente. Não habilitar importação de arquivos com essa versão; obter e validar a distribuição oficial antes de adicionar esse recurso. A ausência de alertas em npm audit não cobre bibliotecas vendorizadas.
+
+ExcelJS 4.4.0 (`exceljs-4.4.0.min.js`) é o bundle oficial de cdn.jsdelivr.net/npm/exceljs@4.4.0, usado somente para escrever o Excel formatado por lote. Carregado sob demanda da própria origem; licença MIT em exceljs-LICENSE e SHA-256 em integrity.json. Não lê arquivos enviados.
