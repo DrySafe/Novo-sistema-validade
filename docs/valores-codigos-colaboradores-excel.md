@@ -22,7 +22,9 @@ Gestor gerencia pessoas da própria empresa; administrador de loja gerencia some
 
 ## Excel
 
-A aba principal **Resumo por lote** segue as colunas do PDF, com cabeçalhos laranja, faixas claras alternadas, separação de lotes, subtotais, total geral, cabeçalho congelado, larguras e alturas ajustadas, moeda numérica em R$ e impressão horizontal. Dados dos itens e Histórico preservam os detalhes adicionais.
+A aba principal **Produtos** segue o modelo aprovado: Código Winthor, Código de barras, Produto, Data de validade, Quantidade, Sugestão R$ e Dias que faltam. Depois ficam preço unitário, valor do saldo, lote, embalagem, local, situação, quantidades históricas, data da entrada e justificativa do desconto. Os dados ficam em tabela contínua, com filtro nos cabeçalhos, tons de laranja, linhas alternadas, datas nativas, moeda numérica e as três primeiras colunas e o cabeçalho congelados.
+
+A aba **Totais por lote** concentra os subtotais e o total geral pelo preço atual. Dados dos itens e Histórico preservam os detalhes adicionais. A sugestão por prazo segue a regra descrita em `modelo-excel-sugestoes.md`; a sugestão não altera os totais do estoque.
 
 ExcelJS 4.4.0 oficial, licença MIT e hash em `js/vendor`, é carregado da própria origem somente ao exportar. O app escreve `.xlsx` e não interpreta arquivos enviados. Textos são células de texto; não são transformados em fórmulas. A exportação captura dados e identificação da loja antes de carregar a biblioteca para evitar mistura ao trocar de loja durante a geração.
 
