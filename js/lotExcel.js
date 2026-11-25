@@ -1,3 +1,5 @@
+import {reportColumnHeaders as excelHeaders} from './reportColumns.js';
+export {excelHeaders};
 import {resumoGerencial,sortedReportRows,groupedReport,linhasResumo,linhasHistorico} from './lifecycleReports.js';
 import {stockValue,itemValueCents} from './stockValue.js';
 import {priceSuggestion} from './priceSuggestion.js';
@@ -5,7 +7,6 @@ import {hojeBrasil,formatDate} from './lifecycleRules.js';
 const orange='C65D17', pale='FFF4E8', line='E8CCAF', ink='26332F';
 const rgb=value=>value.length===6?'FF'+value:value;
 const brl='"R$" #,##0.00;[Red]-"R$" #,##0.00';
-export const excelHeaders=['CÓDIGO WINTHOR','CÓDIGO DE BARRAS','PRODUTO','DATA DE VALIDADE','QUANTIDADE','SUGESTÃO R$','DIAS QUE FALTAM','PREÇO UNITÁRIO R$','VALOR DO SALDO R$','LOTE DE ACOMPANHAMENTO','CÓD. DA EMBALAGEM','LOTE FÍSICO','LOCALIZAÇÃO','SITUAÇÃO','QUANTIDADE INICIAL','VENDAS REGISTRADAS','PERDAS','OUTRAS SAÍDAS','AJUSTE','DATA DE ENTRADA','DESCONTO SUGERIDO %','REGRA DA SUGESTÃO'];
 function styleRow(row,fill=undefined,bold=false){row.eachCell({includeEmpty:true},cell=>{cell.font={name:'Aptos',size:11,color:{argb:rgb(ink)},bold};cell.alignment={vertical:'middle',wrapText:true};cell.border={bottom:{style:'thin',color:{argb:rgb(line)}}};if(fill)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:rgb(fill)}};});}
 function merged(sheet,row,from,to,value,{fill,bold=false,size=11,color=ink}={}){
  sheet.mergeCells(row,from,row,to);const cell=sheet.getCell(row,from);cell.value=value;cell.font={name:'Aptos',size,bold,color:{argb:rgb(color)}};cell.alignment={vertical:'middle',wrapText:true,indent:1};if(fill)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:rgb(fill)}};return cell;
